@@ -52,7 +52,7 @@
     updatedSchedule.currentDay = nextDay;
     scheduleStore.set(updatedSchedule);
 
-    const newlyCompletedMatches = updatedSchedule.matches.filter(m => m.day === currentDay && m.status === 'completed' && m.result);
+    const newlyCompletedMatches = updatedSchedule.matches.filter(m => m.day === currentDay && m.status === 'completed' && m.result && m.team1Id !== 'user_team' && m.team2Id !== 'user_team');
     
     // Apply fatigue recovery and injury healing across all teams, and update match results
     teamStore.update(tStore => {
@@ -194,9 +194,15 @@
         </div>
       </div>
       
-      <button class="advance-btn" onclick={advanceTournament}>
-        Advance to Day {schedule.currentDay + 1}
-      </button>
+      {#if schedule?.matches.some(m => m.day === schedule?.currentDay && m.status === 'scheduled' && (m.team1Id === 'user_team' || m.team2Id === 'user_team'))}
+        <a href="/match" class="advance-btn" style="display: block; text-align: center; text-decoration: none; box-sizing: border-box; background: var(--success);">
+          Start Match
+        </a>
+      {:else}
+        <button class="advance-btn" onclick={advanceTournament}>
+          Advance to Day {schedule?.currentDay ? schedule.currentDay + 1 : ''}
+        </button>
+      {/if}
     </section>
   {/if}
 

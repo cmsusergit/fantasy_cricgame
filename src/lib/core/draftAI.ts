@@ -75,6 +75,11 @@ export function generatePlayer(role: PlayerRole): Player {
   const isWK = role === 'batsman' && Math.random() < 0.15;
   const isCaptain = Math.random() < 0.10;
 
+  let bowlingType: any = 'none';
+  if (role === 'bowler' || role === 'allrounder') {
+      bowlingType = randomElement(['pacer', 'fast', 'swinger', 'spinner']);
+  }
+
   // Reduced variance for more balanced gameplay
   const stats: PlayerStats = {
     batting: generateStatValue(baseStats.batting, 5),
@@ -91,6 +96,7 @@ export function generatePlayer(role: PlayerRole): Player {
     id: generatePlayerId(),
     name,
     role,
+    bowlingType,
     faction,
     stats,
     special: {

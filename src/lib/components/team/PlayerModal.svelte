@@ -28,7 +28,7 @@
       <span class="faction-icon">{player.faction === 'human' ? '⚔' : player.faction === 'elf' ? '🌿' : player.faction === 'orc' ? '🪓' : player.faction === 'dwarf' ? '⛏' : player.faction === 'goblin' ? '💎' : '🌙'}</span>
       <div class="player-info">
         <h2>{player.name}</h2>
-        <span class="role">{player.role}</span>
+        <span class="role">{player.role}{player.bowlingType !== 'none' ? ` (${player.bowlingType})` : ''}</span>
         <span class="faction">{faction.name}</span>
       </div>
     </div>

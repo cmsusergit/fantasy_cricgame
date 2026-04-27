@@ -17,10 +17,13 @@ export interface PlayerSpecial {
   wkBonus: number;       // +handling skill
 }
 
+export type BowlingType = 'pacer' | 'fast' | 'swinger' | 'spinner' | 'none';
+
 export interface Player {
   id: string;
   name: string;
   role: PlayerRole;
+  bowlingType: BowlingType;
   faction: FactionType;
   stats: PlayerStats;
   special: PlayerSpecial;

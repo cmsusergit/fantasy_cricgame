@@ -315,10 +315,13 @@
         nextBatsmen = [currentInn.currentBatsmen[1], currentInn.currentBatsmen[0]] as [string, string];
     }
 
-    let nextBalls = currentInn.balls + 1;
+    let nextBalls = currentInn.balls;
+    if (ballEvent.result !== 'wide' && ballEvent.result !== 'noball') {
+        nextBalls += 1;
+    }
     let nextOvers = currentInn.overs;
     
-    if (nextBalls % 6 === 0) {
+    if (nextBalls > currentInn.balls && nextBalls > 0 && nextBalls % 6 === 0) {
         nextOvers += 1;
         nextBatsmen = [nextBatsmen[1], nextBatsmen[0]] as [string, string];
         needsBowler = (currentBowlingTeam.id === 'user_team') && nextOvers < totalOvers && nextWickets < 10;
@@ -624,7 +627,7 @@
                             onclick={() => phase === 'selectOpeningBatsmen' ? toggleBatsman(p.id) : confirmNextBatsman(p.id)}>
                         <div class="player-info">
                            <span class="name">{p.name}</span>
-                           <span class="role">{p.role}</span>
+                           <span class="role">{p.role}{p.bowlingType !== 'none' ? ` (${p.bowlingType})` : ''}</span>
                         </div>
                         <span class="stat-badge">Bat: {p.stats.batting}</span>
                     </button>
@@ -734,7 +737,7 @@
                     <button class="player-select-btn" onclick={() => confirmBowler(p.id)}>
                         <div class="player-info">
                            <span class="name">{p.name}</span>
-                           <span class="role">{p.role}</span>
+                           <span class="role">{p.role}{p.bowlingType !== 'none' ? ` (${p.bowlingType})` : ''}</span>
                         </div>
                         <span class="stat-badge">Bowl: {p.stats.bowling}</span>
                     </button>

@@ -96,10 +96,20 @@ export function calculateShotQuality(
     const injury = (batter as any).activeInjury as Injury;
     injuryPenalty = injury.statPenalty * 0.8 * (injury.currentDay / injury.recoveryDays);
   }
+
+  // Bowling type and technique interaction
+  let typeAdvantage = 0;
+  if (bowler.bowlingType === 'spinner' && pitch === 'turning') typeAdvantage = 2.5;
+  if (bowler.bowlingType === 'pacer' && pitch === 'seaming') typeAdvantage = 2.0;
+  if (bowler.bowlingType === 'fast' && pitch === 'bouncing') typeAdvantage = 2.0;
+  if (bowler.bowlingType === 'swinger' && weather === 'cloudy') typeAdvantage = 2.5;
+
+  const techMitigation = batterStats.technique * 0.08;
+  const netTypeAdvantage = Math.max(0, typeAdvantage - techMitigation);
   
   // Balanced formula from simulation
   const battingPower = (batterStats.batting * 0.22 + batterStats.power * 0.11) * fatigueFactor;
-  const bowlingDefense = (bowlerStats.bowling * 0.09 + bowlerStats.technique * 0.04) * bowlingEffort;
+  const bowlingDefense = (bowlerStats.bowling * 0.09 + bowlerStats.technique * 0.04) * bowlingEffort + netTypeAdvantage;
   
   // Home advantage bonus
   const homeBonus = homeAdvantage * 0.015;
