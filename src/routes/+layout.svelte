@@ -8,7 +8,29 @@
   let isResetting = $state(false);
   let newTeamName = $state('Your Team');
   let newManagerName = $state('You');
-  let newLogoUrl = $state('');
+  let newLogoUrl = $state('https://api.dicebear.com/7.x/shapes/svg?seed=Felix&backgroundColor=b6e3f4');
+  
+  const teamAdjectives = ['Mighty', 'Super', 'Royal', 'Flying', 'Golden', 'Fierce', 'Cosmic', 'Thunder', 'Shadow'];
+  const teamNouns = ['Lions', 'Eagles', 'Titans', 'Warriors', 'Knights', 'Dragons', 'Strikers', 'Phoenix', 'Panthers'];
+  const managerFirstNames = ['John', 'Mike', 'David', 'Chris', 'James', 'Sarah', 'Emma', 'Alex', 'Liam', 'Sophia'];
+  const managerLastNames = ['Smith', 'Johnson', 'Brown', 'Taylor', 'Wilson', 'Davis', 'Miller', 'Moore'];
+
+  const predefinedLogos = [
+    'https://api.dicebear.com/7.x/shapes/svg?seed=Felix&backgroundColor=b6e3f4',
+    'https://api.dicebear.com/7.x/shapes/svg?seed=Aneka&backgroundColor=c0aede',
+    'https://api.dicebear.com/7.x/shapes/svg?seed=Liam&backgroundColor=ffdfbf',
+    'https://api.dicebear.com/7.x/shapes/svg?seed=Tigger&backgroundColor=d1d4f9',
+    'https://api.dicebear.com/7.x/bottts/svg?seed=Bot1&backgroundColor=ffb8b8',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Team'
+  ];
+
+  function randomizeTeam() {
+    newTeamName = `${teamAdjectives[Math.floor(Math.random() * teamAdjectives.length)]} ${teamNouns[Math.floor(Math.random() * teamNouns.length)]}`;
+  }
+
+  function randomizeManager() {
+    newManagerName = `${managerFirstNames[Math.floor(Math.random() * managerFirstNames.length)]} ${managerLastNames[Math.floor(Math.random() * managerLastNames.length)]}`;
+  }
   
   onMount(() => {
     const saved = localStorage.getItem('theme') || 'dark';
@@ -72,17 +94,35 @@
       
       <div class="form-group">
         <label for="teamName">Team Name</label>
-        <input id="teamName" type="text" bind:value={newTeamName} placeholder="E.g., Mumbai Indians" />
+        <div style="display: flex; gap: 8px;">
+          <input id="teamName" type="text" bind:value={newTeamName} placeholder="E.g., Mumbai Indians" style="flex: 1;" />
+          <button class="dice-btn" onclick={randomizeTeam} title="Randomize Team Name">🎲</button>
+        </div>
       </div>
       
       <div class="form-group">
         <label for="managerName">Manager Name</label>
-        <input id="managerName" type="text" bind:value={newManagerName} placeholder="E.g., John Doe" />
+        <div style="display: flex; gap: 8px;">
+          <input id="managerName" type="text" bind:value={newManagerName} placeholder="E.g., John Doe" style="flex: 1;" />
+          <button class="dice-btn" onclick={randomizeManager} title="Randomize Manager Name">🎲</button>
+        </div>
       </div>
       
       <div class="form-group">
-        <label for="logoUrl">Team Logo URL (Optional)</label>
-        <input id="logoUrl" type="text" bind:value={newLogoUrl} placeholder="https://example.com/logo.png" />
+        <label>Team Logo (Optional)</label>
+        <div style="display: flex; gap: 12px; margin-bottom: 8px; flex-wrap: wrap;">
+          {#each predefinedLogos as logo}
+            <button 
+              class="logo-option" 
+              class:selected={newLogoUrl === logo} 
+              onclick={() => newLogoUrl = logo}
+              style="padding: 0; border: 2px solid {newLogoUrl === logo ? 'var(--success)' : 'var(--border-color)'}; border-radius: 8px; background: transparent; cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center;"
+            >
+              <img src={logo} alt="Logo option" style="width: 48px; height: 48px; display: block;" />
+            </button>
+          {/each}
+        </div>
+        <input id="logoUrl" type="text" bind:value={newLogoUrl} placeholder="Or enter custom URL..." />
       </div>
       
       <div class="modal-actions">
@@ -186,6 +226,23 @@
     background: var(--bg-tertiary);
     color: var(--text-primary);
     font-size: 1rem;
+  }
+  
+  .dice-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1.2rem;
+    padding: 0 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .dice-btn:hover {
+    background: var(--bg-secondary);
   }
   
   .modal-actions {

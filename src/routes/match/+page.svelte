@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { teamStore, scheduleStore } from '$lib/stores/gameState';
   import { resolveBall, updateFatigueAndMorale, calculateRunRate, resolveMatch } from '$lib/core/matchEngine';
+  import { getAIIntent } from '$lib/core/teamBuilder';
   import type { Player } from '$lib/models/player';
   import type { Team } from '$lib/models/team';
   import type { innings, IntentType } from '$lib/models/match';
@@ -9,6 +10,7 @@
   import MatchControls, { type SimSpeed } from '$lib/components/match/MatchControls.svelte';
   import BallFeed from '$lib/components/match/BallFeed.svelte';
   import Scoreboard from '$lib/components/match/Scoreboard.svelte';
+  import MatchSummary from '$lib/components/match/MatchSummary.svelte';
   import { goto } from '$app/navigation';
   
   type Phase = 'loading' | 'toss' | 'selectOpeningBatsmen' | 'selectOpeningBowler' | 'selectNextBatsman' | 'selectNextBowler' | 'ready' | 'inningBreak' | 'playing' | 'paused' | 'complete' | 'invalidSquad';
@@ -40,6 +42,7 @@
   let ballInterval: any = null;
   
   let gameSpeed: SimSpeed = $state('ball');
+  let autoPlayDelay = $state(1000);
   let isComplete = $state(false);
   let battingIntent: IntentType = $state('balanced');
   let bowlingIntent: IntentType = $state('balanced');
@@ -51,6 +54,10 @@
   let selectedBowlerId = $state<string | null>(null);
   let pendingBowlerSelection = $state(false);
   let placeholderBatsman = $state<string | null>(null);
+
+  let tossWinner = $state<string | null>(null);
+  let tossChoice = $state<'bat' | 'bowl' | null>(null);
+  let isTossing = $state(false);
   
   function createEmptyInnings(): innings {
     return {
@@ -149,40 +156,52 @@
     }
   }
 
-  function chooseToBat() {
+  function performToss() {
     if (!matchTeam1 || !matchTeam2) return;
-    const userIsTeam1 = matchTeam1.id === 'user_team';
-    const userTeamObj = userIsTeam1 ? matchTeam1 : matchTeam2;
-    const aiTeamObj = userIsTeam1 ? matchTeam2 : matchTeam1;
+    isTossing = true;
+    setTimeout(() => {
+      const userWon = Math.random() > 0.5;
+      tossWinner = userWon ? 'user_team' : (matchTeam1!.id === 'user_team' ? matchTeam2!.id : matchTeam1!.id);
+      
+      if (!userWon) {
+         tossChoice = Math.random() > 0.5 ? 'bat' : 'bowl';
+         setTimeout(() => {
+            if (tossChoice === 'bat') {
+                startGame(tossWinner!);
+            } else {
+                startGame('user_team');
+            }
+         }, 3000);
+      }
+      isTossing = false;
+    }, 1500);
+  }
 
-    const t1BattingOrder = getPlaying11(userTeamObj);
-    const t2BattingOrder = getSortedBattingOrder(aiTeamObj);
+  function startGame(battingTeamId: string) {
+    if (!matchTeam1 || !matchTeam2) return;
+    const battingTeamObj = matchTeam1.id === battingTeamId ? matchTeam1 : matchTeam2;
+    const bowlingTeamObj = matchTeam1.id === battingTeamId ? matchTeam2 : matchTeam1;
 
-    innings1 = { teamId: userTeamObj.id, totalRuns: 0, wickets: 0, overs: 0, balls: 0, extras: 0, ballsFaced: [], battingOrder: t1BattingOrder, currentBatsmen: [t1BattingOrder[0], t1BattingOrder[1]], impactPlayer: null };
-    innings2 = { teamId: aiTeamObj.id, totalRuns: 0, wickets: 0, overs: 0, balls: 0, extras: 0, ballsFaced: [], battingOrder: t2BattingOrder, currentBatsmen: [t2BattingOrder[0], t2BattingOrder[1]], impactPlayer: null };
+    const t1BattingOrder = battingTeamId === 'user_team' ? getPlaying11(battingTeamObj) : getSortedBattingOrder(battingTeamObj);
+    const t2BattingOrder = bowlingTeamObj.id === 'user_team' ? getPlaying11(bowlingTeamObj) : getSortedBattingOrder(bowlingTeamObj);
+
+    innings1 = { teamId: battingTeamObj.id, totalRuns: 0, wickets: 0, overs: 0, balls: 0, extras: 0, ballsFaced: [], battingOrder: t1BattingOrder, currentBatsmen: [t1BattingOrder[0], t1BattingOrder[1]], impactPlayer: null };
+    innings2 = { teamId: bowlingTeamObj.id, totalRuns: 0, wickets: 0, overs: 0, balls: 0, extras: 0, ballsFaced: [], battingOrder: t2BattingOrder, currentBatsmen: [t2BattingOrder[0], t2BattingOrder[1]], impactPlayer: null };
     
     currentInnings = 1;
     currentBowlerIndex = 0;
     target = 0;
     checkInitialSelection();
   }
-  
-  function chooseToBowl() {
+
+  function userChooseToBat() {
+    startGame('user_team');
+  }
+
+  function userChooseToBowl() {
     if (!matchTeam1 || !matchTeam2) return;
-    const userIsTeam1 = matchTeam1.id === 'user_team';
-    const userTeamObj = userIsTeam1 ? matchTeam1 : matchTeam2;
-    const aiTeamObj = userIsTeam1 ? matchTeam2 : matchTeam1;
-
-    const t1BattingOrder = getSortedBattingOrder(aiTeamObj);
-    const t2BattingOrder = getPlaying11(userTeamObj);
-
-    innings1 = { teamId: aiTeamObj.id, totalRuns: 0, wickets: 0, overs: 0, balls: 0, extras: 0, ballsFaced: [], battingOrder: t1BattingOrder, currentBatsmen: [t1BattingOrder[0], t1BattingOrder[1]], impactPlayer: null };
-    innings2 = { teamId: userTeamObj.id, totalRuns: 0, wickets: 0, overs: 0, balls: 0, extras: 0, ballsFaced: [], battingOrder: t2BattingOrder, currentBatsmen: [t2BattingOrder[0], t2BattingOrder[1]], impactPlayer: null };
-    
-    currentInnings = 1;
-    currentBowlerIndex = 0;
-    target = 0;
-    checkInitialSelection();
+    const aiTeamId = matchTeam1.id === 'user_team' ? matchTeam2.id : matchTeam1.id;
+    startGame(aiTeamId);
   }
   
   function startPlay() {
@@ -296,7 +315,18 @@
       return true;
     }
     
-    const ballEvent = resolveBall(striker, bowler, currentInn.balls, totalOvers, battingIntent, weather as any, pitch as any, 0, false, bowlingIntent, avoidSingles);
+    if (currentBattingTeam.id !== 'user_team' && currentBattingTeam.tendency) {
+      const reqRR = target > 0 ? (target - currentInn.totalRuns) / ((totalOvers * 6 - currentInn.balls) / 6 || 1) : 0;
+      battingIntent = getAIIntent(currentBattingTeam.tendency, currentInn.overs, totalOvers, reqRR, totalOvers * 6 - currentInn.balls);
+    }
+    if (currentBowlingTeam.id !== 'user_team' && currentBowlingTeam.tendency) {
+      const reqRR = target > 0 ? (target - currentInn.totalRuns) / ((totalOvers * 6 - currentInn.balls) / 6 || 1) : 0;
+      bowlingIntent = getAIIntent(currentBowlingTeam.tendency, currentInn.overs, totalOvers, reqRR, totalOvers * 6 - currentInn.balls);
+    }
+
+    const bowlingFieldingAvg = currentBowlingTeam.players.filter(p => getPlaying11(currentBowlingTeam).includes(p.id)).reduce((sum, p) => sum + (p.stats.fielding || 12), 0) / 11;
+
+    const ballEvent = resolveBall(striker, bowler, currentInn.balls, totalOvers, battingIntent, weather as any, pitch as any, 0, false, bowlingIntent, avoidSingles, bowlingFieldingAvg);
     
     striker.fatigue += 0.3;
     
@@ -372,19 +402,24 @@
     if (phase !== 'playing' || isComplete) return;
     executeSingleBall();
     if (!isComplete && phase === 'playing') {
-      ballInterval = setTimeout(playAutoBall, 100);
+      ballInterval = setTimeout(playAutoBall, autoPlayDelay);
     }
   }
 
   function simulateOver() {
     if (phase !== 'playing' || isComplete) return;
-    for (let i = 0; i < 6; i++) {
+    
+    const currentInn = currentInnings === 1 ? innings1 : innings2;
+    const ballsInOver = currentInn.balls % 6;
+    const ballsToBowl = ballsInOver === 0 ? 6 : 6 - ballsInOver;
+    
+    for (let i = 0; i < ballsToBowl; i++) {
       if (isComplete || phase !== 'playing') break;
       const phaseChanged = executeSingleBall();
       if (phaseChanged) break;
     }
     if (!isComplete && phase === 'playing') {
-      ballInterval = setTimeout(simulateOver, 100);
+      ballInterval = setTimeout(simulateOver, autoPlayDelay);
     }
   }
   
@@ -415,13 +450,28 @@
     const team = currentBattingTeam;
     if (!team) return [];
     
+    const getRoleWeight = (role: string) => {
+        if (role === 'batsman') return 3;
+        if (role === 'wk' || role === 'wicketkeeper') return 2;
+        if (role === 'allrounder') return 1;
+        return 0;
+    };
+
+    let available = [];
     if (phase === 'selectOpeningBatsmen') {
-        return team.players.filter(p => inn.battingOrder.includes(p.id)).sort((a,b) => b.stats.batting - a.stats.batting);
+        available = team.players.filter(p => inn.battingOrder.includes(p.id));
     } else {
         const outPlayers = new Set(inn.ballsFaced.filter(b => b.isWicket).map(b => b.batsmanId));
         const nonStriker = inn.currentBatsmen[0] === placeholderBatsman ? inn.currentBatsmen[1] : inn.currentBatsmen[0];
-        return team.players.filter(p => inn.battingOrder.includes(p.id) && !outPlayers.has(p.id) && p.id !== nonStriker).sort((a,b) => b.stats.batting - a.stats.batting);
+        available = team.players.filter(p => inn.battingOrder.includes(p.id) && !outPlayers.has(p.id) && p.id !== nonStriker);
     }
+    
+    return available.sort((a,b) => {
+        const weightA = getRoleWeight(a.role);
+        const weightB = getRoleWeight(b.role);
+        if (weightA !== weightB) return weightB - weightA;
+        return b.stats.batting - a.stats.batting;
+    });
   }
 
   function toggleBatsman(id: string) {
@@ -494,13 +544,24 @@
         }
     }
     
+    const getRoleWeight = (role: string) => {
+        if (role === 'bowler') return 2;
+        if (role === 'allrounder') return 1;
+        return 0;
+    };
+
     return team.players.filter(p => {
         if (!p11.includes(p.id)) return false;
         if (p.id === lastBowler) return false;
         const balls = bowlerOvers[p.id] || 0;
         if (Math.floor(balls / 6) >= 4) return false;
         return true;
-    }).sort((a,b) => b.stats.bowling - a.stats.bowling);
+    }).sort((a,b) => {
+        const weightA = getRoleWeight(a.role);
+        const weightB = getRoleWeight(b.role);
+        if (weightA !== weightB) return weightB - weightA;
+        return b.stats.bowling - a.stats.bowling;
+    });
   }
 
   function confirmBowler(id: string) {
@@ -599,11 +660,30 @@
           </div>
         </div>
         
-        <p class="toss-prompt">You Won The Toss! Choose to:</p>
-        <div class="toss-actions">
-          <button class="btn-bat" onclick={chooseToBat}>🏏 Bat First</button>
-          <button class="btn-bowl" onclick={chooseToBowl}>🎯 Bowl First</button>
-        </div>
+        {#if !tossWinner}
+          <div class="toss-actions">
+            <button class="btn-primary large" onclick={performToss} disabled={isTossing}>
+              {isTossing ? '🪙 Flipping Coin...' : '🪙 Flip Coin'}
+            </button>
+          </div>
+        {:else if tossWinner === 'user_team'}
+          <p class="toss-prompt">You Won The Toss! Choose to:</p>
+          <div class="toss-actions">
+            <button class="btn-bat" onclick={userChooseToBat}>🏏 Bat First</button>
+            <button class="btn-bowl" onclick={userChooseToBowl}>🎯 Bowl First</button>
+          </div>
+        {:else}
+          <p class="toss-prompt">{matchTeam1?.id === tossWinner ? matchTeam1?.name : matchTeam2?.name} Won The Toss!</p>
+          {#if tossChoice}
+            <div class="toss-actions" style="margin-top: 16px;">
+              <p class="toss-prompt" style="font-weight: 700; color: var(--color-accent);">
+                They chose to {tossChoice === 'bat' ? '🏏 Bat' : '🎯 Bowl'} first.
+              </p>
+            </div>
+          {:else}
+            <p class="toss-prompt" style="color: var(--text-muted); font-size: 0.9rem;">Making decision...</p>
+          {/if}
+        {/if}
       </div>
     </div>
   {:else}
@@ -627,7 +707,7 @@
                             onclick={() => phase === 'selectOpeningBatsmen' ? toggleBatsman(p.id) : confirmNextBatsman(p.id)}>
                         <div class="player-info">
                            <span class="name">{p.name}</span>
-                           <span class="role">{p.role}{p.bowlingType !== 'none' ? ` (${p.bowlingType})` : ''}</span>
+                           <span class="role">{p.role} • {p.battingType || 'RHB'} • {p.battingRole || 'Middle Order'}{p.bowlingType && p.bowlingType !== 'none' ? ` • ${p.bowlingType}` : ''}</span>
                         </div>
                         <span class="stat-badge">Bat: {p.stats.batting}</span>
                     </button>
@@ -681,26 +761,51 @@
             <button class="btn-start" onclick={startPlay}>▶ Start Match</button>
           </div>
         {:else if phase === 'inningBreak'}
-          <div class="action-panel centered">
+          <div class="action-panel centered" style="justify-content: flex-start; padding-top: 20px; overflow-y: auto; overflow-x: hidden;">
             <h2 class="break-title">Innings Break</h2>
             <p class="target-text">Target for {matchTeam1?.id === innings2.teamId ? matchTeam1?.name : matchTeam2?.name} is <strong>{target}</strong> runs.</p>
-            <button class="btn-start" onclick={startSecondInnings}>▶ Start 2nd Innings</button>
+            
+            <div style="width: 100%; max-width: 800px; margin: 0 auto;">
+                <MatchSummary inningsList={[innings1]} teams={[matchTeam1!, matchTeam2!]} matchComplete={false} />
+            </div>
+
+            <button class="btn-start" onclick={startSecondInnings} style="margin-top: 24px; margin-bottom: 24px;">▶ Start 2nd Innings</button>
           </div>
         {:else if phase === 'complete'}
-          <div class="action-panel centered">
+          <div class="action-panel centered" style="justify-content: flex-start; padding-top: 20px; overflow-y: auto; overflow-x: hidden;">
             <h3 class="win-title">{innings2.totalRuns >= target ? getTeamName(innings2.teamId) : getTeamName(innings1.teamId)} Wins!</h3>
             <p class="final-score">{innings1.totalRuns}/{innings1.wickets} <span class="vs">vs</span> {innings2.totalRuns}/{innings2.wickets}</p>
-            <button class="btn-primary large" onclick={handleGoHome}>Continue to Dashboard</button>
+            
+            <div style="width: 100%; max-width: 800px; margin: 0 auto;">
+                <MatchSummary inningsList={[innings1, innings2]} teams={[matchTeam1!, matchTeam2!]} matchComplete={true} />
+            </div>
+
+            <button class="btn-primary large" onclick={handleGoHome} style="margin-top: 24px; margin-bottom: 24px;">Continue to Dashboard</button>
           </div>
         {:else if phase === 'selectOpeningBatsmen' || phase === 'selectNextBatsman' || phase === 'selectOpeningBowler' || phase === 'selectNextBowler'}
-          <div class="action-panel centered">
-            <div class="spinner large"></div>
-            <h2 class="waiting-title">Waiting for Selection</h2>
-            <p class="waiting-desc">Please make your selection in the side panel.</p>
+          <div class="controls-panel" style="display: flex; align-items: center; justify-content: center; padding: 20px; gap: 12px; background: var(--bg-tertiary);">
+            <div class="spinner" style="margin: 0; width: 24px; height: 24px; border-width: 3px;"></div>
+            <h3 style="color: var(--color-accent); margin: 0; font-size: 1.1rem;">Waiting for Selection...</h3>
+            <span style="color: var(--text-muted); font-size: 0.9rem;">(Select from the side panel)</span>
+          </div>
+          
+          <div class="commentary-panel">
+             <div class="commentary-header">
+               <span>Live Commentary</span>
+               {#if currentLiveBowlerId}
+                 {@const b = currentBowlingTeam?.players.find(x => x.id === currentLiveBowlerId)}
+                 <span class="live-bowler">Bowling: {b?.name}</span>
+               {/if}
+             </div>
+             <div class="commentary-content">
+                <BallFeed events={currentInningsData.ballsFaced} />
+             </div>
           </div>
         {:else}
           <div class="controls-panel">
              <MatchControls bind:speed={gameSpeed} isPaused={phase === 'paused'} {battingIntent} {bowlingIntent} {avoidSingles}
+               isUserBatting={currentBattingTeam?.id === 'user_team'} isUserBowling={currentBowlingTeam?.id === 'user_team'}
+               {autoPlayDelay} onAutoPlayDelayChange={(d) => autoPlayDelay = d}
                onSpeedChange={handleSpeedChange} onPauseToggle={togglePause}
                onBattingIntentChange={(i) => battingIntent = i} onBowlingIntentChange={(i) => bowlingIntent = i} onAvoidSinglesChange={(v) => avoidSingles = v}
                onPlaySingleBall={playSingleBallAction} onPlaySingleOver={playSingleOverAction} />
@@ -737,7 +842,7 @@
                     <button class="player-select-btn" onclick={() => confirmBowler(p.id)}>
                         <div class="player-info">
                            <span class="name">{p.name}</span>
-                           <span class="role">{p.role}{p.bowlingType !== 'none' ? ` (${p.bowlingType})` : ''}</span>
+                           <span class="role">{p.role} • {p.battingType || 'RHB'} • {p.battingRole || 'Middle Order'}{p.bowlingType && p.bowlingType !== 'none' ? ` • ${p.bowlingType}` : ''}</span>
                         </div>
                         <span class="stat-badge">Bowl: {p.stats.bowling}</span>
                     </button>

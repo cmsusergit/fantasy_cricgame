@@ -60,13 +60,33 @@ export function calculateWicketChance(
   
   const baseChance = 0.09;
   const techReduction = batterStats.technique * 0.0005;
-  const bowlerBoost = bowlerStats.bowling * 0.0004;
+  const synergyMult = getPitchSynergyMultiplier(bowler.bowlingType, pitch);
+  const bowlerBoost = (bowlerStats.bowling * synergyMult) * 0.0004;
   const weatherMod = WEATHER_EFFECTS[weather].wicketChance;
   
   const wicketChance = (baseChance * intentMult) + (faction.modifiers.fatigue * (batter.fatigue / 100) * 0.2 * fatigueMult) 
                    - techReduction + bowlerBoost;
   
   return clamp(wicketChance * weatherMod, 0.02, 0.16);
+}
+
+export function getPitchSynergyMultiplier(bowlingType: string, pitch: PitchType): number {
+  if (pitch === 'flat') return 0.90;
+  
+  if (pitch === 'turning') {
+      if (bowlingType === 'spinner') return 1.20;
+      if (bowlingType === 'fast' || bowlingType === 'pacer') return 0.95;
+  }
+  if (pitch === 'seaming') {
+      if (bowlingType === 'swinger') return 1.15;
+      if (bowlingType === 'pacer') return 1.05;
+  }
+  if (pitch === 'bouncing') {
+      if (bowlingType === 'fast' || bowlingType === 'pacer') return 1.15;
+      if (bowlingType === 'spinner') return 0.95;
+  }
+  
+  return 1.0;
 }
 
 export function calculateShotQuality(
@@ -83,6 +103,9 @@ export function calculateShotQuality(
   const bowlerStats = getEffectiveStats(bowler);
   const weatherMod = WEATHER_EFFECTS[weather];
   const pitchMod = PITCH_EFFECTS[pitch];
+  
+  const synergyMult = getPitchSynergyMultiplier(bowler.bowlingType, pitch);
+  const effectiveBowling = bowlerStats.bowling * synergyMult;
   
   const fatigueFactor = 1 - (batter.fatigue / 350);
   const lastOverBonus = isLastOver ? 0.03 : 0;
@@ -109,7 +132,7 @@ export function calculateShotQuality(
   
   // Balanced formula from simulation
   const battingPower = (batterStats.batting * 0.22 + batterStats.power * 0.11) * fatigueFactor;
-  const bowlingDefense = (bowlerStats.bowling * 0.09 + bowlerStats.technique * 0.04) * bowlingEffort + netTypeAdvantage;
+  const bowlingDefense = (effectiveBowling * 0.09 + bowlerStats.technique * 0.04) * bowlingEffort + netTypeAdvantage;
   
   // Home advantage bonus
   const homeBonus = homeAdvantage * 0.015;
@@ -202,7 +225,8 @@ export function resolveBall(
   homeAdvantage: number = 0,
   isFreeHit: boolean = false,
   bowlingIntent: IntentType = 'balanced',
-  avoidSingles: boolean = false
+  avoidSingles: boolean = false,
+  fieldingAverage: number = 12
 ): BallEvent {
   const ballNumber = currentBalls + 1;
   const currentOver = Math.floor(currentBalls / 6);
@@ -249,6 +273,28 @@ export function resolveBall(
   if (Math.random() < wicketChance && !isFreeHit) {
     const wicketTypes = ['caught', 'bowled', 'lbw', 'run out', 'stumped'];
     const wicketType = wicketTypes[randomInt(0, wicketTypes.length - 1)];
+
+    if (wicketType === 'caught' || wicketType === 'run out') {
+      const dropChance = Math.max(0.02, 0.25 - (fieldingAverage * 0.015)); // Higher fielding = lower drop chance
+      
+      if (Math.random() < dropChance) {
+         // Dropped!
+         const dropRuns = randomInt(1, 2);
+         return {
+            ballNumber,
+            over: currentOver,
+            ball: ballNumber % 6 || 6,
+            batsmanId: batter.id,
+            bowlerId: bowler.id,
+            result: dropRuns === 1 ? 'single' : 'dot', // Simplify result mapping
+            runs: dropRuns,
+            isWicket: false,
+            commentary: `${wicketType === 'caught' ? 'Dropped catch!' : 'Missed run out!'} They scrambled for ${dropRuns} run${dropRuns > 1 ? 's' : ''}.`,
+            isPowerplay
+         };
+      }
+    }
+
     return {
       ballNumber,
       over: currentOver,

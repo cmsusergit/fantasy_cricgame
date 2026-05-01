@@ -47,7 +47,7 @@
     <span class="faction-icon" title="Faction: {faction.name}">{player.faction === 'human' ? '⚔' : player.faction === 'elf' ? '🌿' : player.faction === 'orc' ? '🪓' : player.faction === 'dwarf' ? '⛏' : player.faction === 'goblin' ? '💎' : '🌙'}</span>
     <div class="player-info">
       <span class="name">{player.name}</span>
-      <span class="role">{player.role}{player.bowlingType !== 'none' ? ` (${player.bowlingType})` : ''}</span>
+      <span class="role">{player.role} • {player.battingType || 'RHB'} • {player.battingRole || 'Middle Order'}{player.bowlingType && player.bowlingType !== 'none' ? ` • ${player.bowlingType}` : ''}</span>
     </div>
   </div>
   
@@ -79,6 +79,13 @@
         <div class="stat-bar-fill {getStatClass(player.stats.technique)}" style="width: {player.stats.technique}%"></div>
       </div>
       <span class="stat-value">{Math.round(player.stats.technique)}</span>
+    </div>
+    <div class="stat-row" title="Fielding: Determines ability to take catches and save runs.">
+      <span class="stat-label">Field</span>
+      <div class="stat-bar">
+        <div class="stat-bar-fill {getStatClass(player.stats.fielding || 10)}" style="width: {player.stats.fielding || 10}%"></div>
+      </div>
+      <span class="stat-value">{Math.round(player.stats.fielding || 10)}</span>
     </div>
   </div>
   

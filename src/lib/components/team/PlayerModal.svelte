@@ -28,7 +28,7 @@
       <span class="faction-icon">{player.faction === 'human' ? '⚔' : player.faction === 'elf' ? '🌿' : player.faction === 'orc' ? '🪓' : player.faction === 'dwarf' ? '⛏' : player.faction === 'goblin' ? '💎' : '🌙'}</span>
       <div class="player-info">
         <h2>{player.name}</h2>
-        <span class="role">{player.role}{player.bowlingType !== 'none' ? ` (${player.bowlingType})` : ''}</span>
+        <span class="role">{player.role} • {player.battingType || 'RHB'} • {player.battingRole || 'Middle Order'}{player.bowlingType && player.bowlingType !== 'none' ? ` • ${player.bowlingType}` : ''}</span>
         <span class="faction">{faction.name}</span>
       </div>
     </div>
@@ -59,6 +59,10 @@
           <span class="stat-label">Technique</span>
           <span class="stat-value {getStatClass(effectiveStats.technique)}">{effectiveStats.technique}</span>
         </div>
+        <div class="stat-item">
+          <span class="stat-label">Fielding</span>
+          <span class="stat-value {getStatClass(effectiveStats.fielding || 10)}">{effectiveStats.fielding || 10}</span>
+        </div>
       </div>
     </div>
     
@@ -80,6 +84,10 @@
         <div class="stat-item">
           <span class="stat-label">Technique</span>
           <span class="stat-value">{player.stats.technique}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Fielding</span>
+          <span class="stat-value">{player.stats.fielding || 10}</span>
         </div>
       </div>
     </div>

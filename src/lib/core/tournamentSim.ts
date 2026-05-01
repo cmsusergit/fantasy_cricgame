@@ -77,9 +77,9 @@ function simulateInnings(
       
       const striker = players.find(p => p.id === currentBatsmen[0])!;
       const bowler = bowlers.find(p => p.id === currentBowlerId)!;
-      const intent = intents[randomInt(0, intents.length - 1)];
-      
-      const ballEvent = resolveBall(striker, bowler, over, totalOvers, intent);
+        const intent: IntentType = over < 6 ? 'aggressive' : over >= 15 ? 'very_aggressive' : 'balanced';
+        const bowlingFieldingAvg = bowlingTeam.players.slice(0, 11).reduce((sum, p) => sum + (p.stats.fielding || 12), 0) / 11;
+        const ballEvent = resolveBall(striker, bowler, over, totalOvers, intent, 'sunny', 'balanced', 0, false, 'balanced', false, bowlingFieldingAvg);
       
       const updates = updateFatigueAndMorale(striker, bowler, ballEvent.result);
       striker.fatigue += updates.batterFatigue;

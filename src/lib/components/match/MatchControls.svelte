@@ -9,6 +9,9 @@
     battingIntent: IntentType;
     bowlingIntent: IntentType;
     avoidSingles: boolean;
+    isUserBatting: boolean;
+    isUserBowling: boolean;
+    autoPlayDelay: number;
     onSpeedChange: (speed: SimSpeed) => void;
     onPauseToggle: () => void;
     onBattingIntentChange: (intent: IntentType) => void;
@@ -16,6 +19,7 @@
     onAvoidSinglesChange: (avoidSingles: boolean) => void;
     onPlaySingleBall: () => void;
     onPlaySingleOver: () => void;
+    onAutoPlayDelayChange: (delay: number) => void;
   }
   
   let { 
@@ -24,13 +28,17 @@
     battingIntent = 'balanced',
     bowlingIntent = 'balanced',
     avoidSingles = false,
+    isUserBatting = true,
+    isUserBowling = true,
+    autoPlayDelay = 1000,
     onSpeedChange, 
     onPauseToggle,
     onBattingIntentChange,
     onBowlingIntentChange,
     onAvoidSinglesChange,
     onPlaySingleBall,
-    onPlaySingleOver
+    onPlaySingleOver,
+    onAutoPlayDelayChange
   }: Props = $props();
 </script>
 
@@ -79,11 +87,25 @@
       ⚡ Fast
     </button>
   </div>
+
+  <div class="speed-slider-container">
+    <label for="speed-slider" title="Auto Play Delay">⏱️</label>
+    <input 
+      id="speed-slider"
+      type="range" 
+      min="100" 
+      max="3000" 
+      step="100" 
+      value={autoPlayDelay} 
+      oninput={(e) => onAutoPlayDelayChange(parseInt(e.currentTarget.value))}
+      title="Speed Delay ({autoPlayDelay}ms)"
+    />
+  </div>
   
   <div class="intent-controls">
     <div class="intent-group">
       <label>🏏 Bat:</label>
-      <select value={battingIntent} onchange={(e) => onBattingIntentChange(e.currentTarget.value as IntentType)}>
+      <select value={battingIntent} disabled={!isUserBatting} onchange={(e) => onBattingIntentChange(e.currentTarget.value as IntentType)} title={!isUserBatting ? "AI controlled" : ""}>
         <option value="defensive">🛡️ Def</option>
         <option value="balanced">⚖️ Bal</option>
         <option value="aggressive">🔥 Agg</option>
@@ -91,15 +113,15 @@
     </div>
     
     <div class="intent-group" style="margin-left: 8px;">
-      <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;">
-        <input type="checkbox" checked={avoidSingles} onchange={(e) => onAvoidSinglesChange(e.currentTarget.checked)} />
+      <label style="cursor: {isUserBatting ? 'pointer' : 'default'}; display: flex; align-items: center; gap: 4px;" title={!isUserBatting ? "AI controlled" : ""}>
+        <input type="checkbox" checked={avoidSingles} disabled={!isUserBatting} onchange={(e) => onAvoidSinglesChange(e.currentTarget.checked)} />
         Avoid Singles
       </label>
     </div>
     
     <div class="intent-group">
       <label>🎯 Bowl:</label>
-      <select value={bowlingIntent} onchange={(e) => onBowlingIntentChange(e.currentTarget.value as IntentType)}>
+      <select value={bowlingIntent} disabled={!isUserBowling} onchange={(e) => onBowlingIntentChange(e.currentTarget.value as IntentType)} title={!isUserBowling ? "AI controlled" : ""}>
         <option value="defensive">🛡️ Def</option>
         <option value="balanced">⚖️ Bal</option>
         <option value="aggressive">🔥 Agg</option>
@@ -135,6 +157,18 @@
     background: var(--success);
     color: white;
   }
+
+  .speed-slider-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 8px;
+  }
+
+  .speed-slider-container input[type=range] {
+    width: 80px;
+    accent-color: var(--success);
+  }
   
   .intent-controls {
     display: flex;
@@ -153,6 +187,10 @@
     color: var(--text-secondary);
   }
   
+  .intent-group select, .intent-group input[type="checkbox"] {
+    cursor: pointer;
+  }
+  
   .intent-group select {
     padding: 4px 6px;
     border-radius: 4px;
@@ -160,11 +198,15 @@
     background: var(--bg-tertiary);
     color: var(--text-primary);
     font-size: 12px;
-    cursor: pointer;
   }
   
   .intent-group select:focus {
     outline: none;
     border-color: var(--success);
+  }
+
+  .intent-group select:disabled, .intent-group input[type="checkbox"]:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 </style>

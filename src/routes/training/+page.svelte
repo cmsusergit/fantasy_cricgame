@@ -72,7 +72,7 @@
               onclick={() => selectPlayer(player)}
             >
               <span class="name">{player.name}</span>
-              <span class="role">{player.role}{player.bowlingType !== 'none' ? ` (${player.bowlingType})` : ''}</span>
+              <span class="role">{player.role} • {player.battingType || 'RHB'} • {player.battingRole || 'Middle Order'}{player.bowlingType && player.bowlingType !== 'none' ? ` • ${player.bowlingType}` : ''}</span>
               <span class="faction">{player.faction}</span>
               {#if player.special?.isCaptain}
                 <span class="captain-badge">C</span>

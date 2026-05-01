@@ -65,10 +65,10 @@ export function generatePlayer(role: PlayerRole): Player {
 
   // Balanced base stats for 180-200 run target
   const baseStats = {
-    batsman: { batting: 12, bowling: 5, power: 10, technique: 12 },
-    allrounder: { batting: 10, bowling: 10, power: 8, technique: 8 },
-    bowler: { batting: 5, bowling: 14, power: 9, technique: 8 },
-    wicketkeeper: { batting: 10, bowling: 4, power: 8, technique: 14 }
+    batsman: { batting: 12, bowling: 5, power: 10, technique: 12, fielding: 12 },
+    allrounder: { batting: 10, bowling: 10, power: 8, technique: 8, fielding: 14 },
+    bowler: { batting: 5, bowling: 14, power: 9, technique: 8, fielding: 10 },
+    wicketkeeper: { batting: 10, bowling: 4, power: 8, technique: 14, fielding: 16 }
   }[role];
 
   // 15% chance of being WK, 10% chance of captain potential
@@ -85,18 +85,32 @@ export function generatePlayer(role: PlayerRole): Player {
     batting: generateStatValue(baseStats.batting, 5),
     bowling: generateStatValue(baseStats.bowling, 4),
     power: generateStatValue(baseStats.power, 4),
-    technique: generateStatValue(baseStats.technique, 4)
+    technique: generateStatValue(baseStats.technique, 4),
+    fielding: generateStatValue(baseStats.fielding, 5)
   };
 
   const firstName = randomElement(FIRST_NAMES[faction]);
   const lastName = randomElement(LAST_NAMES[faction]);
   const name = `${firstName} ${lastName}`;
 
+  const battingType = Math.random() > 0.3 ? 'RHB' : 'LHB';
+  
+  let battingRole: 'Top Order' | 'Middle Order' | 'Finisher' | 'Tail Ender' = 'Middle Order';
+  if (role === 'bowler') {
+      battingRole = 'Tail Ender';
+  } else if (stats.technique >= stats.power + 2) {
+      battingRole = 'Top Order';
+  } else if (stats.power >= stats.technique + 2) {
+      battingRole = 'Finisher';
+  }
+
   return {
     id: generatePlayerId(),
     name,
     role,
     bowlingType,
+    battingType,
+    battingRole,
     faction,
     stats,
     special: {

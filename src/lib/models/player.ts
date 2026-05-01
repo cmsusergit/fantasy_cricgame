@@ -8,6 +8,7 @@ export interface PlayerStats {
   bowling: number;
   power: number;
   technique: number;
+  fielding: number;
 }
 
 export interface PlayerSpecial {
@@ -18,12 +19,16 @@ export interface PlayerSpecial {
 }
 
 export type BowlingType = 'pacer' | 'fast' | 'swinger' | 'spinner' | 'none';
+export type BattingType = 'RHB' | 'LHB';
+export type BattingRole = 'Top Order' | 'Middle Order' | 'Finisher' | 'Tail Ender';
 
 export interface Player {
   id: string;
   name: string;
   role: PlayerRole;
   bowlingType: BowlingType;
+  battingType?: BattingType;
+  battingRole?: BattingRole;
   faction: FactionType;
   stats: PlayerStats;
   special: PlayerSpecial;
@@ -40,10 +45,10 @@ export interface Player {
 // Lower base stats to target 180-200 average runs
 export function createBasePlayerStats(role: PlayerRole): PlayerStats {
   const base = {
-    batsman: { batting: 12, bowling: 5, power: 10, technique: 12 },
-    allrounder: { batting: 10, bowling: 10, power: 8, technique: 8 },
-    bowler: { batting: 5, bowling: 14, power: 9, technique: 8 },
-    wicketkeeper: { batting: 10, bowling: 4, power: 8, technique: 14 }
+    batsman: { batting: 12, bowling: 5, power: 10, technique: 12, fielding: 12 },
+    allrounder: { batting: 10, bowling: 10, power: 8, technique: 8, fielding: 14 },
+    bowler: { batting: 5, bowling: 14, power: 9, technique: 8, fielding: 10 },
+    wicketkeeper: { batting: 10, bowling: 4, power: 8, technique: 14, fielding: 16 }
   };
   return base[role];
 }
@@ -74,7 +79,8 @@ export function getEffectiveStats(player: Player): PlayerStats {
     batting: Math.round(batting),
     bowling: player.stats.bowling,
     power: Math.round(power),
-    technique: Math.round(technique)
+    technique: Math.round(technique),
+    fielding: player.stats.fielding
   };
 }
 

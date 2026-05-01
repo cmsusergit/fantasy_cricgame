@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { innings } from '$lib/models/match';
+  import type { innings, BallEvent } from '$lib/models/match';
   
   interface Props {
     inningsData: innings;
@@ -13,6 +13,35 @@
   let ballsInOver = $derived(inningsData.balls % 6);
   let runRate = $derived(inningsData.balls > 0 ? ((inningsData.totalRuns / inningsData.balls) * 6).toFixed(2) : '0.00');
   let reqRate = $derived(target !== undefined && inningsData.balls < 120 ? (((target - inningsData.totalRuns) / (120 - inningsData.balls)) * 6).toFixed(2) : null);
+
+  let currentOverBalls = $derived.by(() => {
+    const balls = inningsData.ballsFaced;
+    if (balls.length === 0) return [];
+    
+    let currentOverIndex = inningsData.overs;
+    
+    if (ballsInOver === 0 && balls.length > 0) {
+      currentOverIndex = inningsData.overs - 1;
+    }
+    
+    return balls.filter(b => b.over === currentOverIndex);
+  });
+
+  function getBallLabel(ball: BallEvent): string {
+    if (ball.isWicket) return 'W';
+    if (ball.result === 'wide') return `${ball.runs}wd`;
+    if (ball.result === 'noball') return `${ball.runs}nb`;
+    return ball.runs.toString();
+  }
+
+  function getBallClass(ball: BallEvent): string {
+    if (ball.isWicket) return 'wicket';
+    if (ball.result === 'wide' || ball.result === 'noball') return 'extra';
+    if (ball.runs === 4) return 'four';
+    if (ball.runs === 6) return 'six';
+    if (ball.runs === 0) return 'dot';
+    return 'runs';
+  }
 </script>
 
 <div class="scoreboard">
@@ -46,6 +75,19 @@
   
   {#if inningsData.extras > 0}
     <div class="extras">Extras: {inningsData.extras}</div>
+  {/if}
+
+  {#if currentOverBalls.length > 0}
+    <div class="over-timeline">
+      <span class="over-label">This Over:</span>
+      <div class="bubbles">
+        {#each currentOverBalls as ball}
+          <div class="bubble {getBallClass(ball)}">
+            {getBallLabel(ball)}
+          </div>
+        {/each}
+      </div>
+    </div>
   {/if}
 </div>
 
@@ -132,4 +174,47 @@
     color: var(--text-secondary);
     margin-top: 8px;
   }
+
+  .over-timeline {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .over-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+
+  .bubbles {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .bubble {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .bubble.dot { background-color: #64748b; }
+  .bubble.runs { background-color: #3b82f6; }
+  .bubble.four { background-color: #10b981; }
+  .bubble.six { background-color: #8b5cf6; }
+  .bubble.wicket { background-color: #ef4444; }
+  .bubble.extra { background-color: #f59e0b; color: #1e293b; }
 </style>
