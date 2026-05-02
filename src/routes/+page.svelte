@@ -1,9 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { initializeGame, resetGame, teamStore, playerStore, tournamentStore, scheduleStore } from '$lib/stores/gameState';
+  import { initializeGame, resetGame, teamStore, playerStore, tournamentStore, scheduleStore, gamePhase } from '$lib/stores/gameState';
   import { getMatchesForDay, simulateAllMatchesForDay } from '$lib/core/schedule';
   import PlayerCard from '$lib/components/team/PlayerCard.svelte';
   import type { TournamentSchedule, GameDay, ScheduledMatch } from '$lib/core/schedule';
+  import { generateSponsorship, type SponsorshipContract } from '$lib/core/sponsorship';
+  import { goto } from '$app/navigation';
   
   let teams = $state<any[]>([]);
   let players = $state<any[]>([]);
@@ -11,6 +13,7 @@
   let day = $state(1);
   let budget = $state(100000);
   let selectedDay = $state(1);
+  let sponsorshipOffers = $state<SponsorshipContract[]>([]);
   
   onMount(() => {
     
@@ -36,11 +39,34 @@
   let availablePlayers = $derived(players.filter(p => p.isAvailable));
   let winRate = $derived(userTeam ? ((userTeam.wins / (userTeam.matchesPlayed || 1)) * 100).toFixed(0) : '0');
   
+  $effect(() => {
+    if (userTeam && !userTeam.sponsorship && $gamePhase === 'tournament' && sponsorshipOffers.length === 0) {
+      const offers: SponsorshipContract[] = [];
+      // Generate 3 unique offers
+      while(offers.length < 3) {
+         const newOffer = generateSponsorship(userTeam.budget);
+         if (!offers.find(o => o.sponsorName === newOffer.sponsorName)) {
+            offers.push(newOffer);
+         }
+      }
+      sponsorshipOffers = offers;
+    }
+  });
+
+  function acceptSponsorship(offer: SponsorshipContract) {
+    if (!userTeam) return;
+    teamStore.setSponsorship(userTeam.id, offer);
+    sponsorshipOffers = []; // Clear offers
+  }
+  
   let currentDayGames = $derived(schedule ? getMatchesForDay(schedule, selectedDay) : []);
   let dayInfo = $derived(schedule?.days.find(d => d.day === selectedDay));
   let userNextMatch = $derived(schedule?.matches.find(m => 
     m.status === 'scheduled' && (m.team1Id === 'user_team' || m.team2Id === 'user_team')
   ));
+  
+  // Expose gamePhase for conditional UI rendering
+  let phase = $derived($gamePhase);
   
   function advanceTournament() {
     if (!schedule || !teams.length) return;
@@ -91,6 +117,11 @@
 
       return nextStore;
     });
+
+    if (nextDay > schedule.totalDays) {
+      gamePhase.set('season_end');
+      goto('/season-review');
+    }
   }
 </script>
 
@@ -124,6 +155,9 @@
         <div class="team-badges">
           <span class="badge win-rate">{winRate}% Win Rate</span>
           <span class="badge matches">{userTeam.matchesPlayed || 0} Matches</span>
+          {#if userTeam.sponsorship}
+             <span class="badge sponsor">🤝 {userTeam.sponsorship.sponsorName}</span>
+          {/if}
         </div>
       </div>
       
@@ -156,6 +190,29 @@
             <span class="stat-label">Runs Scored</span>
           </div>
         </div>
+      </div>
+    </section>
+  {/if}
+
+  {#if userTeam && !userTeam.sponsorship && $gamePhase === 'tournament' && sponsorshipOffers.length > 0}
+    <section class="sponsorship-section">
+      <div class="section-header">
+        <h3>🤝 Select a Team Sponsor</h3>
+      </div>
+      <p class="sponsor-desc">Choose a primary sponsor for this season. Sponsors provide crucial funds based on your performance.</p>
+      <div class="sponsor-grid">
+        {#each sponsorshipOffers as offer}
+          <div class="sponsor-card">
+            <h4>{offer.sponsorName}</h4>
+            <div class="sponsor-type badge {offer.type}">{offer.type.toUpperCase()}</div>
+            <ul class="sponsor-terms">
+              <li><strong>Matches:</strong> {offer.matches}</li>
+              <li><strong>Match Bonus:</strong> ${offer.bonusAmount.toLocaleString()}</li>
+              <li><strong>Performance Bonus:</strong> ${offer.performanceBonus.toLocaleString()}</li>
+            </ul>
+            <button class="accept-btn" onclick={() => acceptSponsorship(offer)}>Sign Contract</button>
+          </div>
+        {/each}
       </div>
     </section>
   {/if}
@@ -194,14 +251,30 @@
         </div>
       </div>
       
-      {#if schedule?.matches.some(m => m.day === schedule?.currentDay && m.status === 'scheduled' && (m.team1Id === 'user_team' || m.team2Id === 'user_team'))}
-        <a href="/match" class="advance-btn" style="display: block; text-align: center; text-decoration: none; box-sizing: border-box; background: var(--success);">
-          Start Match
-        </a>
+      {#if phase === 'tournament' || phase === 'match' || phase === 'menu'}
+        {#if schedule?.matches.some(m => m.day === schedule?.currentDay && m.status === 'scheduled' && (m.team1Id === 'user_team' || m.team2Id === 'user_team'))}
+          <a href="/match" class="advance-btn" style="display: block; text-align: center; text-decoration: none; box-sizing: border-box; background: var(--success);">
+            Start Match
+          </a>
+        {:else}
+          <button class="advance-btn" onclick={advanceTournament}>
+            Advance to Day {schedule?.currentDay ? schedule.currentDay + 1 : ''}
+          </button>
+        {/if}
       {:else}
-        <button class="advance-btn" onclick={advanceTournament}>
-          Advance to Day {schedule?.currentDay ? schedule.currentDay + 1 : ''}
-        </button>
+         <div class="off-season-alert" style="margin-top: 16px; padding: 16px; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--warning); border-radius: 8px; text-align: center; color: var(--warning); font-weight: 600;">
+           Tournament is currently in the off-season phase. Please complete the off-season activities to begin the next season.
+           <br>
+           {#if phase === 'season_end'}
+              <a href="/season-review" class="advance-btn" style="display: inline-block; width: auto; padding: 8px 16px; background: var(--success); color: white; text-decoration: none; margin-top: 12px;">Go to Season Review</a>
+           {:else if phase === 'retention'}
+              <a href="/retention" class="advance-btn" style="display: inline-block; width: auto; padding: 8px 16px; background: var(--danger); color: white; text-decoration: none; margin-top: 12px;">Go to Retention Board</a>
+           {:else if phase === 'scouting'}
+              <a href="/scouting" class="advance-btn" style="display: inline-block; width: auto; padding: 8px 16px; background: var(--info); color: white; text-decoration: none; margin-top: 12px;">Go to Scouting Network</a>
+           {:else if phase === 'auction'}
+              <a href="/auction" class="advance-btn" style="display: inline-block; width: auto; padding: 8px 16px; background: var(--warning); color: black; text-decoration: none; margin-top: 12px;">Go to Live Auction</a>
+           {/if}
+         </div>
       {/if}
     </section>
   {/if}
@@ -228,7 +301,7 @@
     <section class="marketplace">
       <div class="section-header">
         <h3>Transfer Market</h3>
-        <a href="/draft" class="view-all">View All →</a>
+        <a href="/auction" class="view-all">View All →</a>
       </div>
       <div class="players-grid">
         {#each availablePlayers.slice(0, 4) as player}
@@ -253,6 +326,7 @@
   .badge { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
   .win-rate { background: rgba(35, 134, 54, 0.2); color: var(--success); }
   .matches { background: var(--bg-tertiary); color: var(--text-secondary); }
+  .sponsor { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
   .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
   .stat-card { display: flex; align-items: center; gap: 12px; background: var(--bg-tertiary); padding: 16px; border-radius: 8px; }
   .stat-icon { font-size: 24px; }
@@ -266,6 +340,22 @@
   .players-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
   .dashboard-footer { text-align: center; padding: 20px; }
   @media (max-width: 768px) { .stats-grid, .players-grid { grid-template-columns: repeat(2, 1fr); } .hero { flex-direction: column; gap: 16px; text-align: center; } .team-header { flex-direction: column; gap: 12px; } }
+  
+  .sponsorship-section { background: var(--bg-secondary); border: 2px solid var(--info); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  .sponsor-desc { color: var(--text-secondary); margin-bottom: 20px; font-size: 14px; }
+  .sponsor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .sponsor-card { background: var(--bg-tertiary); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; }
+  .sponsor-card h4 { margin: 0 0 8px 0; font-size: 18px; color: var(--text-primary); }
+  .sponsor-type { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-bottom: 12px; width: max-content; }
+  .sponsor-type.bonus { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+  .sponsor-type.performance { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+  .sponsor-type.hybrid { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+  .sponsor-terms { list-style: none; padding: 0; margin: 0 0 16px 0; font-size: 13px; color: var(--text-secondary); flex-grow: 1; }
+  .sponsor-terms li { margin-bottom: 4px; }
+  .sponsor-terms strong { color: var(--text-primary); }
+  .accept-btn { background: var(--success); color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
+  .accept-btn:hover { opacity: 0.9; }
+
   .schedule-section {
     background: var(--bg-secondary);
     border: 2px solid var(--accent-elf); /* Highlight border */

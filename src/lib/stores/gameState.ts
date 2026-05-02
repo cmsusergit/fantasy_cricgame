@@ -49,7 +49,7 @@ function createTeamStore() {
     update,
     initialize: (existingTeams?: Team[], userTeam?: Team) => {
       const baseTeams: Team[] = [];
-      const playerPool = generatePlayerPool(30);
+      const playerPool = generatePlayerPool(150);
       
       const factionTypes = ['human', 'elf', 'orc', 'dwarf', 'goblin', 'nightelf'] as const;
       
@@ -58,7 +58,7 @@ function createTeamStore() {
         const isUserTeam = userTeam?.id === teamId;
         const faction = factionTypes[i % factionTypes.length];
         const teamPlayers = playerPool
-          .slice(i * 12, i * 12 + 12)
+          .slice(i * 15, i * 15 + 15)
           .map(p => ({ ...p, isAvailable: false }));
         
         baseTeams.push({
@@ -142,6 +142,16 @@ function createTeamStore() {
         teams.map(t => {
           if (t.id === teamId) {
             return { ...t, playing11, captain, wicketKeeper };
+          }
+          return t;
+        })
+      );
+    },
+    setSponsorship: (teamId: string, sponsorship: any) => {
+      update(teams =>
+        teams.map(t => {
+          if (t.id === teamId) {
+            return { ...t, sponsorship };
           }
           return t;
         })
@@ -239,8 +249,10 @@ export const availablePlayers = derived(playerStore, $players =>
 );
 
 export const currentDay = writable(1);
+export const currentSeason = writable(1);
 
-export const gamePhase = writable<'menu' | 'draft' | 'tournament' | 'match'>('menu');
+export type GamePhase = 'menu' | 'draft' | 'tournament' | 'match' | 'season_end' | 'retention' | 'scouting' | 'trading' | 'auction';
+export const gamePhase = writable<GamePhase>('menu');
 
 export function initializeGame(teamName: string = 'Your Team', managerName: string = 'You', logoUrl: string = '') {
   const existingSave = loadGame();
@@ -250,6 +262,8 @@ export function initializeGame(teamName: string = 'Your Team', managerName: stri
     teamStore.initialize(existingSave.teams);
     tournamentStore.initialize(existingSave.teams);
     currentDay.set(existingSave.currentDay);
+    currentSeason.set(existingSave.currentSeason || 1);
+    gamePhase.set((existingSave.gamePhase as GamePhase) || 'menu');
     if (existingSave.schedule) {
       scheduleStore.set(existingSave.schedule);
     } else {
@@ -257,7 +271,7 @@ export function initializeGame(teamName: string = 'Your Team', managerName: stri
     }
   } else {
     const teams: Team[] = [];
-    const playerPool = generatePlayerPool(100);
+    const playerPool = generatePlayerPool(150);
     const factionTypes: FactionType[] = ['human', 'elf', 'orc', 'dwarf', 'goblin', 'nightelf'];
     
     // 8 teams: User at index 0, 7 AI with unique personalities
@@ -267,7 +281,7 @@ export function initializeGame(teamName: string = 'Your Team', managerName: stri
       const personality = isUserTeam ? 'balanced' : TEAM_PERSONALITIES[i - 1];
       const tendency = createTeamTendency(personality);
       const teamPlayers = playerPool
-        .slice(i * 12, i * 12 + 12)
+        .slice(i * 15, i * 15 + 15)
         .map(p => ({ ...p, isAvailable: false }));
       
       teams.push({
@@ -306,12 +320,16 @@ export function saveCurrentGame(userBudget: number) {
   let matches: Match[] = [];
   let schedule: TournamentSchedule | null = null;
   let day = 1;
+  let season = 1;
+  let phase = 'menu';
   
   teamStore.subscribe(t => teams = t)();
   playerStore.subscribe(p => players = p)();
   tournamentStore.subscribe(m => matches = m)();
   scheduleStore.subscribe(s => schedule = s)();
   currentDay.subscribe(d => day = d)();
+  currentSeason.subscribe(s => season = s)();
+  gamePhase.subscribe(p => phase = p)();
   
   const userTeam = teams.find(t => t.isUserTeam);
   
@@ -323,6 +341,8 @@ export function saveCurrentGame(userBudget: number) {
     tournamentMatches: matches,
     schedule: schedule || undefined,
     currentDay: day,
+    currentSeason: season,
+    gamePhase: phase,
     userBudget,
     savedAt: Date.now()
   });
@@ -335,5 +355,6 @@ export function resetGame() {
   tournamentStore.initialize([]);
   scheduleStore.set(null);
   currentDay.set(1);
+  currentSeason.set(1);
   gamePhase.set('menu');
 }
