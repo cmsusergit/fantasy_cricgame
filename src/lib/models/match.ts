@@ -1,9 +1,10 @@
 import type { Player } from './player';
 import type { Team } from './team';
 
-export type IntentType = 'defensive' | 'balanced' | 'aggressive' | 'very_aggressive';
+export type IntentType = 'very_defensive' | 'defensive' | 'balanced' | 'aggressive' | 'very_aggressive';
 
 export const INTENT_MULTIPLIERS: Record<IntentType, number> = {
+  very_defensive: 0.1,
   defensive: 0.2,
   balanced: 1.0,
   aggressive: 3.5,
@@ -11,6 +12,8 @@ export const INTENT_MULTIPLIERS: Record<IntentType, number> = {
 };
 
 export type BallResult = 'dot' | 'single' | 'four' | 'six' | 'wicket' | 'noball' | 'wide';
+
+export type BallType = 'normal' | 'bouncer' | 'yorker' | 'slower' | 'inswinger' | 'outswinger' | 'off_spin' | 'leg_spin' | 'googly' | 'doosra' | 'arm_ball';
 
 export interface BallEvent {
   ballNumber: number;

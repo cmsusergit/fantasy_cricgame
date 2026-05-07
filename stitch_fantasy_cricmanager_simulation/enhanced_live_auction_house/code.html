@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;family=Space+Grotesk:wght@500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(19, 27, 46, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .stat-bar-segment {
+            height: 6px;
+            width: 10px;
+            border-radius: 1px;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+        .timer-glow {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#131b2e",
+                        "inverse-surface": "#dae2fd",
+                        "secondary-fixed": "#d8e2ff",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-surface-variant": "#bbcabf",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "inverse-on-surface": "#283044",
+                        "on-error": "#690005",
+                        "secondary": "#adc6ff",
+                        "primary-fixed": "#6ffbbe",
+                        "inverse-primary": "#006c49",
+                        "primary-fixed-dim": "#4edea3",
+                        "on-surface": "#dae2fd",
+                        "background": "#0b1326",
+                        "surface": "#0b1326",
+                        "surface-container": "#171f33",
+                        "surface-container-lowest": "#060e20",
+                        "primary-container": "#10b981",
+                        "on-primary-fixed-variant": "#005236",
+                        "secondary-container": "#0566d9",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-background": "#dae2fd",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-container": "#00422b",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#004395",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "tertiary": "#ffb95f",
+                        "on-tertiary-container": "#523200",
+                        "on-primary": "#003824",
+                        "surface-container-highest": "#2d3449",
+                        "surface-variant": "#2d3449",
+                        "on-secondary-fixed": "#001a42",
+                        "outline": "#86948a",
+                        "tertiary-container": "#e29100",
+                        "surface-dim": "#0b1326",
+                        "on-secondary-container": "#e6ecff",
+                        "surface-container-high": "#222a3d",
+                        "surface-tint": "#4edea3",
+                        "on-tertiary": "#472a00",
+                        "on-primary-fixed": "#002113",
+                        "primary": "#4edea3",
+                        "surface-bright": "#31394d",
+                        "outline-variant": "#3c4a42",
+                        "on-secondary": "#002e6a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "1.5rem",
+                        "base": "4px",
+                        "lg": "1.5rem",
+                        "xl": "2rem",
+                        "xs": "0.25rem",
+                        "margin-safe": "2rem",
+                        "sm": "0.5rem",
+                        "md": "1rem"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["Space Grotesk"],
+                        "h2": ["Inter"],
+                        "stat-sm": ["Space Grotesk"],
+                        "body-md": ["Inter"],
+                        "h1": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "stat-lg": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.15em", "fontWeight": "600"}],
+                        "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "stat-sm": ["14px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "500"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "stat-lg": ["24px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary/30 min-h-screen pb-20 md:pb-0">
+<!-- TopAppBar -->
+<header class="bg-surface-container-lowest/90 backdrop-blur-xl border-b border-white/5 top-0 sticky z-50">
+<div class="flex justify-between items-center w-full px-6 h-16 max-w-screen-2xl mx-auto">
+<div class="flex items-center gap-4">
+<span class="text-xl font-black text-primary italic tracking-tighter">ELITE MANAGER</span>
+<div class="hidden md:flex gap-8 ml-10">
+<span class="text-on-surface-variant font-label-caps text-label-caps hover:text-primary transition-colors cursor-pointer">Dashboard</span>
+<span class="text-on-surface-variant font-label-caps text-label-caps hover:text-primary transition-colors cursor-pointer">Roster</span>
+<span class="text-primary font-label-caps text-label-caps border-b-2 border-primary pb-1">Auction</span>
+<span class="text-on-surface-variant font-label-caps text-label-caps hover:text-primary transition-colors cursor-pointer">Leagues</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="bg-surface-container-high px-4 py-2 rounded-lg border border-white/5 flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="font-stat-sm text-stat-sm text-on-surface">$100,000</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/5 transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full border-2 border-primary/40 p-0.5">
+<img alt="User profile" class="w-full h-full rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbcTDaQlbUB2qd3IEC_JlIWQBLG83Yn7Qh0sS2TbDFc8xhpZ6y7_LX2MbLkTAaYG0U6GuPnd_NVKHqvWPOUqi1whkuR81-jSzgtDZJo8FR-D-QecSsAmO164-vJgA6Fg7JR7_Fkn_hCINjw_QIuX5w8l_ygMpQx4P-wwE0atTgxubuyanOO0Dkt_Ty2ZEI5eTb_AN6sFjKSV7zivGdHFZyYT6_IP6YijsW0NtuEguQX1XMqmy5oh9orm6A6gIO14HfOVKJ5FcY"/>
+</div>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-screen-2xl mx-auto p-4 md:p-8">
+<div class="grid grid-cols-12 gap-8">
+<!-- Main Content Area -->
+<div class="col-span-12 lg:col-span-8 flex flex-col gap-8">
+<!-- Player Showcase Card -->
+<div class="glass-panel rounded-xl overflow-hidden relative border-primary/10 shadow-2xl">
+<div class="h-56 w-full relative overflow-hidden">
+<img alt="Stadium" class="w-full h-full object-cover opacity-50 grayscale hover:grayscale-0 transition-all duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBU3eoVhOWyd1eNvuAPLsNnFbb5Vr9eElzBviq_ewb4qG9KHF3bP8YJjS2QXY3wT1C6R5TmqY6vcJhUUH7fBtuv5llyZ0xDOVagdJWQUQ9jYx5hoF0OrbKzmZtYu_c-msnP6E8M1rgCVJCdTb7S8119bpA9YeHmg68rwlYl5jyCExqGjmwImjpm6SEZ0iL6E2Yn7rFmvxtyPbip5ljlsd7vVh5HOhbn72DQBNKN3xAStJz8-Ug9Qma1bIppMM3VdJh7aB6sZcmm"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"></div>
+</div>
+<div class="px-8 pb-10 -mt-24 relative z-10 flex flex-col md:flex-row gap-10 items-end">
+<div class="relative">
+<div class="w-48 h-48 md:w-64 md:h-64 rounded-full border-4 border-primary/50 p-1.5 bg-background shadow-[0_0_50px_rgba(78,222,163,0.2)]">
+<img alt="V. Kohli" class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3KQ0Hgpx1acjt7ZWNvxL4BDldMkbg2-s1AHl3H1xNFfTZtJcziNlxsAvpLByYCrwMhfhTHAZFEy4ka-JNDJK0z7-xVXmprnxLfqB9tf2V88hJ7WothsAlqYp4zGYYgrYQhlCQIc-pAsWvRHSFGy7nM5MH22JdOnEhZJJnig4tXHsdkCFzkeZLKjZx53uRfnG3RoB5qD7zyGia469O9_xvzdi4UlSLc_Yd5OjW1jzp-Ii6RdSL1_6JzBaWWRGB9gWG23zeJAik"/>
+</div>
+<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-primary text-on-primary px-6 py-1.5 rounded-full font-stat-sm text-stat-sm shadow-xl tracking-widest">
+                            HUMAN
+                        </div>
+</div>
+<div class="flex-1 space-y-6">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="bg-primary/20 text-primary border border-primary/30 px-3 py-1 rounded text-[10px] font-bold tracking-widest uppercase">Elite Tier</span>
+<span class="text-on-surface-variant font-label-caps text-label-caps">Batter / Captain</span>
+</div>
+<h1 class="font-display-lg text-6xl text-white tracking-tight">V. KOHLI</h1>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-6">
+<div class="space-y-3">
+<span class="text-on-surface-variant font-label-caps text-[10px]">BATTING</span>
+<div class="flex gap-1.5">
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+</div>
+<div class="font-stat-lg text-stat-lg text-primary">95</div>
+</div>
+<div class="space-y-3">
+<span class="text-on-surface-variant font-label-caps text-[10px]">POWER</span>
+<div class="flex gap-1.5">
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+</div>
+<div class="font-stat-lg text-stat-lg text-primary">88</div>
+</div>
+<div class="space-y-3">
+<span class="text-on-surface-variant font-label-caps text-[10px]">TECH</span>
+<div class="flex gap-1.5">
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+</div>
+<div class="font-stat-lg text-stat-lg text-primary">98</div>
+</div>
+<div class="space-y-3">
+<span class="text-on-surface-variant font-label-caps text-[10px]">FIELDING</span>
+<div class="flex gap-1.5">
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+</div>
+<div class="font-stat-lg text-stat-lg text-primary">92</div>
+</div>
+<div class="space-y-3">
+<span class="text-on-surface-variant font-label-caps text-[10px]">BOWLING</span>
+<div class="flex gap-1.5">
+<div class="stat-bar-segment bg-error"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+</div>
+<div class="font-stat-lg text-stat-lg text-error">15</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Enhanced Live Activity Log -->
+<div class="glass-panel rounded-xl flex flex-col min-h-[400px]">
+<div class="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+<h3 class="font-h2 text-h2 text-white">Live Bidding Log</h3>
+<div class="flex items-center gap-3 bg-black/40 px-4 py-1.5 rounded-full border border-primary/20">
+<span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(78,222,163,0.8)]"></span>
+<span class="text-primary font-stat-sm text-stat-sm">REAL-TIME FEED</span>
+</div>
+</div>
+<div class="p-2 space-y-2 overflow-y-auto max-h-[500px]">
+<!-- Orc Faction Bid -->
+<div class="flex justify-between items-center p-4 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors border-l-4 border-primary">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded bg-primary/10 border border-primary/30 flex items-center justify-center font-bold text-lg text-primary shadow-inner">OR</div>
+<div>
+<p class="text-white font-bold flex items-center gap-2">
+                                    Orc Raiders
+                                    <span class="bg-primary/20 text-primary text-[8px] px-1.5 py-0.5 rounded uppercase tracking-tighter">Faction: Orc</span>
+</p>
+<p class="text-on-surface-variant text-xs font-label-caps">Just Now</p>
+</div>
+</div>
+<div class="text-right">
+<span class="text-primary font-stat-lg text-3xl">$12.5M</span>
+</div>
+</div>
+<!-- Elf Faction Bid -->
+<div class="flex justify-between items-center p-4 rounded-lg bg-surface-container/50 hover:bg-surface-container-high transition-colors border-l-4 border-tertiary opacity-90">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded bg-tertiary/10 border border-tertiary/30 flex items-center justify-center font-bold text-lg text-tertiary shadow-inner">ER</div>
+<div>
+<p class="text-white font-bold flex items-center gap-2">
+                                    Elf Rangers
+                                    <span class="bg-tertiary/20 text-tertiary text-[8px] px-1.5 py-0.5 rounded uppercase tracking-tighter">Faction: Elf</span>
+</p>
+<p class="text-on-surface-variant text-xs font-label-caps">15s ago</p>
+</div>
+</div>
+<div class="text-right">
+<span class="text-tertiary font-stat-lg text-2xl">$12.0M</span>
+</div>
+</div>
+<!-- Human Faction Bid -->
+<div class="flex justify-between items-center p-4 rounded-lg bg-surface-container/50 hover:bg-surface-container-high transition-colors border-l-4 border-secondary opacity-75">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded bg-secondary/10 border border-secondary/30 flex items-center justify-center font-bold text-lg text-secondary shadow-inner">DK</div>
+<div>
+<p class="text-white font-bold flex items-center gap-2">
+                                    Dwarf Kings
+                                    <span class="bg-secondary/20 text-secondary text-[8px] px-1.5 py-0.5 rounded uppercase tracking-tighter">Faction: Human</span>
+</p>
+<p class="text-on-surface-variant text-xs font-label-caps">42s ago</p>
+</div>
+</div>
+<div class="text-right">
+<span class="text-secondary font-stat-lg text-xl">$11.5M</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Side: Auction Controls & Financials -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-8">
+<!-- Main Bidding Interface -->
+<div class="glass-panel rounded-xl p-8 flex flex-col items-center text-center gap-10 relative overflow-hidden border-primary/20 bg-gradient-to-b from-surface-container-high/50 to-background">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-pulse"></div>
+<div class="w-full space-y-2">
+<span class="text-on-surface-variant font-label-caps text-label-caps block tracking-[0.3em] opacity-80">CURRENT HIGH BID</span>
+<div class="text-7xl font-display-lg text-white drop-shadow-[0_0_25px_rgba(78,222,163,0.3)] tracking-tighter">$12.5M</div>
+<div class="mt-4 flex items-center justify-center gap-3 py-2 px-4 rounded-full bg-primary/5 border border-primary/10 inline-flex mx-auto">
+<span class="text-on-surface-variant text-sm font-label-caps">Leader:</span>
+<span class="text-primary font-bold tracking-tight">Orc Raiders</span>
+</div>
+</div>
+<!-- High-Visibility Circular Countdown -->
+<div class="relative w-64 h-64 flex items-center justify-center group">
+<div class="absolute inset-0 bg-primary/5 rounded-full timer-glow"></div>
+<svg class="w-full h-full -rotate-90">
+<!-- Background track -->
+<circle class="text-white/10" cx="128" cy="128" fill="transparent" r="110" stroke="currentColor" stroke-width="12"></circle>
+<!-- Progress foreground -->
+<circle class="text-primary transition-all duration-1000 ease-linear shadow-[0_0_20px_rgba(78,222,163,0.6)]" cx="128" cy="128" fill="transparent" r="110" stroke="currentColor" stroke-dasharray="691" stroke-dashoffset="172.75" stroke-linecap="round" stroke-width="12"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-7xl font-display-lg text-white tracking-tighter">08</span>
+<span class="text-on-surface-variant font-label-caps text-stat-sm tracking-widest mt-1">SECONDS</span>
+</div>
+</div>
+<div class="w-full space-y-6">
+<button class="w-full py-8 bg-primary text-on-primary rounded-xl font-h1 text-2xl hover:shadow-[0_0_40px_rgba(78,222,163,0.5)] hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-[0.15em] border border-white/20">
+                        PLACE BID: $13.0M
+                    </button>
+<div class="flex items-center justify-between p-5 rounded-xl bg-surface-container-low border border-white/5 hover:border-primary/20 transition-all cursor-pointer">
+<div class="flex items-center gap-4 text-primary">
+<span class="material-symbols-outlined text-3xl">bolt</span>
+<div class="text-left">
+<span class="font-bold block text-sm tracking-tight">Auto-Bid Assist</span>
+<span class="text-[10px] text-on-surface-variant uppercase font-label-caps">Bot protection active</span>
+</div>
+</div>
+<div class="w-14 h-7 bg-surface-container-highest rounded-full p-1 relative shadow-inner">
+<div class="w-5 h-5 bg-on-surface-variant rounded-full shadow-lg"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Financial Impact Summary -->
+<div class="glass-panel rounded-xl p-8 space-y-8 bg-surface-container-low border-white/5">
+<div class="flex items-center gap-3 pb-4 border-b border-white/5">
+<span class="material-symbols-outlined text-primary">analytics</span>
+<h3 class="text-white font-label-caps text-label-caps tracking-widest">FINANCIAL SUMMARY</h3>
+</div>
+<div class="grid grid-cols-2 gap-8">
+<div class="space-y-2">
+<p class="text-on-surface-variant text-xs font-label-caps uppercase">Current Purse</p>
+<div class="text-white font-stat-lg text-3xl tracking-tight">$100,000</div>
+<p class="text-[10px] text-primary/60 font-semibold tracking-widest uppercase">Available Liquid</p>
+</div>
+<div class="space-y-2 text-right">
+<p class="text-on-surface-variant text-xs font-label-caps uppercase">Win Balance</p>
+<div class="text-error font-stat-lg text-3xl tracking-tight">-$13.0M</div>
+<p class="text-[10px] text-error/60 font-semibold tracking-widest uppercase">Projected Net</p>
+</div>
+</div>
+<div class="space-y-4">
+<div class="w-full h-3 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
+<div class="h-full bg-gradient-to-r from-error to-error/50 w-full rounded-full"></div>
+</div>
+<div class="flex items-start gap-4 p-4 rounded-lg bg-error/10 border border-error/20">
+<span class="material-symbols-outlined text-error text-xl shrink-0">warning</span>
+<div class="space-y-1">
+<p class="text-error text-xs font-bold leading-tight uppercase tracking-tight">Insufficient Funds Detected</p>
+<p class="text-error/80 text-[10px] leading-relaxed">Your bid of $13.0M exceeds your current liquid purse. Credit margin of $12.9M will be applied if won.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile only) -->
+<nav class="fixed bottom-0 w-full z-50 border-t border-white/5 bg-surface-container-lowest/95 backdrop-blur-2xl md:hidden">
+<div class="flex justify-around items-center h-20 pb-safe">
+<div class="flex flex-col items-center justify-center text-on-surface-variant/60">
+<span class="material-symbols-outlined text-2xl">grid_view</span>
+<span class="font-label-caps text-[10px] mt-1">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant/60">
+<span class="material-symbols-outlined text-2xl">groups</span>
+<span class="font-label-caps text-[10px] mt-1">Roster</span>
+</div>
+<div class="flex flex-col items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">gavel</span>
+<span class="font-label-caps text-[10px] mt-0.5">Auction</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant/60">
+<span class="material-symbols-outlined text-2xl">trophy</span>
+<span class="font-label-caps text-[10px] mt-1">Leagues</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant/60">
+<span class="material-symbols-outlined text-2xl">settings</span>
+<span class="font-label-caps text-[10px] mt-1">Profile</span>
+</div>
+</div>
+</nav>
+</body></html>

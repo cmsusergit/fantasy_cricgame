@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "inverse-primary": "#006c49",
+                        "on-surface-variant": "#bbcabf",
+                        "surface": "#0b1326",
+                        "surface-container-lowest": "#060e20",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "surface-container-highest": "#2d3449",
+                        "surface-container": "#171f33",
+                        "on-primary-fixed": "#002113",
+                        "secondary": "#adc6ff",
+                        "error-container": "#93000a",
+                        "primary-fixed-dim": "#4edea3",
+                        "tertiary": "#ffb95f",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "on-background": "#dae2fd",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-primary": "#003824",
+                        "on-tertiary": "#472a00",
+                        "on-secondary-fixed-variant": "#004395",
+                        "surface-bright": "#31394d",
+                        "secondary-fixed": "#d8e2ff",
+                        "primary": "#4edea3",
+                        "on-tertiary-container": "#523200",
+                        "on-primary-fixed-variant": "#005236",
+                        "surface-variant": "#2d3449",
+                        "surface-dim": "#0b1326",
+                        "on-secondary": "#002e6a",
+                        "surface-container-low": "#131b2e",
+                        "outline-variant": "#3c4a42",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed": "#001a42",
+                        "tertiary-container": "#e29100",
+                        "primary-fixed": "#6ffbbe",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-container": "#00422b",
+                        "surface-tint": "#4edea3",
+                        "secondary-container": "#0566d9",
+                        "primary-container": "#10b981",
+                        "on-secondary-container": "#e6ecff",
+                        "inverse-on-surface": "#283044",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-surface": "#dae2fd",
+                        "inverse-surface": "#dae2fd",
+                        "surface-container-high": "#222a3d",
+                        "outline": "#86948a",
+                        "background": "#0b1326"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-safe": "2rem",
+                        "xs": "0.25rem",
+                        "md": "1rem",
+                        "lg": "1.5rem",
+                        "base": "4px",
+                        "xl": "2rem",
+                        "gutter": "1.5rem",
+                        "sm": "0.5rem"
+                    },
+                    "fontFamily": {
+                        "h1": ["Inter"],
+                        "stat-sm": ["Space Grotesk"],
+                        "display-lg": ["Inter"],
+                        "stat-lg": ["Space Grotesk"],
+                        "label-caps": ["Space Grotesk"],
+                        "h2": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "stat-sm": ["14px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "500"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "stat-lg": ["24px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.15em", "fontWeight": "600"}],
+                        "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(23, 31, 51, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .stat-segment {
+            height: 6px;
+            border-radius: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .stat-segment.active {
+            background: #4edea3;
+            box-shadow: 0 0 8px rgba(78, 222, 163, 0.5);
+        }
+        .performance-ring {
+            background: conic-gradient(#4edea3 95%, transparent 0);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full flex justify-between items-center px-6 h-16 bg-slate-950/80 backdrop-blur-xl border-b border-white/10 z-50 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+<div class="flex items-center gap-4">
+<span class="text-xl font-black italic text-emerald-500 uppercase font-inter tracking-tight">CRICKET ELITE</span>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-slate-400 font-label-caps hover:bg-white/5 transition-colors px-3 py-2 rounded-lg" href="#">Lobby</a>
+<a class="text-emerald-400 font-bold font-label-caps hover:bg-white/5 transition-colors px-3 py-2 rounded-lg" href="#">Squad</a>
+<a class="text-slate-400 font-label-caps hover:bg-white/5 transition-colors px-3 py-2 rounded-lg" href="#">Market</a>
+<a class="text-slate-400 font-label-caps hover:bg-white/5 transition-colors px-3 py-2 rounded-lg" href="#">Stats</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-slate-400 hover:text-primary transition-colors">notifications</button>
+<button class="material-symbols-outlined text-slate-400 hover:text-primary transition-colors">account_balance_wallet</button>
+<div class="w-10 h-10 rounded-full border-2 border-primary/30 p-0.5">
+<img class="w-full h-full object-cover rounded-full" data-alt="A professional headshot of a futuristic sports manager in a dark studio setting. The lighting is cinematic with sharp emerald green rim lights that emphasize the sleek, modern aesthetic. He wears high-tech communication gear, and the overall mood is authoritative and elite, fitting the premium broadcast dashboard style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDVD70TMErTzuuLTIbDcA6K9R96ghogd35qcvzMP9V0RO7zchLG5TJJSXRs3BfA4xxyN6exEd2DW5djoSCloi01j6COp3o2T4B_O9RY8xNvHJ9wcd_H5G89U1ibwPQ0wJCphWBiYbBEM5FN7uZcxLKpItO0QqJ6DzHz1XjimlPdn5mCh5Uo5644VCiZY7SGZtS30JlCBhdpKOVUVUxkSkuEPjnWvog6k-MTtUAuqfjH-BM4AtD8EGLgrqjv9Gqf3uEelfHb4jV4"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-4 md:px-lg max-w-7xl mx-auto">
+<!-- Hero Profile Section -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<!-- Left Column: Portrait & Identity -->
+<div class="lg:col-span-4 flex flex-col gap-lg">
+<div class="glass-card rounded-xl p-lg flex flex-col items-center text-center">
+<div class="relative group">
+<!-- Faction Glowing Ring -->
+<div class="absolute inset-0 rounded-full p-1 performance-ring animate-pulse opacity-70"></div>
+<div class="relative w-48 h-48 rounded-full border-4 border-surface p-1 bg-surface">
+<img class="w-full h-full object-cover rounded-full" data-alt="A cinematic, high-detail portrait of a legendary cricket player with an intense expression. The player is captured in a close-up against a dark, tech-inspired background with subtle hexagonal patterns. Sharp green neon highlights define the contours of his face and shoulders, conveying a sense of peak athletic performance and elite status." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeLuT5TUpNL-atVRr4aPpuK4vbY3sq-6hIZxxxKFkE5iSgGJQXEsRDz2tFfGtwK0IbPnyMFIOgkGOPi2-i5ZXAeaWboCJpfOYmAMhKCs2ZFokzyCWgSIm29Ku1d2kIpP97ZHJEPbYbpg-AVbBnty1ixclCy7L052BhlOtNfgoKuxDVuhlvOcZYBheFs2a_tGDpQ4XIMGZX3UT6idhVKx2nRxzWZJC80PybI2gmedAwKsQ_KSE0nQwoJsVRc-IfewngSI0-bzNo"/>
+</div>
+<div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary text-on-primary px-4 py-1 rounded-full font-label-caps text-[10px] shadow-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">person</span>
+                            HUMAN
+                        </div>
+</div>
+<h1 class="font-display-lg text-display-lg mt-8 text-on-background">V. Kohli</h1>
+<p class="font-label-caps text-primary tracking-[0.2em] mt-2 uppercase">Elite Tier - Batter / Captain</p>
+<div class="grid grid-cols-3 w-full mt-8 gap-4">
+<div class="flex flex-col">
+<span class="font-label-caps text-slate-500 text-[10px]">FITNESS</span>
+<span class="font-stat-lg text-stat-lg text-primary">95%</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-caps text-slate-500 text-[10px]">MORALE</span>
+<span class="font-stat-lg text-stat-lg text-tertiary">EXC</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-caps text-slate-500 text-[10px]">FATIGUE</span>
+<span class="font-stat-lg text-stat-lg text-slate-300">LOW</span>
+</div>
+</div>
+<div class="w-full h-px bg-white/10 my-6"></div>
+<div class="flex flex-col w-full gap-3">
+<button class="w-full bg-primary text-on-primary font-label-caps py-3 rounded-lg hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all flex items-center justify-center gap-2 active:scale-95">
+<span class="material-symbols-outlined text-sm">compare_arrows</span>
+                            COMPARE PLAYER
+                        </button>
+<button class="w-full border border-secondary text-secondary bg-secondary-container/10 font-label-caps py-3 rounded-lg hover:bg-secondary-container/20 transition-all flex items-center justify-center gap-2 active:scale-95">
+<span class="material-symbols-outlined text-sm">edit_note</span>
+                            EDIT TACTICS
+                        </button>
+</div>
+</div>
+<!-- Form History -->
+<div class="glass-card rounded-xl p-lg">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-label-caps text-slate-400">FORM HISTORY</h3>
+<span class="text-xs text-primary font-bold">RECENT 5</span>
+</div>
+<div class="flex justify-between gap-2">
+<div class="flex-1 aspect-square bg-primary-container/20 border border-primary/30 rounded-lg flex items-center justify-center text-primary font-black">W</div>
+<div class="flex-1 aspect-square bg-primary-container/20 border border-primary/30 rounded-lg flex items-center justify-center text-primary font-black">W</div>
+<div class="flex-1 aspect-square bg-error-container/20 border border-error/30 rounded-lg flex items-center justify-center text-error font-black">L</div>
+<div class="flex-1 aspect-square bg-primary-container/20 border border-primary/30 rounded-lg flex items-center justify-center text-primary font-black">W</div>
+<div class="flex-1 aspect-square bg-primary-container/20 border border-primary/30 rounded-lg flex items-center justify-center text-primary font-black">W</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Stats & Attributes -->
+<div class="lg:col-span-8 flex flex-col gap-lg">
+<!-- Career Stats Bento -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-md">
+<div class="glass-card rounded-xl p-lg border-l-4 border-primary">
+<span class="font-label-caps text-slate-500 text-[11px]">TOTAL RUNS</span>
+<div class="font-stat-lg text-stat-lg mt-1">12,500</div>
+</div>
+<div class="glass-card rounded-xl p-lg border-l-4 border-tertiary">
+<span class="font-label-caps text-slate-500 text-[11px]">AVERAGE</span>
+<div class="font-stat-lg text-stat-lg mt-1">52.4</div>
+</div>
+<div class="glass-card rounded-xl p-lg border-l-4 border-secondary">
+<span class="font-label-caps text-slate-500 text-[11px]">STRIKE RATE</span>
+<div class="font-stat-lg text-stat-lg mt-1">138.2</div>
+</div>
+<div class="glass-card rounded-xl p-lg border-l-4 border-white/20">
+<span class="font-label-caps text-slate-500 text-[11px]">100s / 50s</span>
+<div class="font-stat-lg text-stat-lg mt-1">27 / 72</div>
+</div>
+</div>
+<!-- Attributes Detail -->
+<div class="glass-card rounded-xl p-lg flex-1">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="font-h2 text-h2 text-on-background">Core Attributes</h2>
+<p class="font-body-md text-slate-400 text-sm">Performance metrics based on last 50 matches</p>
+</div>
+<div class="flex gap-2">
+<span class="w-3 h-3 rounded-full bg-primary"></span>
+<span class="w-3 h-3 rounded-full bg-slate-800"></span>
+<span class="w-3 h-3 rounded-full bg-slate-800"></span>
+</div>
+</div>
+<div class="space-y-8">
+<!-- Attribute Block -->
+<div>
+<div class="flex justify-between items-center mb-3">
+<span class="font-label-caps text-on-background tracking-wider">BATTING</span>
+<span class="font-stat-sm text-primary text-lg">95</span>
+</div>
+<div class="flex gap-1">
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-3">
+<span class="font-label-caps text-on-background tracking-wider">TECH</span>
+<span class="font-stat-sm text-primary text-lg">98</span>
+</div>
+<div class="flex gap-1">
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-3">
+<span class="font-label-caps text-on-background tracking-wider">POWER</span>
+<span class="font-stat-sm text-primary text-lg">88</span>
+</div>
+<div class="flex gap-1">
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment"></div>
+<div class="flex-1 stat-segment"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-3">
+<span class="font-label-caps text-on-background tracking-wider">FIELDING</span>
+<span class="font-stat-sm text-primary text-lg">92</span>
+</div>
+<div class="flex gap-1">
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment active"></div>
+<div class="flex-1 stat-segment"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-3">
+<span class="font-label-caps text-on-background tracking-wider">BOWLING</span>
+<span class="font-stat-sm text-slate-500 text-lg">15</span>
+</div>
+<div class="flex gap-1">
+<div class="flex-1 stat-segment active bg-slate-600"></div>
+<div class="flex-1 stat-segment active bg-slate-600"></div>
+<div class="flex-1 stat-segment"></div>
+<div class="flex-1 stat-segment"></div>
+<div class="flex-1 stat-segment"></div>
+<div class="flex-1 stat-segment"></div>
+<div class="flex-1 stat-segment"></div>
+<div class="flex-1 stat-segment"></div>
+<div class="flex-1 stat-segment"></div>
+<div class="flex-1 stat-segment"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Secondary Actions -->
+<div class="flex justify-end gap-md">
+<button class="bg-surface-container-high text-on-surface-variant font-label-caps py-3 px-8 rounded-lg hover:bg-surface-bright transition-all active:scale-95 border border-white/5">
+                        ADD TO TRANSFER LIST
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<footer class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-4 pt-2 bg-slate-950/90 backdrop-blur-lg border-t border-white/5 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] md:hidden">
+<button class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:text-emerald-300 transition-all duration-150 active:scale-90">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-[10px] font-bold uppercase tracking-widest mt-1">Lobby</span>
+</button>
+<button class="flex flex-col items-center justify-center text-emerald-400 bg-emerald-500/10 rounded-xl py-1 px-3 shadow-[0_0_10px_rgba(16,185,129,0.2)] hover:text-emerald-300 transition-all duration-150 active:scale-90">
+<span class="material-symbols-outlined">groups</span>
+<span class="text-[10px] font-bold uppercase tracking-widest mt-1">Squad</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:text-emerald-300 transition-all duration-150 active:scale-90">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-[10px] font-bold uppercase tracking-widest mt-1">Market</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:text-emerald-300 transition-all duration-150 active:scale-90">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="text-[10px] font-bold uppercase tracking-widest mt-1">Stats</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:text-emerald-300 transition-all duration-150 active:scale-90">
+<span class="material-symbols-outlined">menu</span>
+<span class="text-[10px] font-bold uppercase tracking-widest mt-1">Menu</span>
+</button>
+</footer>
+</body></html>

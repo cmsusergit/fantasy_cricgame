@@ -28,7 +28,8 @@ export interface Team {
   runsAgainst: number;
   isUserTeam: boolean;
   fanProfile: FanProfile;
-  sponsorship: SponsorshipContract | null;
+  sponsorships: SponsorshipContract[];
+  tournamentWins: number;
   injuries: Injury[];
   personality: TeamPersonality;
   tendency: TeamTendency;
@@ -36,6 +37,7 @@ export interface Team {
   playing11?: string[]; // Array of player IDs
   captain?: string; // Player ID
   wicketKeeper?: string; // Player ID
+  retainedPlayers?: string[]; // Array of player IDs retained for next season
 }
 
 export interface TeamStanding {

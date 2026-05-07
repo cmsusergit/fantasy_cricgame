@@ -22,7 +22,7 @@ export function simulateMatch(team1: Team, team2: Team, totalOvers: number = 20)
   };
 }
 
-function simulateInnings(
+export function simulateInnings(
   battingTeam: Team, 
   bowlingTeam: Team, 
   totalOvers: number,

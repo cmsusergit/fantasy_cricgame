@@ -7,13 +7,13 @@
   export let teams: Team[];
   export let matchComplete: boolean = false;
 
-  let expandedCommentary = -1;
+  let expandedDetails = -1;
 
-  function toggleCommentary(inningsIndex: number) {
-      if (expandedCommentary === inningsIndex) {
-          expandedCommentary = -1;
+  function toggleDetails(inningsIndex: number) {
+      if (expandedDetails === inningsIndex) {
+          expandedDetails = -1;
       } else {
-          expandedCommentary = inningsIndex;
+          expandedDetails = inningsIndex;
       }
   }
 
@@ -134,7 +134,14 @@
                     <span class="innings-score">{inn.totalRuns}/{inn.wickets} <small>({Math.floor(inn.balls/6)}.{inn.balls%6} ov)</small></span>
                 </div>
 
-                <div class="scorecard">
+                <div class="commentary-toggle" style="border-top: none; background: transparent; padding: 12px 20px;">
+                    <button class="btn-toggle" on:click={() => toggleDetails(index)}>
+                        {expandedDetails === index ? 'Hide' : 'Show'} Detailed Scorecard
+                    </button>
+                </div>
+
+                {#if expandedDetails === index}
+                <div class="scorecard" style="border-top: 1px solid var(--border-color);">
                     <table class="batting-table">
                         <thead>
                             <tr>
@@ -196,19 +203,12 @@
                     </table>
                 </div>
                 
-                <div class="commentary-toggle">
-                    <button class="btn-toggle" on:click={() => toggleCommentary(index)}>
-                        {expandedCommentary === index ? 'Hide' : 'Show'} Detailed Analysis
-                    </button>
-                </div>
-                
-                {#if expandedCommentary === index}
-                    <div class="detailed-analysis">
-                        <h5>Ball-by-Ball Commentary</h5>
-                        <div class="commentary-scroll">
-                            <BallFeed events={inn.ballsFaced.slice().reverse()} />
-                        </div>
+                <div class="detailed-analysis">
+                    <h5>Ball-by-Ball Commentary</h5>
+                    <div class="commentary-scroll">
+                        <BallFeed events={inn.ballsFaced.slice().reverse()} />
                     </div>
+                </div>
                 {/if}
             </div>
         {/if}
@@ -219,14 +219,14 @@
     .match-summary { display: flex; flex-direction: column; gap: 24px; width: 100%; }
     
     .pom-card {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
-        border: 1px solid rgba(245, 158, 11, 0.5);
+        background: linear-gradient(135deg, rgba(var(--accent-fire-rgb), 0.2), rgba(var(--accent-fire-rgb), 0.1));
+        border: 1px solid rgba(var(--accent-fire-rgb), 0.5);
         border-radius: 12px;
         padding: 20px;
         text-align: center;
     }
     .pom-card h3 { color: var(--warning); margin-bottom: 8px; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
-    .pom-name { font-size: 1.8rem; font-weight: 800; color: white; }
+    .pom-name { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); }
 
     .innings-card {
         background: var(--bg-secondary);
@@ -251,7 +251,7 @@
     
     table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.95rem; }
     th { padding: 8px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border-color); }
-    td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    td { padding: 10px 8px; border-bottom: 1px solid rgba(150, 150, 150, 0.1); }
     
     .text-left { text-align: left; }
     .font-semibold { font-weight: 600; }

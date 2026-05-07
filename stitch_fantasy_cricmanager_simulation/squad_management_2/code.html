@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#131b2e",
+                    "on-error": "#690005",
+                    "surface-variant": "#2d3449",
+                    "primary": "#4edea3",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "on-surface-variant": "#bbcabf",
+                    "on-secondary-container": "#e6ecff",
+                    "primary-fixed": "#6ffbbe",
+                    "on-tertiary-fixed": "#2a1700",
+                    "surface-container-lowest": "#060e20",
+                    "on-primary-fixed": "#002113",
+                    "inverse-on-surface": "#283044",
+                    "secondary-fixed": "#d8e2ff",
+                    "on-surface": "#dae2fd",
+                    "on-secondary-fixed-variant": "#004395",
+                    "error-container": "#93000a",
+                    "on-primary-fixed-variant": "#005236",
+                    "on-background": "#dae2fd",
+                    "secondary-fixed-dim": "#adc6ff",
+                    "tertiary-fixed": "#ffddb8",
+                    "secondary": "#adc6ff",
+                    "on-tertiary": "#472a00",
+                    "on-error-container": "#ffdad6",
+                    "on-secondary": "#002e6a",
+                    "surface-container": "#171f33",
+                    "tertiary-fixed-dim": "#ffb95f",
+                    "outline-variant": "#3c4a42",
+                    "on-tertiary-container": "#523200",
+                    "on-secondary-fixed": "#001a42",
+                    "error": "#ffb4ab",
+                    "tertiary": "#ffb95f",
+                    "primary-fixed-dim": "#4edea3",
+                    "surface": "#0b1326",
+                    "surface-dim": "#0b1326",
+                    "primary-container": "#10b981",
+                    "tertiary-container": "#e29100",
+                    "background": "#0b1326",
+                    "inverse-surface": "#dae2fd",
+                    "on-primary-container": "#00422b",
+                    "secondary-container": "#0566d9",
+                    "outline": "#86948a",
+                    "on-primary": "#003824",
+                    "surface-tint": "#4edea3",
+                    "surface-container-highest": "#2d3449",
+                    "inverse-primary": "#006c49",
+                    "surface-container-high": "#222a3d",
+                    "surface-bright": "#31394d"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "1.5rem",
+                    "margin-safe": "2rem",
+                    "gutter": "1.5rem",
+                    "base": "4px",
+                    "xl": "2rem",
+                    "sm": "0.5rem",
+                    "md": "1rem",
+                    "xs": "0.25rem"
+            },
+            "fontFamily": {
+                    "stat-lg": ["Space Grotesk"],
+                    "body-md": ["Inter"],
+                    "h1": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "h2": ["Inter"],
+                    "stat-sm": ["Space Grotesk"],
+                    "label-caps": ["Space Grotesk"]
+            },
+            "fontSize": {
+                    "stat-lg": ["24px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                    "stat-sm": ["14px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "500"}],
+                    "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.15em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      .glass-card {
+        background: rgba(45, 52, 73, 0.4);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .performance-ring {
+        background: conic-gradient(#4edea3 85%, transparent 0);
+      }
+      .stat-bar-segment {
+        height: 6px;
+        width: 100%;
+        border-radius: 2px;
+      }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md overflow-hidden h-screen flex">
+<!-- Side Navigation -->
+<nav class="fixed left-0 top-0 h-full w-64 border-r border-white/5 bg-slate-950/90 backdrop-blur-xl flex flex-col pt-20 pb-6 z-40 hidden md:flex">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+<img alt="Team Crest" class="w-10 h-10 rounded-full border border-primary/30" data-alt="A professional sports team crest featuring a stylized lion in emerald and silver, set against a dark carbon-fiber textured background. The lighting is cinematic, highlighting the metallic sheen of the emblem. The aesthetic is elite and modern, echoing a premier league sports broadcast identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjAgAGm5Qg9F5vz1pgCTr2bxa_72V8T8q4lWQGyT10oKXbxnbiNNdegDPRtp1doUhVKvhuy_kGk9PH_Z-wBalqLXhwe23znaroeJYmJ0-dReBWaeGA-4N1x0RkrTy-X8nJrj2dBU6W0KNqRAD3h14zSLGIXVXd0woYjxLbm6dEEC7kSGFonmzTSvJjvAIhLXdGgJFF-I4IOV6FWviA_44sgL1mCcenX5K-QAzLM6qtsuoVmEhVDMp47nPRJ2vNuVVUXPjxTgV2"/>
+<div>
+<h3 class="font-h2 text-stat-sm text-primary">Mumbai Mavericks</h3>
+<p class="text-xs text-slate-500 font-stat-sm tracking-widest">BUDGET: $14.5M</p>
+</div>
+</div>
+</div>
+<div class="flex-1 space-y-1">
+<a class="text-slate-500 hover:text-slate-200 flex items-center gap-3 px-6 py-3 cursor-pointer transition-all duration-200 hover:bg-white/5" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-caps">Dashboard</span>
+</a>
+<a class="bg-primary/10 text-primary border-r-4 border-primary flex items-center gap-3 px-6 py-3 cursor-pointer transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">groups</span>
+<span class="font-label-caps">My Squad</span>
+</a>
+<a class="text-slate-500 hover:text-slate-200 flex items-center gap-3 px-6 py-3 cursor-pointer transition-all duration-200 hover:bg-white/5" href="#">
+<span class="material-symbols-outlined">swap_horizontal_circle</span>
+<span class="font-label-caps">Transfer Market</span>
+</a>
+<a class="text-slate-500 hover:text-slate-200 flex items-center gap-3 px-6 py-3 cursor-pointer transition-all duration-200 hover:bg-white/5" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-label-caps">Analytics</span>
+</a>
+<a class="text-slate-500 hover:text-slate-200 flex items-center gap-3 px-6 py-3 cursor-pointer transition-all duration-200 hover:bg-white/5" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps">Settings</span>
+</a>
+</div>
+<div class="px-4 mt-auto">
+<button class="w-full py-3 bg-primary text-on-primary font-bold rounded-lg shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
+                Quick Swap
+            </button>
+<div class="mt-4 pt-4 border-t border-white/5 space-y-1">
+<a class="text-slate-500 hover:text-slate-200 flex items-center gap-3 px-4 py-2 text-xs transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">help</span>
+                    Support
+                </a>
+<a class="text-slate-500 hover:text-slate-200 flex items-center gap-3 px-4 py-2 text-xs transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">logout</span>
+                    Logout
+                </a>
+</div>
+</div>
+</nav>
+<!-- Main Workspace -->
+<main class="flex-1 flex flex-col md:ml-64 h-full relative overflow-hidden">
+<!-- Top App Bar -->
+<header class="fixed top-0 right-0 left-0 md:left-64 h-16 bg-slate-900/80 backdrop-blur-md border-b border-white/10 flex justify-between items-center px-6 z-50">
+<div class="flex items-center gap-4">
+<h1 class="text-xl font-black italic tracking-tighter text-primary">ELITE SQUAD ALPHA</h1>
+<div class="h-6 w-px bg-white/10 mx-2"></div>
+<div class="flex gap-6">
+<a class="text-slate-400 hover:text-white transition-colors font-label-caps" href="#">Live Scores</a>
+<a class="text-slate-400 hover:text-white transition-colors font-label-caps" href="#">Leagues</a>
+<a class="text-primary border-b-2 border-primary pb-1 font-label-caps" href="#">Market</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center bg-surface-container-lowest px-4 py-1.5 rounded-full border border-white/5">
+<span class="material-symbols-outlined text-primary text-sm mr-2">payments</span>
+<span class="font-stat-sm text-on-surface">$100,000</span>
+</div>
+<div class="flex items-center gap-4 text-slate-400">
+<span class="material-symbols-outlined cursor-pointer hover:text-white">account_balance_wallet</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-white relative">
+                        notifications
+                        <span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
+</span>
+<button class="bg-primary px-4 py-1.5 rounded text-on-primary font-bold text-xs hover:bg-primary-fixed transition-colors active:scale-95">Save Squad</button>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="flex-1 mt-16 p-6 flex flex-col lg:flex-row gap-6 overflow-hidden bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-surface-container-low via-background to-background">
+<!-- Left Panel: Playing 11 Grid -->
+<div class="flex-[1.5] flex flex-col gap-4 overflow-hidden">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">stadium</span>
+<h2 class="font-h2 text-on-surface">Playing 11 <span class="text-slate-500 font-normal text-sm ml-2">4-3-3 Hybrid</span></h2>
+</div>
+<button class="flex items-center gap-2 text-primary font-label-caps text-[10px] bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20 hover:bg-primary/20 transition-all">
+<span class="material-symbols-outlined text-xs">auto_fix_high</span>
+                        OPTIMIZE XI
+                    </button>
+</div>
+<div class="flex-1 glass-card rounded-2xl p-6 relative overflow-y-auto">
+<!-- Ground Grid -->
+<div class="grid grid-cols-4 gap-4">
+<!-- Card 1 (Captain) -->
+<div class="glass-card rounded-xl border-primary/40 p-3 flex flex-col items-center text-center relative group cursor-pointer hover:bg-white/5 transition-colors">
+<div class="absolute top-2 left-2 flex gap-1">
+<span class="bg-primary text-on-primary text-[8px] font-black px-1.5 py-0.5 rounded-sm">C</span>
+<span class="bg-slate-700 text-white text-[8px] font-black px-1.5 py-0.5 rounded-sm">WK</span>
+</div>
+<div class="w-16 h-16 rounded-full performance-ring p-1 mb-2">
+<img alt="Player" class="w-full h-full rounded-full object-cover bg-surface" data-alt="A close-up studio portrait of a professional cricket player looking intense and determined. The lighting is high-contrast, dramatic sports-style lighting with emerald green rim-light. The background is a dark, out-of-focus stadium atmosphere. Modern, high-end photography aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDg8qz108__YtA32rKetwsYTGYzr4p4LT8JVS2FehAhmf5Ho2Hd4M3zVMBmMq8LqQd6HX00O1g6hz2mz-d0D_YMm48eF8fQO-VZvw2fASq-cA2bcXasQrKlVZrXCdspfy86Ec7sshfG_0-gWqf6HKDSqoudHDW_VNQSwYB6qb5x9NFIalRieDYmQB-oeHgtT6JY2IfKS3iu7Xp-BdunSQHa1VhKRjKm1yB84b5fQCyQHITChgO5sNGwGPc4yFv2e0pbI-lqSROu"/>
+</div>
+<p class="font-bold text-xs text-on-surface truncate w-full">V. Kohli</p>
+<p class="text-[9px] text-slate-500 font-label-caps mt-1">BATTER</p>
+<span class="material-symbols-outlined text-xs text-primary absolute bottom-2 right-2">verified</span>
+</div>
+<!-- Card 2 -->
+<div class="glass-card rounded-xl border-white/5 p-3 flex flex-col items-center text-center relative group cursor-pointer hover:bg-white/5 transition-colors">
+<div class="w-16 h-16 rounded-full bg-slate-800 p-1 mb-2">
+<img alt="Player" class="w-full h-full rounded-full object-cover bg-surface" data-alt="A portrait of a star cricket bowler in mid-celebration, shouting with joy. High-intensity sports lighting with deep shadows and vibrant emerald highlights. The focus is sharp on the player's face, conveying elite performance and passion." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJD6jFXi1t5jVsOXAGYwj2f83NGHFw2NGmxFW6J9pOWRo9JTw0EfzE-7Lri9ZZ1Xjh7_ErbQb3Scf_d6hsiH3ndhWE5Cu9b2C9hsr4-yEsRrS4Bdyj4wVU4IdXdFVJMEOadusexwfpe7sJsze2GPMH04XhOXKZglPy0buvxYDNxoqgqHf7pviIqmK6WIn7ctbG6OJgJ9AviBWJUTz3WRZbjkcGy58GBLvSc_EfvyL-cCPAIhe6qTZ3hBiRhxAWXAAU5qA2pT6E"/>
+</div>
+<p class="font-bold text-xs text-on-surface truncate w-full">J. Bumrah</p>
+<p class="text-[9px] text-slate-500 font-label-caps mt-1">BOWLER</p>
+</div>
+<!-- Repeat for other slots... generating diverse UI placeholders -->
+<div class="glass-card rounded-xl border-white/5 p-3 flex flex-col items-center text-center bg-slate-900/50 border-dashed">
+<div class="w-16 h-16 rounded-full bg-slate-800/30 flex items-center justify-center mb-2 border-2 border-dashed border-white/10">
+<span class="material-symbols-outlined text-slate-600">add</span>
+</div>
+<p class="font-bold text-[10px] text-slate-600">ALL-ROUNDER</p>
+</div>
+<!-- Filling up with some actual players for the visual -->
+<div class="glass-card rounded-xl border-white/5 p-3 flex flex-col items-center text-center relative group cursor-pointer hover:bg-white/5 transition-colors">
+<div class="w-16 h-16 rounded-full performance-ring p-1 mb-2" style="background: conic-gradient(#4edea3 40%, transparent 0)">
+<img alt="Player" class="w-full h-full rounded-full object-cover bg-surface" data-alt="A high-performance sports profile of a cricketer in action, sweating with intensity under stadium floodlights. The palette is dominated by deep slates and emerald greens. The composition is dynamic and professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeUWQXB7TYQhDO2SmpPO9tsNVj4TDXDvGdXrxhmTEmOR-JeAb0IZE6-AWVeQhVBh_0YLhEC3-Y1PbCRUexzTaYKqdGE_N697OW7ZyF2EH18XzQILkjvTBfTiMbhe-nXRMTXT0F3px5Tbn-5p0cDCerb1j_V6SY2_tSLWr42ePuHw8Ud9FzEsZhKMLPUFcd7dEp3PVX8OnY6Ton_sZsPpkjh_6Zo--BkCArAwbensj7NCOKoKKRa6ljPHjQf6fat9Gr3S2fkRZm"/>
+</div>
+<p class="font-bold text-xs text-on-surface truncate w-full">R. Sharma</p>
+<p class="text-[9px] text-slate-500 font-label-caps mt-1">BATTER</p>
+</div>
+<!-- Player Slots 5-11 ... abbreviated for design focus -->
+<div class="glass-card rounded-xl border-white/5 p-3 flex flex-col items-center text-center opacity-80">
+<div class="w-16 h-16 rounded-full bg-slate-800 p-1 mb-2">
+<img alt="Player" class="w-full h-full rounded-full object-cover bg-surface" data-alt="Close up face of a cricketer with a confident smirk. Lighting is cinematic and dramatic, focused on high-contrast skin textures and the vibrant team jersey. Elite sports photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbMEP5N0wvzUQB2Z9Z9JEKKE8sg9GvA6z0NdLLOQgz_XXAt8YuF2aPWaG-DBkYFPIfZy8kaOTO6Ho4ew8wtSko8a49lpGpUCopzPWZxVCIc-EjUSdfBVEE_tLnuLgdQAmQ_ztvfYzHOTIoXUZp24Lte3Id8GVeqS5M3-l0mePV8xc1FpZyNQ1hkkUR1n8QEj1L-Q2sTV6FjQFQ9Vhk2us8FFb6-0jery0fHJG4Qs0p8vKei6m1XYBsCrZ_rHaAaPiLiKz2E7_W"/>
+</div>
+<p class="font-bold text-xs text-on-surface">H. Pandya</p>
+<p class="text-[9px] text-slate-500 font-label-caps mt-1">ALL-ROUNDER</p>
+</div>
+<div class="glass-card rounded-xl border-white/5 p-3 flex flex-col items-center text-center opacity-80">
+<div class="w-16 h-16 rounded-full bg-slate-800 p-1 mb-2">
+<img alt="Player" class="w-full h-full rounded-full object-cover bg-surface" data-alt="Dynamic shot of a cricket player focusing on the ball. Cinematic night stadium atmosphere with bright floodlights creating flare and emerald glowing highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCHzyw3_bUxJOlhMlKWSg61xCk8SIqRKBzY89c_Y3zq58gOSKjima1LGOv15TfFoaZzpqgbPnypTYVoSl7XU_w5c9M1E3KGuQK-yzJqPA4coepy9ugm3ZDtyW5uoifZCOfrPf97folij46jUwNfgqYLN5XczW-IbRVBBAxbjR0vgxg2kV1dAyuhjfbYk8TYqNaZpkVhF57TOEQ9qrlBuFPMEShcSI-hE8IujpjULBjyQmQY7qPxbLaVbrae_lgv_K2eKV3wZnw"/>
+</div>
+<p class="font-bold text-xs text-on-surface">K. Rahul</p>
+<p class="text-[9px] text-slate-500 font-label-caps mt-1">BATTER</p>
+</div>
+<div class="glass-card rounded-xl border-white/5 p-3 flex flex-col items-center text-center opacity-80">
+<div class="w-16 h-16 rounded-full bg-slate-800 p-1 mb-2">
+<img alt="Player" class="w-full h-full rounded-full object-cover bg-surface" data-alt="Action portrait of a bowler delivering the ball. Intense concentration, high-speed photography style with blurred stadium background in dark slate and emerald tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZEbtn-FBtVMK5H4mmNViEaGgn7Kvi5QIDPIxOMvZ-a0xqRGZOTT4rjUkL2qFpuz9qnfa8-pbNcjevquQ2iFPu54Hpr2SSuq0nilsARCLKKEZpN21pB7bYGVDNiPeELuxzfe0_nLSehL_VPOC-jF-2C7cckMj-cfmGiBOf1oDsDotkJ2Ngn-7s753PfsPg7kDXuWtDYQz_fGx62dDJ8_yXxGtIOoMtf2wu-neEmRNNlg4RheiDzZsEcEVuD7-t89TLamtezPgN"/>
+</div>
+<p class="font-bold text-xs text-on-surface">M. Siraj</p>
+<p class="text-[9px] text-slate-500 font-label-caps mt-1">BOWLER</p>
+</div>
+<div class="glass-card rounded-xl border-white/5 p-3 flex flex-col items-center text-center opacity-80">
+<div class="w-16 h-16 rounded-full bg-slate-800 p-1 mb-2">
+<img alt="Player" class="w-full h-full rounded-full object-cover bg-surface" data-alt="A portrait of a legendary cricket player looking towards the horizon. Moody, cinematic lighting with subtle emerald backlighting. Premium editorial sports photography aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5pWUsdMykKN9BZQoy2hv3a2pTBXxSkW8nfKOAi7pcYwIlkz2szlLKL_fpkeME4EwhU8PdV-qyWW2ywWn6YC8jImj88SBAKVVJlYQEkSVqjAe-KQXq6BzkhbwP-j2gWwHV-spjemT94sB3htGtS4CXyXFiFy16WDRORBZyUSwzjaOutolQmf49_JjD5aqWFkJPLOOgU1kWAGqxXBi4281KjaJeojv9UfPB0yypBa7Ryzcv-w2eDSapAPYG44xmyAgZpAY8f6vm"/>
+</div>
+<p class="font-bold text-xs text-on-surface">R. Jadeja</p>
+<p class="text-[9px] text-slate-500 font-label-caps mt-1">ALL-ROUNDER</p>
+</div>
+</div>
+<!-- Stat Detail Section (Selected Player) -->
+<div class="mt-8 pt-8 border-t border-white/10">
+<div class="flex gap-6 items-start">
+<div class="relative">
+<div class="w-24 h-24 rounded-2xl glass-card p-1">
+<img alt="Selected Player" class="w-full h-full rounded-xl object-cover" data-alt="A close-up studio portrait of a professional cricket player looking intense and determined. The lighting is high-contrast, dramatic sports-style lighting with emerald green rim-light. The background is a dark, out-of-focus stadium atmosphere. Modern, high-end photography aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDK53rC0mZz9zggAwGd4wMscX_ly3cxzQjOwfej5nvpTM4pquYBNdCT_pvTEZui2kbqxhyrtt8fJMMjlAYNOEKCn4bq-HgOWiPNZTZiqjaDBfzL6Dk32Ii3J1kJKEm3G7mq6s7tSgpLmbPo1Esvf0i6eM2XwNgbFZj5t-Dvf9eHBk1iyonTejtFm1dw2PxqxR-nfe1PGQsrraKkidRJgHgfw2gY2mpqKvUJP0HdvdlXrOJtJa_EFSDTRNq9_-PHxrlVKnCzFcEO"/>
+</div>
+<div class="absolute -bottom-2 -right-2 bg-primary text-on-primary p-1.5 rounded-lg shadow-lg">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+</div>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="font-display-lg text-h2 text-on-surface">Virat Kohli</h3>
+<div class="flex gap-3 items-center mt-1">
+<span class="text-primary font-stat-sm text-xs">MAVERICKS</span>
+<div class="w-1 h-1 bg-slate-600 rounded-full"></div>
+<span class="text-slate-400 font-stat-sm text-xs">FORM: A+</span>
+</div>
+</div>
+<div class="text-right">
+<p class="font-stat-lg text-primary">$12.5M</p>
+<p class="text-[10px] text-slate-500 font-label-caps">MARKET VALUE</p>
+</div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div>
+<p class="text-[10px] text-slate-500 font-label-caps mb-1">BATTING</p>
+<div class="flex gap-0.5">
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-slate-800"></div>
+</div>
+</div>
+<div>
+<p class="text-[10px] text-slate-500 font-label-caps mb-1">BOWLING</p>
+<div class="flex gap-0.5">
+<div class="stat-bar-segment bg-tertiary"></div>
+<div class="stat-bar-segment bg-slate-800"></div>
+<div class="stat-bar-segment bg-slate-800"></div>
+<div class="stat-bar-segment bg-slate-800"></div>
+<div class="stat-bar-segment bg-slate-800"></div>
+</div>
+</div>
+<div>
+<p class="text-[10px] text-slate-500 font-label-caps mb-1">POWER</p>
+<div class="flex gap-0.5">
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-slate-800"></div>
+<div class="stat-bar-segment bg-slate-800"></div>
+</div>
+</div>
+<div>
+<p class="text-[10px] text-slate-500 font-label-caps mb-1">TECH</p>
+<div class="flex gap-0.5">
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+</div>
+</div>
+<div>
+<p class="text-[10px] text-slate-500 font-label-caps mb-1">FIELDING</p>
+<div class="flex gap-0.5">
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-slate-800"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Panel: Available Roster -->
+<div class="flex-1 flex flex-col gap-4 overflow-hidden">
+<div class="flex justify-between items-center px-2">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">person_search</span>
+<h2 class="font-h2 text-on-surface">Available Roster</h2>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 cursor-pointer">filter_list</span>
+<span class="material-symbols-outlined text-slate-400 cursor-pointer">search</span>
+</div>
+</div>
+<div class="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
+<!-- Roster Card 1 -->
+<div class="glass-card rounded-xl p-4 flex gap-4 hover:border-primary/30 transition-all cursor-pointer">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high relative overflow-hidden">
+<img alt="Roster Player" class="w-full h-full object-cover" data-alt="Close up face of a cricketer with a focused expression. Lighting is cinematic and dramatic, focused on high-contrast skin textures and the vibrant team jersey. Elite sports photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9uJoZ8DXAht5ZEgd_fAOddPwpL9um0XfCUq0RZOB1i0juUk9g2gjNgWiFDC6gUOvIFTYtZ9oi3JyPF_nLvQMdfnymL5IDSPBoOrzg1dY0YJcWP7Yv3nOi7QHOANimYEFod6Hq7BLflQOYqk8-EjzzyMSvrE8ltyEorQPZdrubXMrAs_HoQMhDn_DlKVV_JWmY5zV7y47Antc-GUrcEDG9ZVTx1AgUH7XDUdjHvoH_ciUeefPLwRCrYGkLKxR4wrYxgHbYWDg1"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between">
+<h4 class="font-bold text-sm text-on-surface">Kane Williamson</h4>
+<span class="font-stat-sm text-xs text-primary">$10.2M</span>
+</div>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[10px] text-primary">star</span>
+<span class="text-[10px] font-stat-sm">92</span>
+</div>
+<div class="w-20 h-1 bg-slate-800 rounded-full relative overflow-hidden">
+<div class="absolute left-0 top-0 h-full bg-error w-1/4"></div>
+<div class="absolute left-0 top-0 h-full bg-primary w-3/4"></div>
+</div>
+<span class="text-[10px] text-slate-500 font-label-caps">FITNESS 75%</span>
+</div>
+</div>
+<button class="self-center bg-white/5 hover:bg-primary/20 text-primary p-2 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-base">swap_horiz</span>
+</button>
+</div>
+<!-- Roster Card 2 -->
+<div class="glass-card rounded-xl p-4 flex gap-4 border-l-4 border-l-primary/50">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high overflow-hidden">
+<img alt="Roster Player" class="w-full h-full object-cover" data-alt="Portrait of a professional athlete, high-end editorial lighting, dark slate background with neon emerald accents. Subject is in an athletic stance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAL0IxA6isxaVu-XxtA3S6uAoS5d9Qv6AI7hidwd1K4DGZ3Sns84AeF2CUgND9n5RY-rUcPQgy7j1VM03WEOkqMX6xUEPKu7-WCPntzn-r1wdeVuAX2HHzOVk7H56QRu0xWYjQ6stTRCH1reV4EHF_nuUVEumwlh5_bb_9wL8_WP7dOrEtAe_BJWxXPELtcwPK95pk91DA8_UM6Yx0vocsnZwgfA-HwzCPfNN5W1GFhfL5wL1xKrjmBAo4uYquDCXln5CgnooS3"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between">
+<h4 class="font-bold text-sm text-on-surface">Ben Stokes</h4>
+<span class="font-stat-sm text-xs text-primary">$11.8M</span>
+</div>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[10px] text-primary">star</span>
+<span class="text-[10px] font-stat-sm">89</span>
+</div>
+<div class="w-20 h-1 bg-slate-800 rounded-full relative overflow-hidden">
+<div class="absolute left-0 top-0 h-full bg-primary w-[90%]"></div>
+</div>
+<span class="text-[10px] text-slate-500 font-label-caps">FITNESS 90%</span>
+</div>
+</div>
+<button class="self-center bg-primary text-on-primary p-2 rounded-lg">
+<span class="material-symbols-outlined text-base">add</span>
+</button>
+</div>
+<!-- Roster Card 3 -->
+<div class="glass-card rounded-xl p-4 flex gap-4 opacity-70">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high overflow-hidden">
+<img alt="Roster Player" class="w-full h-full object-cover" data-alt="Portrait of a professional cricketer focusing intensely, dark atmospheric lighting with green highlights. The background is a blurred stadium at night." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8PLGv9usXTEJQrz4rkWNHiWP8wf-nipx6a3Is3YWf8aIwrQSULssndAGOvo0r4TjNIhLmYwAQLA-ZNyVjt9oZs7KhwTG6GFRD44FYBpH0a1ZoOmxokWfA-8vEgO8RPi4r8aCQ-QfPC44tNRPfXN-ddMNso3C_JmzHci_rsX0vGQoBsZFdYxhjUbwey2ljE8XdzgK12vcbQI80-7hYY6tsbeIrY8A9OOxJw9xScLfGIv_YMKrhYy50FXNZV1RryECFqOCUo6nN"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between">
+<h4 class="font-bold text-sm text-on-surface">Rashid Khan</h4>
+<span class="font-stat-sm text-xs text-primary">$9.5M</span>
+</div>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[10px] text-primary">star</span>
+<span class="text-[10px] font-stat-sm">94</span>
+</div>
+<div class="w-20 h-1 bg-slate-800 rounded-full relative overflow-hidden">
+<div class="absolute left-0 top-0 h-full bg-error w-1/2"></div>
+</div>
+<span class="text-[10px] text-on-error-container font-label-caps">FATIGUE HIGH</span>
+</div>
+</div>
+<button class="self-center bg-white/5 text-slate-600 p-2 rounded-lg cursor-not-allowed">
+<span class="material-symbols-outlined text-base">block</span>
+</button>
+</div>
+<!-- Roster Card 4 -->
+<div class="glass-card rounded-xl p-4 flex gap-4 hover:border-primary/30 transition-all cursor-pointer">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high overflow-hidden">
+<img alt="Roster Player" class="w-full h-full object-cover" data-alt="Dramatic sports portrait of a cricketer under stadium lights, emerald glow on his face, cinematic depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUcX8pXf1XQnC_SXyV9EKMKwJbXj25UsBUMF0ffrngLDQWXl2-XrtGxpg5JOlhHTsI9pX6ZJGT88CmA_boMKhsONdl444BvkSK2plQguYroyDQWpVBiS6mh4XDaBjo9ZjLgoPViZ1deOWONSUhveaA1oCvww7VEA6S-vLd2Tgmu3L5UWr1zt2h_TWfwqA43YJc3oR7oBi3NKA3UiDHvwA61hONoT_9y7qJsfV7dJSWo7LcBCk8c22Sl6gvziG0kfi4j-gFJ1Um"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between">
+<h4 class="font-bold text-sm text-on-surface">Pat Cummins</h4>
+<span class="font-stat-sm text-xs text-primary">$10.8M</span>
+</div>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[10px] text-primary">star</span>
+<span class="text-[10px] font-stat-sm">91</span>
+</div>
+<div class="w-20 h-1 bg-slate-800 rounded-full relative overflow-hidden">
+<div class="absolute left-0 top-0 h-full bg-primary w-2/3"></div>
+</div>
+<span class="text-[10px] text-slate-500 font-label-caps">FITNESS 66%</span>
+</div>
+</div>
+<button class="self-center bg-white/5 hover:bg-primary/20 text-primary p-2 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-base">swap_horiz</span>
+</button>
+</div>
+</div>
+<!-- Summary Bar -->
+<div class="mt-auto glass-card rounded-xl p-4 border-primary/20 flex flex-col gap-3">
+<div class="flex justify-between items-center">
+<span class="text-[10px] text-slate-500 font-label-caps">SQUAD BALANCE</span>
+<span class="text-[10px] text-primary font-bold">OPTIMAL</span>
+</div>
+<div class="flex gap-1 h-2">
+<div class="flex-1 bg-primary rounded-full"></div>
+<div class="flex-1 bg-primary rounded-full"></div>
+<div class="flex-1 bg-primary rounded-full"></div>
+<div class="flex-1 bg-primary rounded-full"></div>
+<div class="flex-1 bg-primary rounded-full opacity-50"></div>
+<div class="flex-1 bg-slate-800 rounded-full"></div>
+<div class="flex-1 bg-slate-800 rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

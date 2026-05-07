@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;family=Space+Grotesk:wght@500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(11, 19, 38, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .stat-bar-segment {
+            height: 6px;
+            width: 8px;
+            border-radius: 1px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#060e20",
+                        "secondary-container": "#0566d9",
+                        "background": "#0b1326",
+                        "error": "#ffb4ab",
+                        "on-tertiary": "#472a00",
+                        "on-primary-fixed": "#002113",
+                        "inverse-surface": "#dae2fd",
+                        "surface-dim": "#0b1326",
+                        "outline-variant": "#3c4a42",
+                        "surface": "#0b1326",
+                        "tertiary-container": "#e29100",
+                        "secondary": "#adc6ff",
+                        "tertiary-fixed": "#ffddb8",
+                        "surface-bright": "#31394d",
+                        "error-container": "#93000a",
+                        "surface-container-low": "#131b2e",
+                        "on-secondary-fixed": "#001a42",
+                        "inverse-primary": "#006c49",
+                        "surface-variant": "#2d3449",
+                        "primary": "#4edea3",
+                        "on-surface": "#dae2fd",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-error": "#690005",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "surface-container": "#171f33",
+                        "secondary-fixed": "#d8e2ff",
+                        "inverse-on-surface": "#283044",
+                        "surface-tint": "#4edea3",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "on-secondary-fixed-variant": "#004395",
+                        "on-secondary-container": "#e6ecff",
+                        "tertiary": "#ffb95f",
+                        "surface-container-highest": "#2d3449",
+                        "surface-container-high": "#222a3d",
+                        "on-background": "#dae2fd",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "outline": "#86948a",
+                        "primary-fixed-dim": "#4edea3",
+                        "on-tertiary-container": "#523200",
+                        "on-primary-fixed-variant": "#005236",
+                        "on-primary": "#003824",
+                        "on-surface-variant": "#bbcabf",
+                        "primary-container": "#10b981",
+                        "primary-fixed": "#6ffbbe",
+                        "on-secondary": "#002e6a",
+                        "on-primary-container": "#00422b",
+                        "on-error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-safe": "2rem",
+                        "base": "4px",
+                        "gutter": "1.5rem",
+                        "sm": "0.5rem",
+                        "xl": "2rem",
+                        "xs": "0.25rem",
+                        "md": "1rem",
+                        "lg": "1.5rem"
+                    },
+                    "fontFamily": {
+                        "stat-sm": ["Space Grotesk"],
+                        "stat-lg": ["Space Grotesk"],
+                        "h2": ["Inter"],
+                        "h1": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "label-caps": ["Space Grotesk"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "stat-sm": ["14px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "500"}],
+                        "stat-lg": ["24px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.15em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary/30 min-h-screen pb-20 md:pb-0">
+<!-- TopAppBar -->
+<header class="bg-slate-950/80 backdrop-blur-xl border-b border-white/10 docked full-width top-0 sticky z-50 shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+<div class="flex justify-between items-center w-full px-4 h-16 max-w-screen-2xl mx-auto">
+<div class="flex items-center gap-4">
+<span class="text-xl font-black text-emerald-500 italic tracking-tighter">ELITE MANAGER</span>
+<div class="hidden md:flex gap-6 ml-8">
+<span class="text-slate-400 font-inter tracking-tight uppercase font-bold hover:text-emerald-300 transition-colors cursor-pointer">Dashboard</span>
+<span class="text-slate-400 font-inter tracking-tight uppercase font-bold hover:text-emerald-300 transition-colors cursor-pointer">Roster</span>
+<span class="text-emerald-400 font-bold font-inter tracking-tight uppercase font-bold">Auction</span>
+<span class="text-slate-400 font-inter tracking-tight uppercase font-bold hover:text-emerald-300 transition-colors cursor-pointer">Leagues</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="bg-surface-container-high px-4 py-1.5 rounded-full border border-white/5 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+<span class="font-stat-sm text-stat-sm text-on-surface">$100,000</span>
+</div>
+<div class="flex gap-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/5 transition-colors text-slate-400">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full border-2 border-primary/20 overflow-hidden">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a modern tech executive with sharp lighting and a dark cinematic background. The subject is wearing a sleek charcoal suit, looking confidently at the camera. The overall aesthetic is high-contrast and elite, matching a premium sports management dashboard theme with deep slate and emerald undertones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbcTDaQlbUB2qd3IEC_JlIWQBLG83Yn7Qh0sS2TbDFc8xhpZ6y7_LX2MbLkTAaYG0U6GuPnd_NVKHqvWPOUqi1whkuR81-jSzgtDZJo8FR-D-QecSsAmO164-vJgA6Fg7JR7_Fkn_hCINjw_QIuX5w8l_ygMpQx4P-wwE0atTgxubuyanOO0Dkt_Ty2ZEI5eTb_AN6sFjKSV7zivGdHFZyYT6_IP6YijsW0NtuEguQX1XMqmy5oh9orm6A6gIO14HfOVKJ5FcY"/>
+</div>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-screen-2xl mx-auto p-4 md:p-6 lg:p-8">
+<div class="grid grid-cols-12 gap-6 lg:gap-8">
+<!-- Left/Central: Player on the Block -->
+<div class="col-span-12 lg:col-span-8 flex flex-col gap-6">
+<div class="glass-panel rounded-xl overflow-hidden relative group">
+<!-- Player Header Background -->
+<div class="h-48 w-full bg-gradient-to-br from-surface-container-highest to-background relative overflow-hidden">
+<img alt="Stadium background" class="w-full h-full object-cover opacity-40 mix-blend-luminosity" data-alt="A high-intensity action shot of a professional cricketer mid-stroke during a night match under bright stadium floodlights. The atmosphere is electric with a slight haze and lens flare. The visual style is cinematic and high-contrast, featuring deep shadows and vibrant emerald green highlights from the turf, perfectly aligned with a premium sports broadcast aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBU3eoVhOWyd1eNvuAPLsNnFbb5Vr9eElzBviq_ewb4qG9KHF3bP8YJjS2QXY3wT1C6R5TmqY6vcJhUUH7fBtuv5llyZ0xDOVagdJWQUQ9jYx5hoF0OrbKzmZtYu_c-msnP6E8M1rgCVJCdTb7S8119bpA9YeHmg68rwlYl5jyCExqGjmwImjpm6SEZ0iL6E2Yn7rFmvxtyPbip5ljlsd7vVh5HOhbn72DQBNKN3xAStJz8-Ug9Qma1bIppMM3VdJh7aB6sZcmm"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
+</div>
+<div class="px-6 pb-8 -mt-20 relative z-10 flex flex-col md:flex-row gap-8">
+<!-- Player Portrait -->
+<div class="relative">
+<div class="w-40 h-40 md:w-56 md:h-56 rounded-full border-4 border-primary/30 p-1 bg-background overflow-hidden">
+<img alt="V. Kohli portrait" class="w-full h-full object-cover rounded-full" data-alt="A close-up, heroic portrait of a star athlete with a focused and determined expression. The lighting is dramatic, coming from the side to emphasize features, against a dark, moody background. The athlete has short dark hair and a groomed beard, embodying the 'Elite Manager' brand of surgical precision and high-stakes performance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3KQ0Hgpx1acjt7ZWNvxL4BDldMkbg2-s1AHl3H1xNFfTZtJcziNlxsAvpLByYCrwMhfhTHAZFEy4ka-JNDJK0z7-xVXmprnxLfqB9tf2V88hJ7WothsAlqYp4zGYYgrYQhlCQIc-pAsWvRHSFGy7nM5MH22JdOnEhZJJnig4tXHsdkCFzkeZLKjZx53uRfnG3RoB5qD7zyGia469O9_xvzdi4UlSLc_Yd5OjW1jzp-Ii6RdSL1_6JzBaWWRGB9gWG23zeJAik"/>
+</div>
+<div class="absolute -bottom-2 right-4 bg-primary text-on-primary px-3 py-1 rounded-full font-stat-sm text-stat-sm shadow-lg">
+                                HUMAN
+                            </div>
+</div>
+<!-- Info & Stats -->
+<div class="flex-1 flex flex-col justify-end gap-4">
+<div>
+<div class="flex items-center gap-3 mb-1">
+<span class="bg-secondary-container/20 text-secondary px-2 py-0.5 rounded text-[10px] font-bold tracking-widest uppercase">Elite Tier</span>
+<span class="text-slate-400 font-label-caps text-label-caps">Batter / Captain</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-white mb-2">V. KOHLI</h1>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div class="flex flex-col gap-2">
+<span class="text-slate-500 font-label-caps text-label-caps">BATTING</span>
+<div class="flex gap-1">
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+</div>
+<span class="font-stat-lg text-stat-lg text-primary">95</span>
+</div>
+<div class="flex flex-col gap-2">
+<span class="text-slate-500 font-label-caps text-label-caps">POWER</span>
+<div class="flex gap-1">
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+</div>
+<span class="font-stat-lg text-stat-lg text-primary">88</span>
+</div>
+<div class="flex flex-col gap-2">
+<span class="text-slate-500 font-label-caps text-label-caps">TECH</span>
+<div class="flex gap-1">
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+</div>
+<span class="font-stat-lg text-stat-lg text-primary">98</span>
+</div>
+<div class="flex flex-col gap-2">
+<span class="text-slate-500 font-label-caps text-label-caps">FIELDING</span>
+<div class="flex gap-1">
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+</div>
+<span class="font-stat-lg text-stat-lg text-primary">92</span>
+</div>
+<div class="flex flex-col gap-2">
+<span class="text-slate-500 font-label-caps text-label-caps">BOWLING</span>
+<div class="flex gap-1">
+<div class="stat-bar-segment bg-error"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+<div class="stat-bar-segment bg-white/10"></div>
+</div>
+<span class="font-stat-lg text-stat-lg text-error">15</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bidding Activity Feed -->
+<div class="glass-panel rounded-xl flex-1 flex flex-col min-h-[300px]">
+<div class="p-4 border-b border-white/10 flex justify-between items-center">
+<h3 class="font-h2 text-h2 text-white">Live Activity</h3>
+<span class="flex items-center gap-2 text-primary font-stat-sm text-stat-sm">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                            LIVE STREAM
+                        </span>
+</div>
+<div class="p-4 space-y-4 overflow-y-auto max-h-[400px]">
+<div class="flex justify-between items-center py-2 border-b border-white/5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center font-bold text-xs text-secondary">OR</div>
+<div>
+<p class="text-white font-bold">Orc Raiders</p>
+<p class="text-slate-500 text-xs">2 seconds ago</p>
+</div>
+</div>
+<span class="text-primary font-stat-lg text-stat-lg">$12.5M</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-white/5 opacity-80">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center font-bold text-xs text-tertiary">ER</div>
+<div>
+<p class="text-white font-bold">Elf Rangers</p>
+<p class="text-slate-500 text-xs">15 seconds ago</p>
+</div>
+</div>
+<span class="text-slate-300 font-stat-lg text-stat-lg">$12.0M</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-white/5 opacity-60">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center font-bold text-xs text-error">DK</div>
+<div>
+<p class="text-white font-bold">Dwarf Kings</p>
+<p class="text-slate-500 text-xs">42 seconds ago</p>
+</div>
+</div>
+<span class="text-slate-400 font-stat-lg text-stat-lg">$11.5M</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-white/5 opacity-40">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center font-bold text-xs text-primary">OR</div>
+<div>
+<p class="text-white font-bold">Orc Raiders</p>
+<p class="text-slate-500 text-xs">1 minute ago</p>
+</div>
+</div>
+<span class="text-slate-500 font-stat-lg text-stat-lg">$10.8M</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Bidding Interface -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+<!-- Auction Controls Card -->
+<div class="glass-panel rounded-xl p-6 flex flex-col items-center text-center gap-8 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
+<div class="w-full">
+<span class="text-slate-500 font-label-caps text-label-caps block mb-2">CURRENT BID</span>
+<div class="text-6xl font-display-lg text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">$12.5M</div>
+<div class="mt-4 flex items-center justify-center gap-2">
+<span class="text-slate-400">Highest Bidder:</span>
+<span class="text-secondary font-bold">Orc Raiders</span>
+</div>
+</div>
+<!-- Countdown Timer -->
+<div class="relative w-48 h-48 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90">
+<circle class="text-white/5" cx="96" cy="96" fill="transparent" r="88" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-primary drop-shadow-[0_0_8px_rgba(78,222,163,0.5)]" cx="96" cy="96" fill="transparent" r="88" stroke="currentColor" stroke-dasharray="552" stroke-dashoffset="138" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-5xl font-display-lg text-white">08</span>
+<span class="text-slate-500 font-label-caps text-label-caps">SECONDS</span>
+</div>
+</div>
+<div class="w-full space-y-4">
+<button class="w-full py-6 bg-primary text-on-primary rounded-xl font-h2 text-h2 hover:shadow-[0_0_30px_rgba(78,222,163,0.4)] hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest">
+                            BID $13.0M
+                        </button>
+<div class="flex items-center justify-between p-4 glass-panel rounded-lg border border-secondary/20">
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined">bolt</span>
+<span class="font-bold tracking-tight">Auto-Bid Toggle</span>
+</div>
+<div class="w-12 h-6 bg-surface-container-highest rounded-full p-1 cursor-pointer">
+<div class="w-4 h-4 bg-slate-500 rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Your Budget Info -->
+<div class="glass-panel rounded-xl p-6 space-y-4">
+<h3 class="text-slate-400 font-label-caps text-label-caps">YOUR POSITION</h3>
+<div class="flex justify-between items-end">
+<div>
+<p class="text-white font-stat-lg text-stat-lg">$100,000</p>
+<p class="text-slate-500 text-xs">Available Funds</p>
+</div>
+<div class="text-right">
+<p class="text-error font-stat-lg text-stat-lg">-$13.0M</p>
+<p class="text-slate-500 text-xs">Projected Balance</p>
+</div>
+</div>
+<div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-error w-full"></div>
+</div>
+<p class="text-error text-xs italic">Warning: Bid exceeds current available funds. Margin required.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile only) -->
+<nav class="fixed bottom-0 w-full z-50 border-t border-slate-800 bg-slate-950/90 backdrop-blur-2xl md:hidden shadow-[0_-8px_30px_rgba(0,0,0,0.6)]">
+<div class="flex justify-around items-center h-20 pb-safe">
+<div class="flex flex-col items-center justify-center text-slate-500 hover:bg-white/5">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-inter text-[10px] font-semibold uppercase tracking-widest mt-1">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 hover:bg-white/5">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-inter text-[10px] font-semibold uppercase tracking-widest mt-1">Roster</span>
+</div>
+<div class="flex flex-col items-center justify-center text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] scale-110">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">gavel</span>
+<span class="font-inter text-[10px] font-semibold uppercase tracking-widest mt-1">Auction</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 hover:bg-white/5">
+<span class="material-symbols-outlined">military_tech</span>
+<span class="font-inter text-[10px] font-semibold uppercase tracking-widest mt-1">Leagues</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 hover:bg-white/5">
+<span class="material-symbols-outlined">menu</span>
+<span class="font-inter text-[10px] font-semibold uppercase tracking-widest mt-1">More</span>
+</div>
+</div>
+</nav>
+</body></html>

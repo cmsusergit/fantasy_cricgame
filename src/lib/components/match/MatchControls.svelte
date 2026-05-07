@@ -1,5 +1,6 @@
 <script lang="ts">
-  import type { IntentType } from '$lib/models/match';
+  import type { IntentType, BallType } from '$lib/models/match';
+  import type { BowlingType } from '$lib/models/player';
   
   export type SimSpeed = 'ball' | 'over' | 'instant';
   
@@ -8,6 +9,8 @@
     isPaused: boolean;
     battingIntent: IntentType;
     bowlingIntent: IntentType;
+    ballType?: BallType;
+    currentBowlerType?: BowlingType;
     avoidSingles: boolean;
     isUserBatting: boolean;
     isUserBowling: boolean;
@@ -16,6 +19,7 @@
     onPauseToggle: () => void;
     onBattingIntentChange: (intent: IntentType) => void;
     onBowlingIntentChange: (intent: IntentType) => void;
+    onBallTypeChange?: (ballType: BallType) => void;
     onAvoidSinglesChange: (avoidSingles: boolean) => void;
     onPlaySingleBall: () => void;
     onPlaySingleOver: () => void;
@@ -27,6 +31,8 @@
     isPaused = false,
     battingIntent = 'balanced',
     bowlingIntent = 'balanced',
+    ballType = 'normal',
+    currentBowlerType = 'none',
     avoidSingles = false,
     isUserBatting = true,
     isUserBowling = true,
@@ -35,11 +41,25 @@
     onPauseToggle,
     onBattingIntentChange,
     onBowlingIntentChange,
+    onBallTypeChange,
     onAvoidSinglesChange,
     onPlaySingleBall,
     onPlaySingleOver,
     onAutoPlayDelayChange
   }: Props = $props();
+
+  const intentValues: IntentType[] = ['very_defensive', 'defensive', 'balanced', 'aggressive', 'very_aggressive'];
+  const intentLabels = ['Very Def', 'Def', 'Bal', 'Agg', 'Very Agg'];
+
+  function handleBattingSlider(e: Event) {
+      const val = parseInt((e.currentTarget as HTMLInputElement).value);
+      onBattingIntentChange(intentValues[val]);
+  }
+
+  function handleBowlingSlider(e: Event) {
+      const val = parseInt((e.currentTarget as HTMLInputElement).value);
+      onBowlingIntentChange(intentValues[val]);
+  }
 </script>
 
 <div class="match-controls">
@@ -102,30 +122,59 @@
     />
   </div>
   
-  <div class="intent-controls">
-    <div class="intent-group">
-      <label>🏏 Bat:</label>
-      <select value={battingIntent} disabled={!isUserBatting} onchange={(e) => onBattingIntentChange(e.currentTarget.value as IntentType)} title={!isUserBatting ? "AI controlled" : ""}>
-        <option value="defensive">🛡️ Def</option>
-        <option value="balanced">⚖️ Bal</option>
-        <option value="aggressive">🔥 Agg</option>
-      </select>
+  <div class="intent-controls" style="flex-direction: column; align-items: stretch; gap: 16px; width: 100%;">
+    <div class="intent-group slider-group">
+      <label style="width: 80px;">🏏 Bat:</label>
+      <div class="slider-wrapper" style="flex: 1;">
+          <input type="range" min="0" max="4" value={intentValues.indexOf(battingIntent)} disabled={!isUserBatting} oninput={handleBattingSlider} title={!isUserBatting ? "AI controlled" : ""} style="width: 100%;" />
+          <div class="slider-labels" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+              {#each intentLabels as label}
+                  <span>{label}</span>
+              {/each}
+          </div>
+      </div>
+      <div style="margin-left: 16px;">
+        <label style="cursor: {isUserBatting ? 'pointer' : 'default'}; display: flex; align-items: center; gap: 4px;" title={!isUserBatting ? "AI controlled" : ""}>
+          <input type="checkbox" checked={avoidSingles} disabled={!isUserBatting} onchange={(e) => onAvoidSinglesChange(e.currentTarget.checked)} />
+          Avoid Singles
+        </label>
+      </div>
     </div>
     
-    <div class="intent-group" style="margin-left: 8px;">
-      <label style="cursor: {isUserBatting ? 'pointer' : 'default'}; display: flex; align-items: center; gap: 4px;" title={!isUserBatting ? "AI controlled" : ""}>
-        <input type="checkbox" checked={avoidSingles} disabled={!isUserBatting} onchange={(e) => onAvoidSinglesChange(e.currentTarget.checked)} />
-        Avoid Singles
-      </label>
-    </div>
-    
-    <div class="intent-group">
-      <label>🎯 Bowl:</label>
-      <select value={bowlingIntent} disabled={!isUserBowling} onchange={(e) => onBowlingIntentChange(e.currentTarget.value as IntentType)} title={!isUserBowling ? "AI controlled" : ""}>
-        <option value="defensive">🛡️ Def</option>
-        <option value="balanced">⚖️ Bal</option>
-        <option value="aggressive">🔥 Agg</option>
-      </select>
+    <div class="intent-group slider-group">
+      <label style="width: 80px;">🎯 Bowl:</label>
+      <div class="slider-wrapper" style="flex: 1;">
+          <input type="range" min="0" max="4" value={intentValues.indexOf(bowlingIntent)} disabled={!isUserBowling} oninput={handleBowlingSlider} title={!isUserBowling ? "AI controlled" : ""} style="width: 100%;" />
+          <div class="slider-labels" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+              {#each intentLabels as label}
+                  <span>{label}</span>
+              {/each}
+          </div>
+      </div>
+      {#if currentBowlerType !== 'none'}
+      <div style="margin-left: 16px;">
+          <select value={ballType} disabled={!isUserBowling} onchange={(e) => onBallTypeChange?.(e.currentTarget.value as BallType)} title={!isUserBowling ? "AI controlled" : ""}>
+              <option value="normal">Normal</option>
+              {#if currentBowlerType === 'fast' || currentBowlerType === 'pacer'}
+                  <option value="bouncer">Bouncer</option>
+                  <option value="yorker">Yorker</option>
+                  <option value="slower">Slower</option>
+              {/if}
+              {#if currentBowlerType === 'swinger'}
+                  <option value="inswinger">Inswinger</option>
+                  <option value="outswinger">Outswinger</option>
+                  <option value="yorker">Yorker</option>
+              {/if}
+              {#if currentBowlerType === 'spinner'}
+                  <option value="off_spin">Off Spin</option>
+                  <option value="leg_spin">Leg Spin</option>
+                  <option value="googly">Googly</option>
+                  <option value="doosra">Doosra</option>
+                  <option value="arm_ball">Arm Ball</option>
+              {/if}
+          </select>
+      </div>
+      {/if}
     </div>
   </div>
 </div>

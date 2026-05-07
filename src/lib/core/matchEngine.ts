@@ -1,4 +1,4 @@
-import type { IntentType, BallEvent, BallResult, innings } from '../models/match';
+import type { IntentType, BallEvent, BallResult, innings, BallType } from '../models/match';
 import { INTENT_MULTIPLIERS } from '../models/match';
 import type { Player } from '../models/player';
 import type { Team } from '../models/team';
@@ -58,10 +58,14 @@ export function calculateWicketChance(
   const intentMult = INTENT_MULTIPLIERS[intent];
   const fatigueMult = 1 + (batter.fatigue / 100 * 0.2 * currentOver / totalOvers);
   
+  // Morale modifiers
+  const batterMoraleMod = 1 + ((batter.morale - 50) / 100) * 0.20;
+  const bowlerMoraleMod = 1 + ((bowler.morale - 50) / 100) * 0.20;
+  
   const baseChance = 0.09;
-  const techReduction = batterStats.technique * 0.0005;
+  const techReduction = (batterStats.technique * batterMoraleMod) * 0.0005;
   const synergyMult = getPitchSynergyMultiplier(bowler.bowlingType, pitch);
-  const bowlerBoost = (bowlerStats.bowling * synergyMult) * 0.0004;
+  const bowlerBoost = (bowlerStats.bowling * bowlerMoraleMod * synergyMult) * 0.0004;
   const weatherMod = WEATHER_EFFECTS[weather].wicketChance;
   
   const wicketChance = (baseChance * intentMult) + (faction.modifiers.fatigue * (batter.fatigue / 100) * 0.2 * fatigueMult) 
@@ -104,8 +108,12 @@ export function calculateShotQuality(
   const weatherMod = WEATHER_EFFECTS[weather];
   const pitchMod = PITCH_EFFECTS[pitch];
   
+  // Morale modifiers
+  const batterMoraleMod = 1 + ((batter.morale - 50) / 100) * 0.20;
+  const bowlerMoraleMod = 1 + ((bowler.morale - 50) / 100) * 0.20;
+
   const synergyMult = getPitchSynergyMultiplier(bowler.bowlingType, pitch);
-  const effectiveBowling = bowlerStats.bowling * synergyMult;
+  const effectiveBowling = bowlerStats.bowling * bowlerMoraleMod * synergyMult;
   
   const fatigueFactor = 1 - (batter.fatigue / 350);
   const lastOverBonus = isLastOver ? 0.03 : 0;
@@ -127,12 +135,12 @@ export function calculateShotQuality(
   if (bowler.bowlingType === 'fast' && pitch === 'bouncing') typeAdvantage = 2.0;
   if (bowler.bowlingType === 'swinger' && weather === 'cloudy') typeAdvantage = 2.5;
 
-  const techMitigation = batterStats.technique * 0.08;
+  const techMitigation = batterStats.technique * batterMoraleMod * 0.08;
   const netTypeAdvantage = Math.max(0, typeAdvantage - techMitigation);
   
   // Balanced formula from simulation
-  const battingPower = (batterStats.batting * 0.22 + batterStats.power * 0.11) * fatigueFactor;
-  const bowlingDefense = (effectiveBowling * 0.09 + bowlerStats.technique * 0.04) * bowlingEffort + netTypeAdvantage;
+  const battingPower = (batterStats.batting * 0.22 + batterStats.power * 0.11) * batterMoraleMod * fatigueFactor;
+  const bowlingDefense = (effectiveBowling * 0.09 + bowlerStats.technique * bowlerMoraleMod * 0.04) * bowlingEffort + netTypeAdvantage;
   
   // Home advantage bonus
   const homeBonus = homeAdvantage * 0.015;
@@ -208,6 +216,7 @@ export function isPowerplayOver(currentOver: number): boolean {
 }
 
 const BOWLING_INTENT_EFFECT: Record<IntentType, number> = {
+  very_defensive: 1.3,
   defensive: 1.15,
   balanced: 1.0,
   aggressive: 0.85,
@@ -226,7 +235,8 @@ export function resolveBall(
   isFreeHit: boolean = false,
   bowlingIntent: IntentType = 'balanced',
   avoidSingles: boolean = false,
-  fieldingAverage: number = 12
+  fieldingAverage: number = 12,
+  ballType: BallType = 'normal'
 ): BallEvent {
   const ballNumber = currentBalls + 1;
   const currentOver = Math.floor(currentBalls / 6);
@@ -234,8 +244,36 @@ export function resolveBall(
   const isPowerplay = isPowerplayOver(currentOver);
   
   const bowlingEffort = BOWLING_INTENT_EFFECT[bowlingIntent] || 1.0;
+  let ballTypeEffect = 1.0;
 
-  const { isNoBall, runs: noBallRuns, freeHit, commentary: noBallCommentary } = calculateNoBall(calculateShotQuality(batter, bowler, battingIntent, isLastOver, weather, pitch, homeAdvantage, bowlingEffort));
+  // Apply ball type specific effects
+  switch (ballType) {
+      case 'yorker':
+          ballTypeEffect *= 1.2; // More likely to get wickets, less likely to go for runs
+          break;
+      case 'bouncer':
+          ballTypeEffect *= 1.1; // More aggressive, higher chance of wicket or boundary
+          break;
+      case 'slower':
+          ballTypeEffect *= 1.15; // Deceptive, can cause mishits
+          break;
+      case 'inswinger':
+      case 'outswinger':
+          ballTypeEffect *= 1.1; // Movement can trouble batsmen
+          break;
+      case 'off_spin':
+      case 'leg_spin':
+      case 'googly':
+      case 'doosra':
+      case 'arm_ball':
+          ballTypeEffect *= 1.25; // Spin variations can be very effective
+          break;
+      default:
+          ballTypeEffect = 1.0;
+  }
+  const finalBowlingEffort = bowlingEffort * ballTypeEffect;
+
+  const { isNoBall, runs: noBallRuns, freeHit, commentary: noBallCommentary } = calculateNoBall(calculateShotQuality(batter, bowler, battingIntent, isLastOver, weather, pitch, homeAdvantage, finalBowlingEffort));
   
   if (isNoBall) {
     return {
@@ -356,22 +394,14 @@ export function updateFatigueAndMorale(
   morale: number = 50
 ): { batterFatigue: number; batterMorale: number; bowlerFatigue: number; bowlerMorale: number } {
   let batterFatigue = 0.3;
-  let batterMorale = 0;
+  let batterMorale = 0; // Morale is now handled post-match
   let bowlerFatigue = 0.2;
-  let bowlerMorale = 0;
+  let bowlerMorale = 0; // Morale is now handled post-match
   
-  // Morale affects performance
-  const moraleMod = morale > 70 ? 1.08 : morale < 30 ? 0.92 : 1.0;
-
   if (ballResult === 'six' || ballResult === 'four') {
-    batterMorale = 6 * moraleMod;
-    bowlerMorale = -4;
     batterFatigue = 0.35;
   } else if (ballResult === 'single') {
-    batterMorale = 2;
     batterFatigue = 0.2;
-  } else if (ballResult === 'dot') {
-    bowlerMorale = 5;
   }
 
   return {
@@ -431,6 +461,8 @@ export interface MatchResult {
   team1Wickets: number;
   team2Wickets: number;
   sponsorshipEarnings: { team1: number; team2: number };
+  matchEarnings: { team1: number; team2: number };
+  potmReward: number;
   injuries: Array<{ playerId: string; playerName: string; type: string }>;
   fanUpdates: { team1: { popularity: number; homeAdvantage: number }; team2: { popularity: number; homeAdvantage: number } };
   playerOfTheMatch: { id: string; name: string; teamId: string; stats: string } | null;
@@ -457,26 +489,24 @@ export function resolveMatch(
   let team1Earnings = 0;
   let team2Earnings = 0;
   
-  if (team1.sponsorship && team1.sponsorship.active) {
+  if (team1.sponsorships && team1.sponsorships.length > 0) {
     const result: 'win' | 'loss' | 'draw' = team1Won ? 'win' : team2Won ? 'loss' : 'draw';
-    team1Earnings = calculateSponsorshipEarnings(
-      team1.sponsorship,
-      result,
-      innings1.totalRuns,
-      innings2.wickets
-    );
-    team1.sponsorship = updateSponsorship(team1.sponsorship, team1Earnings);
+    team1.sponsorships = team1.sponsorships.map(sponsor => {
+      if (!sponsor.active) return sponsor;
+      const earnings = calculateSponsorshipEarnings(sponsor, result, innings1.totalRuns, innings2.wickets);
+      team1Earnings += earnings;
+      return updateSponsorship(sponsor, earnings);
+    });
   }
   
-  if (team2.sponsorship && team2.sponsorship.active) {
+  if (team2.sponsorships && team2.sponsorships.length > 0) {
     const result: 'win' | 'loss' | 'draw' = team2Won ? 'win' : team1Won ? 'loss' : 'draw';
-    team2Earnings = calculateSponsorshipEarnings(
-      team2.sponsorship,
-      result,
-      innings2.totalRuns,
-      innings1.wickets
-    );
-    team2.sponsorship = updateSponsorship(team2.sponsorship, team2Earnings);
+    team2.sponsorships = team2.sponsorships.map(sponsor => {
+      if (!sponsor.active) return sponsor;
+      const earnings = calculateSponsorshipEarnings(sponsor, result, innings2.totalRuns, innings1.wickets);
+      team2Earnings += earnings;
+      return updateSponsorship(sponsor, earnings);
+    });
   }
   
   // Injury rolls - check random injuries after match
@@ -507,6 +537,64 @@ export function resolveMatch(
   const team1HomeAdvantage = homeTeamId === team1.id ? calculateHomeAdvantage(team1NewPopularity) : 0;
   const team2HomeAdvantage = homeTeamId === team2.id ? calculateHomeAdvantage(team2NewPopularity) : 0;
   
+  // Calculate Base Match Fees and Win Rewards
+  let matchEarningsTeam1 = 10000; // Base participation fee
+  let matchEarningsTeam2 = 10000;
+  if (team1Won) matchEarningsTeam1 += 50000; // Win bonus
+  if (team2Won) matchEarningsTeam2 += 50000;
+  
+  // Calculate POTM (Simple approximation: 1 run = 1 pt, 1 wicket = 25 pts)
+  const playerPoints: Record<string, number> = {};
+  const playerNames: Record<string, string> = {};
+  const playerTeam: Record<string, string> = {};
+  
+  const processInningsForPOTM = (inn: innings, battingTeam: Team, bowlingTeam: Team) => {
+      inn.ballsFaced.forEach(ball => {
+          if (!playerPoints[ball.batsmanId]) {
+              playerPoints[ball.batsmanId] = 0;
+              const b = battingTeam.players.find(p => p.id === ball.batsmanId);
+              if (b) { playerNames[ball.batsmanId] = b.name; playerTeam[ball.batsmanId] = battingTeam.id; }
+          }
+          if (ball.result !== 'wide' && ball.result !== 'noball') {
+              playerPoints[ball.batsmanId] += ball.runs;
+          }
+          if (ball.isWicket && ball.result !== 'noball') { // Rough check
+              if (!playerPoints[ball.bowlerId]) {
+                  playerPoints[ball.bowlerId] = 0;
+                  const b = bowlingTeam.players.find(p => p.id === ball.bowlerId);
+                  if (b) { playerNames[ball.bowlerId] = b.name; playerTeam[ball.bowlerId] = bowlingTeam.id; }
+              }
+              playerPoints[ball.bowlerId] += 25;
+          }
+      });
+  };
+  
+  processInningsForPOTM(innings1, team1, team2);
+  processInningsForPOTM(innings2, team2, team1);
+  
+  let bestPlayerId: string | null = null;
+  let highestPoints = -1;
+  for (const [id, points] of Object.entries(playerPoints)) {
+      if (points > highestPoints) {
+          highestPoints = points;
+          bestPlayerId = id;
+      }
+  }
+  
+  let playerOfTheMatch = null;
+  let potmReward = 0;
+  if (bestPlayerId && highestPoints > 0) {
+      playerOfTheMatch = {
+          id: bestPlayerId,
+          name: playerNames[bestPlayerId] || 'Unknown',
+          teamId: playerTeam[bestPlayerId],
+          stats: `${highestPoints} impact points`
+      };
+      potmReward = 10000;
+  }
+  
+  postMatchMoraleUpdate(team1, team2, innings1, innings2, winner);
+  
   return {
     winner,
     team1Runs: innings1.totalRuns,
@@ -514,11 +602,92 @@ export function resolveMatch(
     team1Wickets: innings1.wickets,
     team2Wickets: innings2.wickets,
     sponsorshipEarnings: { team1: team1Earnings, team2: team2Earnings },
+    matchEarnings: { team1: matchEarningsTeam1, team2: matchEarningsTeam2 },
+    potmReward,
     injuries: [...team1Injuries, ...team2Injuries],
     fanUpdates: {
       team1: { popularity: team1NewPopularity, homeAdvantage: team1HomeAdvantage },
       team2: { popularity: team2NewPopularity, homeAdvantage: team2HomeAdvantage }
     },
-    playerOfTheMatch: null
+    playerOfTheMatch
   };
+}
+
+export function postMatchMoraleUpdate(
+  team1: Team,
+  team2: Team,
+  innings1: innings,
+  innings2: innings,
+  winner: 'team1' | 'team2' | 'draw'
+) {
+  const processTeamMorale = (team: Team, isWin: boolean, isDraw: boolean, teamInnings: innings, bowlingInnings: innings) => {
+    const playing11 = team.playing11 && team.playing11.length === 11 ? team.playing11 : team.players.slice(0, 11).map(p => p.id);
+    const playedSet = new Set(playing11);
+
+    const matchStats: Record<string, { runs: number, balls: number, wickets: number, runsConceded: number, oversBowled: number, isOut: boolean }> = {};
+    playing11.forEach(id => matchStats[id] = { runs: 0, balls: 0, wickets: 0, runsConceded: 0, oversBowled: 0, isOut: false });
+
+    teamInnings.ballsFaced.forEach(b => {
+       if (matchStats[b.batsmanId]) {
+          if (b.result !== 'wide') {
+              matchStats[b.batsmanId].runs += b.runs;
+              matchStats[b.batsmanId].balls += 1;
+          }
+          if (b.isWicket) matchStats[b.batsmanId].isOut = true;
+       }
+    });
+
+    const ballsBowled: Record<string, number> = {};
+    bowlingInnings.ballsFaced.forEach(b => {
+       if (matchStats[b.bowlerId]) {
+           matchStats[b.bowlerId].runsConceded += b.runs;
+           if (b.result !== 'wide' && b.result !== 'noball') {
+               ballsBowled[b.bowlerId] = (ballsBowled[b.bowlerId] || 0) + 1;
+           }
+           if (b.isWicket && b.wicketType !== 'run out') {
+               matchStats[b.bowlerId].wickets += 1;
+           }
+       }
+    });
+    for (const [id, balls] of Object.entries(ballsBowled)) {
+        if (matchStats[id]) matchStats[id].oversBowled = balls / 6;
+    }
+
+    team.players.forEach(player => {
+        let moraleChange = 0;
+        if (playedSet.has(player.id)) {
+            // Base match result
+            if (isWin) moraleChange += 5;
+            else if (!isDraw) moraleChange -= 5;
+
+            const stats = matchStats[player.id];
+            
+            // Batting performance
+            if (stats.runs >= 50) moraleChange += 10;
+            else if (stats.runs >= 30) moraleChange += 5;
+            
+            const sr = stats.balls > 0 ? (stats.runs / stats.balls) * 100 : 0;
+            if (stats.runs > 10 && sr > 150) moraleChange += 5;
+            if (stats.isOut && stats.runs === 0) moraleChange -= 10; // Duck
+            else if (stats.isOut && stats.runs < 10 && stats.balls >= 10 && sr < 100) moraleChange -= 5; // Slow low score
+
+            // Bowling performance
+            if (stats.wickets >= 3) moraleChange += 10;
+            else if (stats.wickets >= 2) moraleChange += 5;
+            
+            const econ = stats.oversBowled > 0 ? stats.runsConceded / stats.oversBowled : 0;
+            if (stats.oversBowled >= 2 && econ < 6.0) moraleChange += 5;
+            if (stats.oversBowled >= 2 && stats.wickets === 0 && econ > 10.0) moraleChange -= 10;
+        } else {
+            // Regression towards 50 for non-playing
+            if (player.morale > 50) moraleChange = -2;
+            else if (player.morale < 50) moraleChange = +2;
+        }
+
+        player.morale = clamp(player.morale + moraleChange, 0, 100);
+    });
+  };
+
+  processTeamMorale(team1, winner === 'team1', winner === 'draw', innings1, innings2);
+  processTeamMorale(team2, winner === 'team2', winner === 'draw', innings2, innings1);
 }

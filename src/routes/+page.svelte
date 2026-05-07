@@ -1,19 +1,28 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { initializeGame, resetGame, teamStore, playerStore, tournamentStore, scheduleStore, gamePhase } from '$lib/stores/gameState';
+  import { initializeGame, resetGame, teamStore, playerStore, tournamentStore, scheduleStore, gamePhase, currentSeason } from '$lib/stores/gameState';
   import { getMatchesForDay, simulateAllMatchesForDay } from '$lib/core/schedule';
   import PlayerCard from '$lib/components/team/PlayerCard.svelte';
   import type { TournamentSchedule, GameDay, ScheduledMatch } from '$lib/core/schedule';
   import { generateSponsorship, type SponsorshipContract } from '$lib/core/sponsorship';
+  import { simulateInnings } from '$lib/core/tournamentSim';
+  import { resolveMatch } from '$lib/core/matchEngine';
+  import MatchSummary from '$lib/components/match/MatchSummary.svelte';
   import { goto } from '$app/navigation';
   
   let teams = $state<any[]>([]);
   let players = $state<any[]>([]);
   let schedule = $state<TournamentSchedule | null>(null);
   let day = $state(1);
-  let budget = $state(100000);
+  let budget = $state(1000000);
   let selectedDay = $state(1);
   let sponsorshipOffers = $state<SponsorshipContract[]>([]);
+
+  // Auto-Simulate Results State
+  let showMatchResultModal = $state(false);
+  let lastSimulatedInnings1 = $state<any>(null);
+  let lastSimulatedInnings2 = $state<any>(null);
+  let lastMatchResult = $state<any>(null);
   
   onMount(() => {
     
@@ -40,7 +49,8 @@
   let winRate = $derived(userTeam ? ((userTeam.wins / (userTeam.matchesPlayed || 1)) * 100).toFixed(0) : '0');
   
   $effect(() => {
-    if (userTeam && !userTeam.sponsorship && $gamePhase === 'tournament' && sponsorshipOffers.length === 0) {
+    const maxSponsors = userTeam?.tournamentWins > 0 ? 2 : 1;
+    if (userTeam && userTeam.sponsorships && userTeam.sponsorships.length < maxSponsors && ($gamePhase === 'tournament' || $gamePhase === 'menu') && sponsorshipOffers.length === 0) {
       const offers: SponsorshipContract[] = [];
       // Generate 3 unique offers
       while(offers.length < 3) {
@@ -55,7 +65,7 @@
 
   function acceptSponsorship(offer: SponsorshipContract) {
     if (!userTeam) return;
-    teamStore.setSponsorship(userTeam.id, offer);
+    teamStore.addSponsorship(userTeam.id, offer);
     sponsorshipOffers = []; // Clear offers
   }
   
@@ -67,7 +77,92 @@
   
   // Expose gamePhase for conditional UI rendering
   let phase = $derived($gamePhase);
+
+  // Top Performers
+  let bestBat = $derived([...players].sort((a,b) => (b.tournamentStats?.runs || 0) - (a.tournamentStats?.runs || 0))[0]);
+  let bestBowl = $derived([...players].sort((a,b) => (b.tournamentStats?.wickets || 0) - (a.tournamentStats?.wickets || 0))[0]);
+  let mvp = $derived([...players].sort((a,b) => ((b.tournamentStats?.runs || 0) * 1 + (b.tournamentStats?.wickets || 0) * 20) - ((a.tournamentStats?.runs || 0) * 1 + (a.tournamentStats?.wickets || 0) * 20))[0]);
   
+  function quickSimulateUserMatch() {
+    if (!schedule || !teams.length || !userNextMatch) return;
+    
+    const team1 = teams.find(t => t.id === userNextMatch.team1Id);
+    const team2 = teams.find(t => t.id === userNextMatch.team2Id);
+    
+    if (!team1 || !team2) return;
+
+    // Simulate match
+    const innings1 = simulateInnings(team1, team2, 20);
+    const target = innings1.totalRuns + 1;
+    const innings2 = simulateInnings(team2, team1, 20, target);
+    
+    const t1Won = innings1.totalRuns > innings2.totalRuns;
+    const t2Won = innings2.totalRuns > innings1.totalRuns;
+
+    // Update stats
+    if (t1Won) {
+      teamStore.addWin(innings1.teamId, innings1.totalRuns, innings2.totalRuns);
+      teamStore.addLoss(innings2.teamId, innings2.totalRuns, innings1.totalRuns);
+    } else if (t2Won) {
+      teamStore.addWin(innings2.teamId, innings2.totalRuns, innings1.totalRuns);
+      teamStore.addLoss(innings1.teamId, innings1.totalRuns, innings2.totalRuns);
+    }
+
+    const winnerId = t1Won ? innings1.teamId : t2Won ? innings2.teamId : 'draw';
+    const score1 = userNextMatch.team1Id === innings1.teamId ? innings1.totalRuns : innings2.totalRuns;
+    const score2 = userNextMatch.team2Id === innings2.teamId ? innings2.totalRuns : innings1.totalRuns;
+    
+    scheduleStore.updateMatchResult(userNextMatch.id, winnerId, score1, score2);
+
+    const result = resolveMatch(team1, team2, innings1, innings2, userNextMatch.team1Id);
+    
+    // Apply Earnings
+    const totalEarningsTeam1 = result.sponsorshipEarnings.team1 + result.matchEarnings.team1;
+    const totalEarningsTeam2 = result.sponsorshipEarnings.team2 + result.matchEarnings.team2;
+    
+    if (totalEarningsTeam1 > 0) teamStore.updateBudget(team1.id, totalEarningsTeam1);
+    if (totalEarningsTeam2 > 0) teamStore.updateBudget(team2.id, totalEarningsTeam2);
+    
+    if (result.playerOfTheMatch && result.potmReward > 0) {
+        teamStore.updateBudget(result.playerOfTheMatch.teamId, result.potmReward);
+    }
+    
+    playerStore.update(pStore => {
+      let updatedPlayers = [...pStore];
+      const processInnings = (inn: any) => {
+          inn.ballsFaced.forEach((ball: any) => {
+              let batter = updatedPlayers.find(p => p.id === ball.batsmanId);
+              if (batter) {
+                  if (!batter.tournamentStats) batter.tournamentStats = { runs: 0, wickets: 0 };
+                  if (ball.result !== 'wide' && ball.result !== 'noball') {
+                      batter.tournamentStats.runs += ball.runs;
+                  }
+              }
+              if (ball.isWicket && ball.result !== 'noball') {
+                  let bowler = updatedPlayers.find(p => p.id === ball.bowlerId);
+                  if (bowler) {
+                      if (!bowler.tournamentStats) bowler.tournamentStats = { runs: 0, wickets: 0 };
+                      bowler.tournamentStats.wickets += 1;
+                  }
+              }
+          });
+      };
+      processInnings(innings1);
+      processInnings(innings2);
+      return updatedPlayers;
+    });
+
+    lastSimulatedInnings1 = innings1;
+    lastSimulatedInnings2 = innings2;
+    lastMatchResult = result;
+    showMatchResultModal = true;
+  }
+
+  function closeMatchResultModal() {
+    showMatchResultModal = false;
+    advanceTournament();
+  }
+
   function advanceTournament() {
     if (!schedule || !teams.length) return;
     
@@ -105,17 +200,88 @@
           if (t1Index !== -1 && t2Index !== -1) {
               const t1 = nextStore[t1Index];
               const t2 = nextStore[t2Index];
+              
+              const baseEarnings = 10000;
+              const winBonus = 50000;
+              let t1Earnings = baseEarnings;
+              let t2Earnings = baseEarnings;
+              
               if (match.result.winner === t1.id) {
-                  nextStore[t1Index] = { ...t1, wins: t1.wins + 1, matchesPlayed: t1.matchesPlayed + 1, runsFor: t1.runsFor + match.result.team1Score, runsAgainst: t1.runsAgainst + match.result.team2Score };
-                  nextStore[t2Index] = { ...t2, losses: t2.losses + 1, matchesPlayed: t2.matchesPlayed + 1, runsFor: t2.runsFor + match.result.team2Score, runsAgainst: t2.runsAgainst + match.result.team1Score };
+                  t1Earnings += winBonus;
+                  nextStore[t1Index] = { ...t1, wins: t1.wins + 1, matchesPlayed: t1.matchesPlayed + 1, runsFor: t1.runsFor + match.result.team1Score, runsAgainst: t1.runsAgainst + match.result.team2Score, budget: t1.budget + t1Earnings };
+                  nextStore[t2Index] = { ...t2, losses: t2.losses + 1, matchesPlayed: t2.matchesPlayed + 1, runsFor: t2.runsFor + match.result.team2Score, runsAgainst: t2.runsAgainst + match.result.team1Score, budget: t2.budget + t2Earnings };
               } else if (match.result.winner === t2.id) {
-                  nextStore[t2Index] = { ...t2, wins: t2.wins + 1, matchesPlayed: t2.matchesPlayed + 1, runsFor: t2.runsFor + match.result.team2Score, runsAgainst: t2.runsAgainst + match.result.team1Score };
-                  nextStore[t1Index] = { ...t1, losses: t1.losses + 1, matchesPlayed: t1.matchesPlayed + 1, runsFor: t1.runsFor + match.result.team1Score, runsAgainst: t1.runsAgainst + match.result.team2Score };
+                  t2Earnings += winBonus;
+                  nextStore[t2Index] = { ...t2, wins: t2.wins + 1, matchesPlayed: t2.matchesPlayed + 1, runsFor: t2.runsFor + match.result.team2Score, runsAgainst: t2.runsAgainst + match.result.team1Score, budget: t2.budget + t2Earnings };
+                  nextStore[t1Index] = { ...t1, losses: t1.losses + 1, matchesPlayed: t1.matchesPlayed + 1, runsFor: t1.runsFor + match.result.team1Score, runsAgainst: t1.runsAgainst + match.result.team2Score, budget: t1.budget + t1Earnings };
+              } else {
+                  nextStore[t1Index] = { ...t1, draws: t1.draws + 1, matchesPlayed: t1.matchesPlayed + 1, runsFor: t1.runsFor + match.result.team1Score, runsAgainst: t1.runsAgainst + match.result.team2Score, budget: t1.budget + t1Earnings };
+                  nextStore[t2Index] = { ...t2, draws: t2.draws + 1, matchesPlayed: t2.matchesPlayed + 1, runsFor: t2.runsFor + match.result.team2Score, runsAgainst: t2.runsAgainst + match.result.team1Score, budget: t2.budget + t2Earnings };
               }
           }
       }
 
       return nextStore;
+    });
+    
+    playerStore.update(pStore => {
+      let updatedPlayers = [...pStore];
+      for (const match of newlyCompletedMatches) {
+          if (!match.result) continue;
+          const team1 = teams.find(t => t.id === match.team1Id);
+          const team2 = teams.find(t => t.id === match.team2Id);
+          if (team1 && team2) {
+              let t1Batters = team1.players.filter((p: any) => p.role === 'batsman' || p.role === 'allrounder').slice(0, 6);
+              if(t1Batters.length === 0) t1Batters = team1.players.slice(0, 6);
+              t1Batters.forEach((p: any) => {
+                  let pStoreMatch = updatedPlayers.find(up => up.id === p.id);
+                  if (pStoreMatch) {
+                      if (!pStoreMatch.tournamentStats) pStoreMatch.tournamentStats = { runs: 0, wickets: 0 };
+                      pStoreMatch.tournamentStats.runs += Math.floor((match.result.team1Score / t1Batters.length) * (0.5 + Math.random()));
+                  }
+              });
+              
+              let t2Batters = team2.players.filter((p: any) => p.role === 'batsman' || p.role === 'allrounder').slice(0, 6);
+              if(t2Batters.length === 0) t2Batters = team2.players.slice(0, 6);
+              t2Batters.forEach((p: any) => {
+                  let pStoreMatch = updatedPlayers.find(up => up.id === p.id);
+                  if (pStoreMatch) {
+                      if (!pStoreMatch.tournamentStats) pStoreMatch.tournamentStats = { runs: 0, wickets: 0 };
+                      pStoreMatch.tournamentStats.runs += Math.floor((match.result.team2Score / t2Batters.length) * (0.5 + Math.random()));
+                  }
+              });
+
+              const avgWickets1 = Math.floor(Math.random() * 10);
+              const avgWickets2 = Math.floor(Math.random() * 10);
+
+              let t1Bowlers = team1.players.filter((p: any) => p.role === 'bowler' || p.role === 'allrounder').slice(0, 5);
+              if (t1Bowlers.length === 0) t1Bowlers = team1.players.slice(6, 11);
+              for(let i=0; i<avgWickets2; i++) {
+                 let bowler = t1Bowlers[Math.floor(Math.random() * t1Bowlers.length)];
+                 if (bowler) {
+                    let pStoreMatch = updatedPlayers.find(up => up.id === bowler.id);
+                    if (pStoreMatch) {
+                        if (!pStoreMatch.tournamentStats) pStoreMatch.tournamentStats = { runs: 0, wickets: 0 };
+                        pStoreMatch.tournamentStats.wickets += 1;
+                    }
+                 }
+              }
+
+              let t2Bowlers = team2.players.filter((p: any) => p.role === 'bowler' || p.role === 'allrounder').slice(0, 5);
+              if (t2Bowlers.length === 0) t2Bowlers = team2.players.slice(6, 11);
+              for(let i=0; i<avgWickets1; i++) {
+                 let bowler = t2Bowlers[Math.floor(Math.random() * t2Bowlers.length)];
+                 if (bowler) {
+                    let pStoreMatch = updatedPlayers.find(up => up.id === bowler.id);
+                    if (pStoreMatch) {
+                        if (!pStoreMatch.tournamentStats) pStoreMatch.tournamentStats = { runs: 0, wickets: 0 };
+                        pStoreMatch.tournamentStats.wickets += 1;
+                    }
+                 }
+              }
+          }
+      }
+      return updatedPlayers;
     });
 
     if (nextDay > schedule.totalDays) {
@@ -136,7 +302,7 @@
       <p class="tagline">Grand Manager v1.4.2</p>
     </div>
     <div class="season-badge">
-      <span>Season 2026</span>
+      <span>Season {$currentSeason}</span>
     </div>
   </header>
 
@@ -145,7 +311,9 @@
       <div class="team-header">
         <div class="team-info" style="display: flex; gap: 16px; align-items: center;">
           {#if userTeam.logo}
-            <img src={userTeam.logo} alt="Team Logo" style="width: 56px; height: 56px; border-radius: 12px; object-fit: cover;" />
+            <div style="font-size: 3rem; line-height: 1; display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: var(--bg-tertiary); border-radius: 12px; border: 2px solid var(--border-color);" title="Coat of Arms">
+              {userTeam.logo}
+            </div>
           {/if}
           <div>
             <h2 style="margin-bottom: 0;">{userTeam.name}</h2>
@@ -155,20 +323,22 @@
         <div class="team-badges">
           <span class="badge win-rate">{winRate}% Win Rate</span>
           <span class="badge matches">{userTeam.matchesPlayed || 0} Matches</span>
-          {#if userTeam.sponsorship}
-             <span class="badge sponsor">🤝 {userTeam.sponsorship.sponsorName}</span>
+          {#if userTeam.sponsorships && userTeam.sponsorships.length > 0}
+             {#each userTeam.sponsorships as sponsor}
+                 <span class="badge sponsor">🤝 {sponsor.sponsorName}</span>
+             {/each}
           {/if}
         </div>
       </div>
       
       <div class="stats-grid">
-        <div class="stat-card budget">
+        <a href="/budget" class="stat-card budget" style="text-decoration: none; cursor: pointer; transition: transform 0.2s;">
           <span class="stat-icon">💰</span>
           <div class="stat-content">
             <span class="stat-value">${budget.toLocaleString()}</span>
-            <span class="stat-label">Budget</span>
+            <span class="stat-label">Budget (Click for Details)</span>
           </div>
-        </div>
+        </a>
         <div class="stat-card wins">
           <span class="stat-icon">🏆</span>
           <div class="stat-content">
@@ -194,12 +364,12 @@
     </section>
   {/if}
 
-  {#if userTeam && !userTeam.sponsorship && $gamePhase === 'tournament' && sponsorshipOffers.length > 0}
+  {#if userTeam && userTeam.sponsorships && userTeam.sponsorships.length < (userTeam.tournamentWins > 0 ? 2 : 1) && ($gamePhase === 'tournament' || $gamePhase === 'menu') && sponsorshipOffers.length > 0}
     <section class="sponsorship-section">
       <div class="section-header">
         <h3>🤝 Select a Team Sponsor</h3>
       </div>
-      <p class="sponsor-desc">Choose a primary sponsor for this season. Sponsors provide crucial funds based on your performance.</p>
+      <p class="sponsor-desc">Choose a sponsor for this season. Sponsors provide crucial funds based on your performance. You can have up to {userTeam.tournamentWins > 0 ? 2 : 1} active sponsor{userTeam.tournamentWins > 0 ? 's' : ''}.</p>
       <div class="sponsor-grid">
         {#each sponsorshipOffers as offer}
           <div class="sponsor-card">
@@ -253,9 +423,14 @@
       
       {#if phase === 'tournament' || phase === 'match' || phase === 'menu'}
         {#if schedule?.matches.some(m => m.day === schedule?.currentDay && m.status === 'scheduled' && (m.team1Id === 'user_team' || m.team2Id === 'user_team'))}
-          <a href="/match" class="advance-btn" style="display: block; text-align: center; text-decoration: none; box-sizing: border-box; background: var(--success);">
-            Start Match
-          </a>
+          <div style="display: flex; gap: 12px; margin-top: 12px;">
+            <a href="/match" class="advance-btn" style="flex: 1; display: block; text-align: center; text-decoration: none; box-sizing: border-box; background: var(--success); margin-top: 0;">
+              Start Match
+            </a>
+            <button class="advance-btn" onclick={quickSimulateUserMatch} style="flex: 1; background: var(--info); margin-top: 0;" title="Instantly simulate the match and advance">
+              Auto Simulate ⚡
+            </button>
+          </div>
         {:else}
           <button class="advance-btn" onclick={advanceTournament}>
             Advance to Day {schedule?.currentDay ? schedule.currentDay + 1 : ''}
@@ -282,7 +457,9 @@
   <section class="squad-preview">
     <div class="section-header">
       <h3>👥 Current Squad</h3>
-      <a href="/squad" class="view-all">Manage Squad →</a>
+      {#if phase !== 'match'}
+        <a href="/squad" class="view-all">Manage Squad →</a>
+      {/if}
     </div>
     <div class="players-scroll-container">
       <div class="players-flex">
@@ -297,20 +474,87 @@
     </div>
   </section>
 
-  {#if availablePlayers.length > 0}
-    <section class="marketplace">
-      <div class="section-header">
-        <h3>Transfer Market</h3>
-        <a href="/auction" class="view-all">View All →</a>
+  <!-- Player Performance Stats replacing Transfer Market -->
+  <section class="player-stats-section">
+    <div class="section-header">
+      <h3>⭐ Top Performers</h3>
+    </div>
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+      <div class="stat-card">
+        <div class="stat-content" style="width: 100%;">
+          <span class="stat-label">Best Batsman (Runs)</span>
+          {#if bestBat && bestBat.tournamentStats?.runs > 0}
+            <span class="stat-value">{bestBat.name}</span>
+            <span style="color: var(--warning); font-weight: bold;">{bestBat.tournamentStats.runs} Runs</span>
+          {:else}
+            <span class="stat-value" style="color: var(--text-muted); font-size: 1rem;">N/A</span>
+          {/if}
+        </div>
       </div>
-      <div class="players-grid">
-        {#each availablePlayers.slice(0, 4) as player}
-          <PlayerCard {player} showPrice />
-        {/each}
+      <div class="stat-card">
+        <div class="stat-content" style="width: 100%;">
+          <span class="stat-label">Best Bowler (Wickets)</span>
+          {#if bestBowl && bestBowl.tournamentStats?.wickets > 0}
+            <span class="stat-value">{bestBowl.name}</span>
+            <span style="color: var(--success); font-weight: bold;">{bestBowl.tournamentStats.wickets} Wickets</span>
+          {:else}
+            <span class="stat-value" style="color: var(--text-muted); font-size: 1rem;">N/A</span>
+          {/if}
+        </div>
       </div>
-    </section>
-  {/if}
+      <div class="stat-card">
+        <div class="stat-content" style="width: 100%;">
+          <span class="stat-label">Most Valuable Player</span>
+          {#if mvp && ((mvp.tournamentStats?.runs || 0) > 0 || (mvp.tournamentStats?.wickets || 0) > 0)}
+            <span class="stat-value">{mvp.name}</span>
+            <span style="color: var(--info); font-weight: bold;">{((mvp.tournamentStats?.runs || 0) * 1 + (mvp.tournamentStats?.wickets || 0) * 20)} MVP Pts</span>
+          {:else}
+            <span class="stat-value" style="color: var(--text-muted); font-size: 1rem;">N/A</span>
+          {/if}
+        </div>
+      </div>
+    </div>
+  </section>
 </div>
+
+<!-- Match Result Modal for Auto-Simulate -->
+{#if showMatchResultModal}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="modal-overlay" style="z-index: 1000; padding: 20px;" onclick={closeMatchResultModal}>
+    <div class="modal-content" style="max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto; background: var(--bg-primary);" onclick={(e) => e.stopPropagation()}>
+       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+         <h2 style="margin: 0; font-family: 'Cinzel', serif; color: var(--warning);">Match Result</h2>
+         <button class="btn-cancel" onclick={closeMatchResultModal}>Close & Continue</button>
+       </div>
+       
+       {#if lastMatchResult}
+          <div style="text-align: center; margin-bottom: 24px;">
+            <h3 style="font-size: 1.5rem; color: var(--success); margin-bottom: 8px;">
+               {lastMatchResult.winner === 'team1' ? teams.find(t=>t.id === lastMatchResult.team1Id)?.name : (lastMatchResult.winner === 'team2' ? teams.find(t=>t.id === lastMatchResult.team2Id)?.name : 'Draw')} Wins!
+            </h3>
+            <p style="font-size: 1.2rem; color: var(--text-secondary);">
+               {lastSimulatedInnings1?.totalRuns}/{lastSimulatedInnings1?.wickets} vs {lastSimulatedInnings2?.totalRuns}/{lastSimulatedInnings2?.wickets}
+            </p>
+          </div>
+       {/if}
+
+       <div style="background: var(--bg-secondary); border-radius: 12px; padding: 16px;">
+         {#if lastSimulatedInnings1 && lastSimulatedInnings2 && teams.length > 0}
+            <MatchSummary 
+              inningsList={[lastSimulatedInnings1, lastSimulatedInnings2]} 
+              teams={teams} 
+              matchComplete={true} 
+            />
+         {/if}
+       </div>
+       
+       <div style="margin-top: 24px; text-align: center;">
+          <button class="btn-confirm" onclick={closeMatchResultModal} style="font-size: 1.1rem; padding: 12px 32px;">Continue Tournament</button>
+       </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .dashboard { max-width: 1100px; margin: 0 auto; }
@@ -423,4 +667,25 @@
     flex-shrink: 0;
   }
   .no-players { color: var(--text-secondary); font-style: italic; }
+
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+  }
+  .modal-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 32px;
+    width: 100%;
+    max-width: 900px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  }
 </style>

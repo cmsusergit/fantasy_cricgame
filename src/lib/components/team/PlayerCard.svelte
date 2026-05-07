@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Player } from '$lib/models/player';
-  import { FACTIONS } from '$lib/models/faction';
+  import { FACTIONS, getAvatarUrl } from '$lib/models/faction';
   
   interface Props {
     player: Player;
@@ -25,6 +25,7 @@
   }: Props = $props();
   
   let faction = $derived(FACTIONS[player.faction]);
+  let avatarUrl = $derived(getAvatarUrl(player.faction, player.portraitId || 1));
   
   function getStatClass(value: number): string {
     if (value >= 70) return 'high';
@@ -44,7 +45,12 @@
   onkeydown={(e) => e.key === 'Enter' && onSelect && (hideAvailability || player.isAvailable) && onSelect(player)}
 >
   <div class="player-header">
-    <span class="faction-icon" title="Faction: {faction.name}">{player.faction === 'human' ? '⚔' : player.faction === 'elf' ? '🌿' : player.faction === 'orc' ? '🪓' : player.faction === 'dwarf' ? '⛏' : player.faction === 'goblin' ? '💎' : '🌙'}</span>
+    <div class="avatar-container">
+      <img src={avatarUrl} alt={player.name} class="avatar-img" />
+      <div class="faction-badge" title="Faction: {faction.name}">
+        {player.faction === 'human' ? '⚔' : player.faction === 'elf' ? '🌿' : player.faction === 'orc' ? '🪓' : player.faction === 'dwarf' ? '⛏' : player.faction === 'goblin' ? '💎' : '🌙'}
+      </div>
+    </div>
     <div class="player-info">
       <span class="name">{player.name}</span>
       <span class="role">{player.role} • {player.battingType || 'RHB'} • {player.battingRole || 'Middle Order'}{player.bowlingType && player.bowlingType !== 'none' ? ` • ${player.bowlingType}` : ''}</span>
@@ -86,6 +92,17 @@
         <div class="stat-bar-fill {getStatClass(player.stats.fielding || 10)}" style="width: {player.stats.fielding || 10}%"></div>
       </div>
       <span class="stat-value">{Math.round(player.stats.fielding || 10)}</span>
+    </div>
+    
+    <div style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+       <div class="stat-row" title="Morale/Form: Higher morale improves performance.">
+          <span class="stat-label" style="width: 35px;">Form</span>
+          <span class="stat-value" style="width: auto; color: {player.morale > 70 ? 'var(--success)' : player.morale < 40 ? 'var(--danger)' : 'var(--text-secondary)'}">{Math.round(player.morale)}%</span>
+       </div>
+       <div class="stat-row" title="Fatigue: High fatigue reduces performance and increases injury risk.">
+          <span class="stat-label" style="width: 45px;">Fatigue</span>
+          <span class="stat-value" style="width: auto; color: {player.fatigue > 70 ? 'var(--danger)' : player.fatigue > 40 ? 'var(--warning)' : 'var(--success)'}">{Math.round(player.fatigue)}%</span>
+       </div>
     </div>
   </div>
   
@@ -142,9 +159,44 @@
     margin-bottom: 12px;
   }
   
-  .faction-icon {
-    font-size: 24px;
+  .avatar-container {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
   }
+  
+  .avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--bg-primary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+  
+  .faction-badge {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  }
+  
+  .player-card[data-faction="human"] .avatar-img { border: 2px solid var(--accent-human); box-shadow: 0 0 10px rgba(9, 105, 218, 0.4); }
+  .player-card[data-faction="elf"] .avatar-img { border: 2px solid var(--accent-elf); box-shadow: 0 0 10px rgba(26, 127, 55, 0.4); }
+  .player-card[data-faction="orc"] .avatar-img { border: 2px solid var(--accent-orc); box-shadow: 0 0 10px rgba(207, 34, 46, 0.4); }
+  .player-card[data-faction="dwarf"] .avatar-img { border: 2px solid var(--accent-dwarf); box-shadow: 0 0 10px rgba(154, 103, 0, 0.4); }
+  .player-card[data-faction="goblin"] .avatar-img { border: 2px solid var(--accent-goblin); box-shadow: 0 0 10px rgba(130, 80, 223, 0.4); }
+  .player-card[data-faction="nightelf"] .avatar-img { border: 2px solid var(--accent-nightelf); box-shadow: 0 0 10px rgba(5, 152, 188, 0.4); }
   
   .player-info {
     display: flex;

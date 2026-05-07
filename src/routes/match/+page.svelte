@@ -5,7 +5,7 @@
   import { getAIIntent } from '$lib/core/teamBuilder';
   import type { Player } from '$lib/models/player';
   import type { Team } from '$lib/models/team';
-  import type { innings, IntentType } from '$lib/models/match';
+  import type { Match, innings, IntentType, BallType } from '$lib/models/match';
   import type { ScheduledMatch, TournamentSchedule } from '$lib/core/schedule';
   import MatchControls, { type SimSpeed } from '$lib/components/match/MatchControls.svelte';
   import BallFeed from '$lib/components/match/BallFeed.svelte';
@@ -38,6 +38,7 @@
   
   let currentInnings = $state(1);
   let target = $state(0);
+  let matchResultObj = $state<any>(null);
   let currentBowlerIndex = $state(0);
   let ballInterval: any = null;
   
@@ -46,6 +47,7 @@
   let isComplete = $state(false);
   let battingIntent: IntentType = $state('balanced');
   let bowlingIntent: IntentType = $state('balanced');
+  let currentBallType: BallType = $state('normal');
   let avoidSingles = $state(false);  
   let noMatchAvailable = $state(false);
   let autoResume = $state(false);
@@ -54,6 +56,9 @@
   let selectedBowlerId = $state<string | null>(null);
   let pendingBowlerSelection = $state(false);
   let placeholderBatsman = $state<string | null>(null);
+
+  let showFullBattingDrawer = $state(false);
+  let showFullBowlingDrawer = $state(false);
 
   let tossWinner = $state<string | null>(null);
   let tossChoice = $state<'bat' | 'bowl' | null>(null);
@@ -280,8 +285,18 @@
       scheduleStore.updateMatchResult(currentMatch.id, winnerId, score1, score2);
 
       const result = resolveMatch(matchTeam1, matchTeam2, innings1, innings2, currentMatch.team1Id);
-      if (result.sponsorshipEarnings.team1 > 0) teamStore.updateBudget(matchTeam1.id, result.sponsorshipEarnings.team1);
-      if (result.sponsorshipEarnings.team2 > 0) teamStore.updateBudget(matchTeam2.id, result.sponsorshipEarnings.team2);
+      matchResultObj = result;
+      
+      // Apply Earnings
+      const totalEarningsTeam1 = result.sponsorshipEarnings.team1 + result.matchEarnings.team1;
+      const totalEarningsTeam2 = result.sponsorshipEarnings.team2 + result.matchEarnings.team2;
+      
+      if (totalEarningsTeam1 > 0) teamStore.updateBudget(matchTeam1.id, totalEarningsTeam1);
+      if (totalEarningsTeam2 > 0) teamStore.updateBudget(matchTeam2.id, totalEarningsTeam2);
+      
+      if (result.playerOfTheMatch && result.potmReward > 0) {
+          teamStore.updateBudget(result.playerOfTheMatch.teamId, result.potmReward);
+      }
     }
   }
 
@@ -326,7 +341,7 @@
 
     const bowlingFieldingAvg = currentBowlingTeam.players.filter(p => getPlaying11(currentBowlingTeam).includes(p.id)).reduce((sum, p) => sum + (p.stats.fielding || 12), 0) / 11;
 
-    const ballEvent = resolveBall(striker, bowler, currentInn.balls, totalOvers, battingIntent, weather as any, pitch as any, 0, false, bowlingIntent, avoidSingles, bowlingFieldingAvg);
+    const ballEvent = resolveBall(striker, bowler, currentInn.balls, totalOvers, battingIntent, weather as any, pitch as any, 0, false, bowlingIntent, avoidSingles, bowlingFieldingAvg, currentBallType);
     
     striker.fatigue += 0.3;
     
@@ -721,6 +736,7 @@
             <div class="scorecard-list">
               {#each currentBattingTeam?.players.filter(p => getPlaying11(currentBattingTeam!).includes(p.id)) || [] as p}
                 {@const stats = getBatsmanStats(p.id)}
+                {#if stats.isBatting}
                 <div class="scorecard-item {stats.isBatting ? 'active' : ''}">
                     <div class="top-row">
                         <span class="player-name {stats.isBatting ? 'highlight' : ''}">{p.name}</span>
@@ -734,8 +750,43 @@
                        <div class="status playing"><span class="pulse-dot"></span> Batting</div>
                     {/if}
                 </div>
+                {/if}
               {/each}
             </div>
+
+            <button class="btn-drawer-toggle" onclick={() => showFullBattingDrawer = true}>
+              View Full Scorecard
+            </button>
+
+            {#if showFullBattingDrawer}
+              <!-- svelte-ignore a11y_click_events_have_key_events -->
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div class="drawer-overlay" onclick={() => showFullBattingDrawer = false}></div>
+              <div class="drawer batting-drawer">
+                <div class="drawer-header">
+                   <h3>{currentBattingTeam?.name} Scorecard</h3>
+                   <button class="btn-close" onclick={() => showFullBattingDrawer = false}>×</button>
+                </div>
+                <div class="drawer-content scorecard-list">
+                  {#each currentBattingTeam?.players.filter(p => getPlaying11(currentBattingTeam!).includes(p.id)) || [] as p}
+                    {@const stats = getBatsmanStats(p.id)}
+                    <div class="scorecard-item {stats.isBatting ? 'active' : ''}">
+                        <div class="top-row">
+                            <span class="player-name {stats.isBatting ? 'highlight' : ''}">{p.name}</span>
+                            <span class="player-score {stats.isBatting ? 'highlight' : ''}">{stats.runs} <span class="balls">({stats.balls})</span></span>
+                        </div>
+                        {#if stats.isOut}
+                           <div class="status out">b. {stats.outType}</div>
+                        {:else if !stats.isBatting && stats.balls === 0}
+                           <div class="status waiting">Yet to bat</div>
+                        {:else if stats.isBatting}
+                           <div class="status playing"><span class="pulse-dot"></span> Batting</div>
+                        {/if}
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
           {/if}
         </div>
       </div>
@@ -776,6 +827,29 @@
             <h3 class="win-title">{innings2.totalRuns >= target ? getTeamName(innings2.teamId) : getTeamName(innings1.teamId)} Wins!</h3>
             <p class="final-score">{innings1.totalRuns}/{innings1.wickets} <span class="vs">vs</span> {innings2.totalRuns}/{innings2.wickets}</p>
             
+            {#if matchResultObj}
+            <div class="match-rewards-panel">
+                <h4>🏆 Match Rewards</h4>
+                <div class="rewards-grid">
+                    <div class="reward-col">
+                        <h5>{getTeamName(matchResultObj.winner === 'team1' ? innings1.teamId : matchResultObj.winner === 'team2' ? innings2.teamId : 'draw')} (Winner)</h5>
+                        <p>Match Fee & Bonus: <span class="money">+${matchResultObj.matchEarnings[matchResultObj.winner === 'team1' ? 'team1' : matchResultObj.winner === 'team2' ? 'team2' : 'team1'].toLocaleString()}</span></p>
+                        {#if matchResultObj.sponsorshipEarnings[matchResultObj.winner === 'team1' ? 'team1' : matchResultObj.winner === 'team2' ? 'team2' : 'team1'] > 0}
+                           <p>Sponsorship: <span class="money">+${matchResultObj.sponsorshipEarnings[matchResultObj.winner === 'team1' ? 'team1' : matchResultObj.winner === 'team2' ? 'team2' : 'team1'].toLocaleString()}</span></p>
+                        {/if}
+                    </div>
+                    {#if matchResultObj.playerOfTheMatch}
+                    <div class="reward-col potm-col">
+                        <h5>⭐ Player of the Match</h5>
+                        <p class="potm-name">{matchResultObj.playerOfTheMatch.name} <span class="potm-team">({getTeamName(matchResultObj.playerOfTheMatch.teamId)})</span></p>
+                        <p class="potm-stats">{matchResultObj.playerOfTheMatch.stats}</p>
+                        <p>Bonus: <span class="money">+${matchResultObj.potmReward.toLocaleString()}</span></p>
+                    </div>
+                    {/if}
+                </div>
+            </div>
+            {/if}
+
             <div style="width: 100%; max-width: 800px; margin: 0 auto;">
                 <MatchSummary inningsList={[innings1, innings2]} teams={[matchTeam1!, matchTeam2!]} matchComplete={true} />
             </div>
@@ -803,11 +877,11 @@
           </div>
         {:else}
           <div class="controls-panel">
-             <MatchControls bind:speed={gameSpeed} isPaused={phase === 'paused'} {battingIntent} {bowlingIntent} {avoidSingles}
+             <MatchControls bind:speed={gameSpeed} isPaused={phase === 'paused'} {battingIntent} {bowlingIntent} ballType={currentBallType} currentBowlerType={currentLiveBowlerId ? currentBowlingTeam?.players.find(x => x.id === currentLiveBowlerId)?.bowlingType : 'none'} {avoidSingles}
                isUserBatting={currentBattingTeam?.id === 'user_team'} isUserBowling={currentBowlingTeam?.id === 'user_team'}
                {autoPlayDelay} onAutoPlayDelayChange={(d) => autoPlayDelay = d}
                onSpeedChange={handleSpeedChange} onPauseToggle={togglePause}
-               onBattingIntentChange={(i) => battingIntent = i} onBowlingIntentChange={(i) => bowlingIntent = i} onAvoidSinglesChange={(v) => avoidSingles = v}
+               onBattingIntentChange={(i) => battingIntent = i} onBowlingIntentChange={(i) => bowlingIntent = i} onBallTypeChange={(b) => currentBallType = b} onAvoidSinglesChange={(v) => avoidSingles = v}
                onPlaySingleBall={playSingleBallAction} onPlaySingleOver={playSingleOverAction} />
           </div>
           
@@ -853,7 +927,7 @@
             <div class="scorecard-list">
               {#each currentBowlingTeam?.players.filter(p => getPlaying11(currentBowlingTeam!).includes(p.id)) || [] as p}
                 {@const stats = getBowlerStats(p.id)}
-                {#if p.role === 'bowler' || p.role === 'allrounder' || stats.oversBowled > 0}
+                {#if p.id === currentLiveBowlerId}
                 <div class="scorecard-item {p.id === currentLiveBowlerId ? 'active-bowl' : ''}">
                     <div class="top-row">
                         <span class="player-name {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">{p.name}</span>
@@ -866,6 +940,38 @@
                 {/if}
               {/each}
             </div>
+
+            <button class="btn-drawer-toggle" onclick={() => showFullBowlingDrawer = true}>
+              View Full Scorecard
+            </button>
+
+            {#if showFullBowlingDrawer}
+              <!-- svelte-ignore a11y_click_events_have_key_events -->
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div class="drawer-overlay" onclick={() => showFullBowlingDrawer = false}></div>
+              <div class="drawer bowling-drawer">
+                <div class="drawer-header">
+                   <h3>{currentBowlingTeam?.name} Scorecard</h3>
+                   <button class="btn-close" onclick={() => showFullBowlingDrawer = false}>×</button>
+                </div>
+                <div class="drawer-content scorecard-list">
+                  {#each currentBowlingTeam?.players.filter(p => getPlaying11(currentBowlingTeam!).includes(p.id)) || [] as p}
+                    {@const stats = getBowlerStats(p.id)}
+                    {#if p.role === 'bowler' || p.role === 'allrounder' || stats.oversBowled > 0}
+                    <div class="scorecard-item {p.id === currentLiveBowlerId ? 'active-bowl' : ''}">
+                        <div class="top-row">
+                            <span class="player-name {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">{p.name}</span>
+                            <span class="player-score {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">{stats.wickets}-{stats.runs} <span class="overs">({stats.overs})</span></span>
+                        </div>
+                        {#if p.id === currentLiveBowlerId}
+                           <div class="status playing-bowl"><span class="pulse-dot bowl"></span> Bowling Now</div>
+                        {/if}
+                    </div>
+                    {/if}
+                  {/each}
+                </div>
+              </div>
+            {/if}
           {/if}
         </div>
       </div>
@@ -877,32 +983,32 @@
 <style>
   /* Base Variables & Theming */
   :root {
-    --color-bg-dark: var(--bg-primary, #0f172a);
-    --color-bg-panel: var(--bg-secondary, #1e293b);
-    --color-bg-panel-light: var(--bg-tertiary, #334155);
-    --color-border: var(--border-color, #334155);
+    --color-bg-dark: var(--bg-primary);
+    --color-bg-panel: var(--bg-secondary);
+    --color-bg-panel-light: var(--bg-tertiary);
+    --color-border: var(--border-color);
     
-    --color-batting: var(--success, #10b981); /* Emerald */
-    --color-batting-dark: #047857;
-    --color-batting-transparent: rgba(35, 134, 54, 0.15);
+    --color-batting: var(--success); /* Emerald */
+    --color-batting-dark: var(--accent-emerald);
+    --color-batting-transparent: rgba(var(--accent-emerald-rgb), 0.15);
     
-    --color-bowling: var(--info, #3b82f6); /* Blue */
-    --color-bowling-dark: #1d4ed8;
-    --color-bowling-transparent: rgba(31, 111, 235, 0.15);
+    --color-bowling: var(--info); /* Blue */
+    --color-bowling-dark: var(--accent-sapphire);
+    --color-bowling-transparent: rgba(var(--accent-sapphire-rgb), 0.15);
     
-    --color-accent: var(--warning, #f59e0b); /* Amber */
-    --color-danger: var(--danger, #f43f5e); /* Rose */
+    --color-accent: var(--warning); /* Amber */
+    --color-danger: var(--danger); /* Rose */
     
-    --text-primary: var(--text-primary, #f8fafc);
-    --text-secondary: var(--text-secondary, #cbd5e1);
-    --text-muted: var(--text-muted, #94a3b8);
+    --text-primary: var(--text-primary);
+    --text-secondary: var(--text-secondary);
+    --text-muted: var(--text-muted);
     
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 
   .match-page-wrapper {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: inherit;
     color: var(--text-primary);
     background-color: var(--color-bg-dark);
     min-height: 100vh;
@@ -948,7 +1054,7 @@
     font-size: 1.75rem;
     font-weight: 800;
     margin-bottom: 20px;
-    background: -webkit-linear-gradient(45deg, #f59e0b, #fbbf24);
+    background: -webkit-linear-gradient(45deg, var(--accent-fire), var(--accent-gold));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
@@ -988,13 +1094,13 @@
   .btn-primary:hover { background: var(--color-bowling-dark); }
   .btn-primary.large { padding: 14px 28px; font-size: 1rem; }
   
-  .btn-bat { background: var(--color-batting); color: white; padding: 14px 28px; border-radius: 12px; font-size: 1rem; font-weight: 700; transition: transform 0.2s; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4); }
-  .btn-bat:hover { transform: translateY(-2px); background: #059669; }
+  .btn-bat { background: var(--color-batting); color: white; padding: 14px 28px; border-radius: 12px; font-size: 1rem; font-weight: 700; transition: transform 0.2s; box-shadow: 0 4px 14px rgba(var(--accent-emerald-rgb), 0.4); }
+  .btn-bat:hover { transform: translateY(-2px); background: var(--color-batting-dark); }
   
-  .btn-bowl { background: var(--color-danger); color: white; padding: 14px 28px; border-radius: 12px; font-size: 1rem; font-weight: 700; transition: transform 0.2s; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.4); }
-  .btn-bowl:hover { transform: translateY(-2px); background: #e11d48; }
+  .btn-bowl { background: var(--color-danger); color: white; padding: 14px 28px; border-radius: 12px; font-size: 1rem; font-weight: 700; transition: transform 0.2s; box-shadow: 0 4px 14px rgba(var(--accent-ruby-rgb), 0.4); }
+  .btn-bowl:hover { transform: translateY(-2px); background: var(--accent-ruby); }
 
-  .btn-start { background: var(--color-batting); color: white; padding: 16px 32px; border-radius: 12px; font-size: 1.1rem; font-weight: 800; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3); }
+  .btn-start { background: var(--color-batting); color: white; padding: 16px 32px; border-radius: 12px; font-size: 1.1rem; font-weight: 800; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 10px 15px -3px rgba(var(--accent-emerald-rgb), 0.3); }
   .btn-start:hover { transform: scale(1.05); }
 
   /* Main Layout */
@@ -1086,14 +1192,14 @@
     transition: all 0.2s;
     color: var(--text-primary);
   }
-  .player-select-btn:hover { background: #475569; }
+  .player-select-btn:hover { background: var(--color-bg-panel); }
   .player-select-btn.selected { background: var(--color-batting-dark); border-color: var(--color-batting); }
   
   .player-info { display: flex; flex-direction: column; text-align: left; }
   .player-info .name { font-weight: 600; font-size: 1rem; }
   .player-info .role { font-size: 0.75rem; color: var(--text-muted); }
   
-  .stat-badge { background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; font-weight: 600; }
+  .stat-badge { background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; font-family: inherit; font-size: 0.85rem; font-weight: 600; }
 
   .btn-confirm { background: var(--color-batting); color: white; padding: 14px; border-radius: 8px; font-weight: 700; margin-top: auto; }
   .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -1110,15 +1216,15 @@
     gap: 6px;
   }
   
-  .scorecard-item.active { background: var(--color-batting-transparent); border-color: rgba(16, 185, 129, 0.3); }
-  .scorecard-item.active-bowl { background: var(--color-bowling-transparent); border-color: rgba(59, 130, 246, 0.3); }
+  .scorecard-item.active { background: var(--color-batting-transparent); border-color: rgba(var(--accent-emerald-rgb), 0.3); }
+  .scorecard-item.active-bowl { background: var(--color-bowling-transparent); border-color: rgba(var(--accent-sapphire-rgb), 0.3); }
 
   .top-row { display: flex; justify-content: space-between; align-items: center; }
   .player-name { font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); }
   .player-name.highlight { color: var(--color-batting); }
   .player-name.highlight-bowl { color: var(--color-bowling); }
   
-  .player-score { font-family: monospace; font-size: 0.95rem; font-weight: 700; color: var(--text-secondary); }
+  .player-score { font-family: inherit; font-size: 0.95rem; font-weight: 700; color: var(--text-secondary); }
   .player-score.highlight { color: var(--text-primary); }
   .player-score.highlight-bowl { color: var(--text-primary); }
   .player-score .balls, .player-score .overs { font-size: 0.75rem; font-weight: 400; color: var(--text-muted); }
@@ -1147,7 +1253,7 @@
   .scoreboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .innings-label { font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
   .conditions-mini { display: flex; gap: 12px; font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--color-border); }
-  .conditions-mini .separator { color: #475569; }
+  .conditions-mini .separator { color: var(--text-muted); }
 
   .action-panel {
     background: var(--color-bg-panel);
@@ -1164,10 +1270,10 @@
   .ready-title { color: var(--color-batting); font-size: 1.5rem; margin-bottom: 24px; }
   .break-title { color: var(--color-accent); font-size: 1.5rem; margin-bottom: 16px; }
   .target-text { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 24px; }
-  .target-text strong { color: white; font-size: 1.25rem; }
+  .target-text strong { color: var(--text-primary); font-size: 1.25rem; }
   .win-title { color: var(--color-batting); font-size: 2rem; margin-bottom: 16px; }
-  .final-score { font-family: monospace; font-size: 1.25rem; color: var(--text-secondary); margin-bottom: 24px; }
-  .final-score .vs { font-family: sans-serif; font-size: 0.9rem; color: var(--text-muted); margin: 0 10px; }
+  .final-score { font-family: inherit; font-size: 1.25rem; color: var(--text-secondary); margin-bottom: 24px; }
+  .final-score .vs { font-family: inherit; font-size: 0.9rem; color: var(--text-muted); margin: 0 10px; }
   
   .waiting-title { color: var(--color-accent); font-size: 1.25rem; margin-bottom: 8px; }
   .waiting-desc { color: var(--text-muted); }
@@ -1221,4 +1327,91 @@
   .pulse-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--color-batting); animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
   .pulse-dot.bowl { background: var(--color-bowling); }
 
+  .match-rewards-panel { background: rgba(var(--accent-emerald-rgb), 0.1); border: 1px solid var(--success); border-radius: 12px; padding: 20px; margin: 20px auto; width: 100%; max-width: 800px; text-align: left; }
+  .match-rewards-panel h4 { color: var(--success); font-size: 1.5rem; margin-top: 0; margin-bottom: 16px; text-align: center; }
+  .rewards-grid { display: flex; gap: 24px; flex-wrap: wrap; }
+  .reward-col { flex: 1; min-width: 200px; background: var(--color-bg-panel); padding: 16px; border-radius: 8px; border: 1px solid var(--color-border); }
+  .reward-col h5 { margin-top: 0; margin-bottom: 12px; font-size: 1.1rem; color: var(--text-primary); border-bottom: 1px solid var(--color-border); padding-bottom: 8px; }
+  .reward-col p { margin: 8px 0; font-size: 0.95rem; color: var(--text-secondary); display: flex; justify-content: space-between; }
+  .reward-col .money { color: var(--success); font-weight: bold; font-family: inherit; font-size: 1.1rem; }
+  .potm-col { border-color: var(--accent-amethyst); background: rgba(var(--accent-amethyst-rgb), 0.05); }
+  .potm-col h5 { color: var(--accent-amethyst); border-bottom-color: rgba(var(--accent-amethyst-rgb), 0.2); }
+  .potm-name { font-weight: bold; color: var(--text-primary) !important; font-size: 1.1rem !important; }
+  .potm-team { font-weight: normal; color: var(--text-muted); font-size: 0.9rem; }
+  .potm-stats { font-style: italic; color: var(--text-muted) !important; }
+  /* Drawer Styles */
+  .drawer-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    backdrop-filter: blur(4px);
+  }
+  .drawer {
+    position: fixed;
+    bottom: 0;
+    left: 0; right: 0;
+    height: 70vh;
+    background: var(--color-bg-panel);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    z-index: 101;
+    box-shadow: 0 -10px 25px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease-out forwards;
+    border: 1px solid var(--color-border);
+    border-bottom: none;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .drawer-header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--color-border);
+    background: rgba(0,0,0,0.2);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+  }
+  .drawer-header h3 { margin: 0; color: var(--text-primary); font-size: 1.25rem; font-weight: 700; }
+  .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.75rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0 10px;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .btn-close:hover { color: var(--color-danger); }
+  .drawer-content {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .btn-drawer-toggle {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-secondary);
+    border: 1px solid var(--color-border);
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 16px;
+    width: 100%;
+    font-weight: 600;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+  }
+  .btn-drawer-toggle:hover {
+    background: rgba(255,255,255,0.1);
+    color: var(--text-primary);
+  }
 </style>

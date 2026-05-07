@@ -1,42 +1,64 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #0d1117;
-  --bg-secondary: #161b22;
-  --bg-tertiary: #21262d;
-  --text-primary: #f0f6fc;
-  --text-secondary: #8b949e;
-  --accent-human: #3498db;
-  --accent-elf: #27ae60;
-  --accent-orc: #e74c3c;
-  --accent-dwarf: #f39c12;
-  --accent-goblin: #9b59b6;
-  --accent-nightelf: #1abc9c;
-  --border-color: #30363d;
-  --success: #238636;
-  --danger: #da3633;
-  --warning: #d29922;
-  --info: #1f6feb;
-  --bg-overlay: rgba(0, 0, 0, 0.7);
+  /* Dark Theme - Fantasy */
+  --bg-primary: #1a1a1a; /* Deep Charcoal */
+  --bg-secondary: #2c2c2c; /* Darker Slate */
+  --bg-tertiary: #404040; /* Muted Grey */
+  --text-primary: #e0d8c7; /* Aged Parchment */
+  --text-secondary: #b8a68b; /* Faded Gold */
+  --text-muted: #8c7f6e; /* Stone Grey */
+
+  --accent-gold: #c2b083; /* Old Gold */
+  --accent-emerald: #4CAF50; /* Deep Emerald */
+  --accent-ruby: #e74c3c; /* Ruby Red */
+  --accent-sapphire: #3498db; /* Sapphire Blue */
+  --accent-amethyst: #9b59b6; /* Amethyst Purple */
+  --accent-shadow: #1abc9c; /* Shadow Teal */
+  --accent-gold-rgb: 194, 176, 131;
+  --accent-emerald-rgb: 76, 175, 80;
+  --accent-ruby-rgb: 231, 76, 60;
+  --accent-sapphire-rgb: 52, 152, 219;
+  --accent-amethyst-rgb: 155, 89, 182;
+  --accent-shadow-rgb: 26, 188, 156;
+  --accent-fire-rgb: 230, 126, 34;
+  
+  --border-color: #554a3f; /* Dark Wood */
+  --success: var(--accent-emerald);
+  --danger: var(--accent-ruby);
+  --warning: var(--accent-fire);
+  --info: var(--accent-sapphire);
+  --bg-overlay: rgba(0, 0, 0, 0.8);
 }
 
 [data-theme="light"] {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f6f8fa;
-  --bg-tertiary: #eaeef2;
-  --text-primary: #24292f;
-  --text-secondary: #57606a;
-  --accent-human: #0969da;
-  --accent-elf: #1a7f37;
-  --accent-orc: #cf222e;
-  --accent-dwarf: #9a6700;
-  --accent-goblin: #8250df;
-  --accent-nightelf: #0598bc;
-  --border-color: #d0d7de;
-  --success: #1a7f37;
-  --danger: #cf222e;
-  --warning: #9a6700;
-  --info: #0969da;
+  /* Light Theme - Fantasy */
+  --bg-primary: #fbf8ed; /* Light Parchment */
+  --bg-secondary: #f1ede0; /* Slightly darker parchment */
+  --bg-tertiary: #e2dac7; /* Aged paper */
+  --text-primary: #3c2f2f; /* Deep Ink Brown */
+  --text-secondary: #6e5c54; /* Muted Sepia */
+  --text-muted: #a39b8b; /* Faded Text */
+
+  --accent-gold: #a68b5a; /* Tarnished Gold */
+  --accent-emerald: #2e7d32; /* Forest Green */
+  --accent-ruby: #c62828; /* Blood Red */
+  --accent-sapphire: #1976d2; /* Sky Blue */
+  --accent-amethyst: #6a1b9a; /* Deep Amethyst */
+  --accent-shadow: #00897b; /* Dark Teal */
+  --accent-gold-rgb: 166, 139, 90;
+  --accent-emerald-rgb: 46, 125, 50;
+  --accent-ruby-rgb: 198, 40, 40;
+  --accent-sapphire-rgb: 25, 118, 210;
+  --accent-amethyst-rgb: 106, 27, 154;
+  --accent-shadow-rgb: 0, 137, 123;
+  --accent-fire-rgb: 216, 67, 21;
+
+  --border-color: #9e907d; /* Old Wood */
+  --success: var(--accent-emerald);
+  --danger: var(--accent-ruby);
+  --warning: var(--accent-fire);
+  --info: var(--accent-sapphire);
   --bg-overlay: rgba(255, 255, 255, 0.9);
 }
 
@@ -47,11 +69,22 @@
 }
 
 body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Lora', serif; /* Body text with Lora */
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.6;
+  text-rendering: optimizeLegibility; /* Improves font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6, .fantasy-title {
+  font-family: 'Cinzel', serif; /* Headings with Cinzel */
+  font-weight: 700;
+  color: var(--text-primary); /* Ensure headings use primary text color */
+  line-height: 1.2;
+  margin-bottom: 0.5em; /* Add some spacing below headings */
 }
 
 a {

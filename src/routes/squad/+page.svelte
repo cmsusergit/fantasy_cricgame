@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { teamStore, saveCurrentGame } from '$lib/stores/gameState';
+  import { teamStore, saveCurrentGame, gamePhase } from '$lib/stores/gameState';
   import type { Player } from '$lib/models/player';
   import PlayerCard from '$lib/components/team/PlayerCard.svelte';
+  import { MAX_SQUAD_SIZE } from '$lib/core/retentionSystem';
   
   let teams = $state<any[]>([]);
   let userTeam = $derived(teams.find((t: any) => t.isUserTeam));
@@ -17,6 +18,10 @@
   let searchQuery = $state('');
   
   onMount(() => {
+    if ($gamePhase === 'match') {
+       goto('/');
+       return;
+    }
     const unsub = teamStore.subscribe(t => {
       teams = t;
       const userT = t.find((team: any) => team.isUserTeam);
@@ -141,8 +146,18 @@
 </svelte:head>
 
 <div class="squad-page">
-  <h1>🛡️ Squad Selection</h1>
-  <p class="subtitle">Strategize and finalize your playing 11 for the upcoming match.</p>
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
+    <div>
+      <h1>🛡️ Squad Selection</h1>
+      <p class="subtitle" style="margin-bottom: 0;">Strategize and finalize your playing 11 for the upcoming match.</p>
+    </div>
+    <div style="text-align: right;">
+      <span style="font-size: 0.9rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Roster Size</span>
+      <div style="font-size: 1.5rem; font-family: 'Cinzel', serif; font-weight: bold; color: {userTeam?.players.length === MAX_SQUAD_SIZE ? 'var(--warning)' : 'var(--text-primary)'};">
+        {userTeam?.players.length || 0} <span style="font-size: 1rem; color: var(--text-muted);">/ {MAX_SQUAD_SIZE}</span>
+      </div>
+    </div>
+  </div>
   
   <div class="budget-display">
     <span class="label">Playing 11 Selected:</span>
@@ -226,8 +241,7 @@
       <div class="empty-icon">📉</div>
       <h2>Your roster is empty!</h2>
       <p>Head over to the Draft room to sign players and build your ultimate team.</p>
-      <button class="primary" onclick={() => goto('/draft')}>Enter Draft Room</button>
-    </div>
+              <button class="primary" onclick={() => goto('/auction')}>Enter Auction Room</button>    </div>
   {/if}
 
   {#if playing11.length > 0}

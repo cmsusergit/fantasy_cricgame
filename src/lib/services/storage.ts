@@ -8,6 +8,8 @@ export interface GameSave {
   tournamentMatches: any[];
   schedule?: any;
   currentDay: number;
+  currentSeason: number;
+  gamePhase: string;
   userBudget: number;
   savedAt: number;
 }

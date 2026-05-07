@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#4edea3",
+                        "on-secondary-fixed-variant": "#004395",
+                        "secondary-fixed": "#d8e2ff",
+                        "primary-fixed": "#6ffbbe",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "outline-variant": "#3c4a42",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#0566d9",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-tertiary": "#472a00",
+                        "background": "#0b1326",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-tertiary-container": "#523200",
+                        "on-primary-fixed-variant": "#005236",
+                        "tertiary": "#ffb95f",
+                        "surface-container-lowest": "#060e20",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "on-primary": "#003824",
+                        "surface-container-low": "#131b2e",
+                        "on-surface": "#dae2fd",
+                        "on-surface-variant": "#bbcabf",
+                        "inverse-on-surface": "#283044",
+                        "inverse-surface": "#dae2fd",
+                        "tertiary-container": "#e29100",
+                        "surface-dim": "#0b1326",
+                        "secondary": "#adc6ff",
+                        "on-error": "#690005",
+                        "surface-variant": "#2d3449",
+                        "surface-bright": "#31394d",
+                        "on-background": "#dae2fd",
+                        "on-primary-fixed": "#002113",
+                        "on-secondary": "#002e6a",
+                        "on-primary-container": "#00422b",
+                        "surface": "#0b1326",
+                        "on-secondary-container": "#e6ecff",
+                        "error-container": "#93000a",
+                        "primary": "#4edea3",
+                        "primary-container": "#10b981",
+                        "outline": "#86948a",
+                        "primary-fixed-dim": "#4edea3",
+                        "inverse-primary": "#006c49",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "surface-container-highest": "#2d3449",
+                        "on-secondary-fixed": "#001a42",
+                        "surface-container-high": "#222a3d",
+                        "surface-container": "#171f33"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "2rem",
+                        "margin-safe": "2rem",
+                        "lg": "1.5rem",
+                        "xs": "0.25rem",
+                        "base": "4px",
+                        "md": "1rem",
+                        "sm": "0.5rem",
+                        "gutter": "1.5rem"
+                    },
+                    "fontFamily": {
+                        "h2": ["Inter"],
+                        "h1": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["Space Grotesk"],
+                        "display-lg": ["Inter"],
+                        "stat-sm": ["Space Grotesk"],
+                        "stat-lg": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.15em", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "stat-sm": ["14px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "500"}],
+                        "stat-lg": ["24px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(45, 52, 73, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .stat-bar-segment {
+            height: 6px;
+            width: 100%;
+            border-radius: 1px;
+        }
+        .achievement-glow {
+            box-shadow: 0 0 20px rgba(226, 145, 0, 0.2);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-slate-950/80 backdrop-blur-md text-emerald-500 font-inter antialiased uppercase tracking-tighter fixed top-0 w-full z-50 border-b border-white/10 shadow-none">
+<div class="flex justify-between items-center h-16 px-4 md:px-8">
+<div class="text-xl font-black italic text-emerald-500">ELITE GM</div>
+<div class="hidden md:flex gap-8 items-center">
+<a class="text-emerald-400 font-bold border-b-2 border-emerald-500 hover:text-emerald-300 hover:bg-white/5 transition-all active:scale-95 duration-200" href="#">Trophies</a>
+<a class="text-slate-400 hover:text-emerald-300 hover:bg-white/5 transition-all active:scale-95 duration-200" href="#">Roster</a>
+<a class="text-slate-400 hover:text-emerald-300 hover:bg-white/5 transition-all active:scale-95 duration-200" href="#">Market</a>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-slate-400 cursor-pointer hover:text-emerald-500 transition-colors">notifications</span>
+<span class="material-symbols-outlined text-slate-400 cursor-pointer hover:text-emerald-500 transition-colors">settings</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-emerald-500/50">
+<img alt="Manager profile" data-alt="A professional portrait of a sports manager wearing a sleek, dark tech-wear vest with subtle emerald-green digital accents. The lighting is dramatic and moody, casting sharp highlights on their confident expression. The background is a soft-focus high-tech control room with glowing data screens in a deep slate and emerald palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZFsJwR5NrQysijXBYCQaUvle_IloYFivkuTYE9Fu6awdP27DLwCwCZA8QcdftvNYuG_YNelRaY7Ic1mFUpATUBe1i1PkYAUB9B7k1pjMqbqnEHlGjEV6Uzk1Cx64p4W4BESux0iCePJ1MnOs5RB3AGyXXL7AAdgWf4HI9PAXF_gJ5xZiEPIJLzdECLMHLKSE_7nJL8955NT0cEtV7NHN9r9ohNOxP9kl8fajjcCw89z7Padg8oBLanKc0Y_SW61sgBH4k10nv"/>
+</div>
+</div>
+</div>
+</header>
+<main class="pt-24 px-4 md:px-8 max-w-7xl mx-auto space-y-gutter">
+<!-- Match Summary Hero -->
+<section class="glass-card rounded-xl p-lg overflow-hidden relative border-l-4 border-l-primary">
+<div class="absolute top-0 right-0 p-lg opacity-10">
+<span class="material-symbols-outlined text-[120px]">emoji_events</span>
+</div>
+<div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-lg">
+<div class="text-center md:text-left">
+<span class="text-label-caps text-primary font-label-caps mb-xs block">LAST MATCH RESULT</span>
+<h1 class="font-h1 text-h1 text-on-surface uppercase tracking-tight">VICTORY +42 PTS</h1>
+<p class="text-slate-400 font-stat-sm mt-xs">ELITE DRAGONS vs THUNDER BOLTS • FINISHED</p>
+</div>
+<div class="flex gap-md items-center bg-black/30 p-md rounded-xl border border-white/5">
+<div class="w-16 h-16 rounded-full border-2 border-tertiary p-1">
+<div class="w-full h-full rounded-full overflow-hidden">
+<img alt="MVP Player" data-alt="A close-up action shot of a professional cricket player in a high-intensity mid-swing pose, wearing a premium dark navy and emerald jersey. The lighting is cinematic stadium floodlights, creating a vibrant lens flare effect. The overall aesthetic is high-stakes sports photography with a clean, modern digital finish and sharp focus on the player's intense concentration." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwnpz894sTczhtV8p7hvAGC5nKqKWZ2UFkrn0uV4CMV3iPz-I65iTS3eXNnP3fI1JAIvtJj3qmYlySFfRyb-u4CcLZb0Gme1wMKmP6Z-_-7SYL7UJuGzeyjK5vyqwREOEIAYW-nIEGnsPIGkR73fHFVXwczagb8m6ZqX71rYb8X4Tc83ZMaNXcVsNcjIfKyqcdH4Z6EB0unc0gI3y8UOCw4tZgOFTVZrxjwbokcmKCGBqVqcLIJdf9swuFNIsNugUEcSP0XhBF"/>
+</div>
+</div>
+<div>
+<span class="text-label-caps text-tertiary block">MATCH MVP</span>
+<p class="font-h2 text-h2 leading-none">DAVID WARNER</p>
+<p class="text-stat-sm text-slate-400">84(42) • 2 WICKETS</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Main Layout Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Performance Deep-Dive -->
+<div class="lg:col-span-8 space-y-gutter">
+<div class="glass-card rounded-xl">
+<div class="px-lg py-md border-b border-white/10 flex justify-between items-center">
+<h2 class="font-h2 text-h2 flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">analytics</span>
+                            PERFORMANCE DEEP-DIVE
+                        </h2>
+<div class="flex gap-xs">
+<button class="px-md py-xs bg-primary text-on-primary font-label-caps rounded-lg text-xs">BATTING</button>
+<button class="px-md py-xs bg-surface-variant text-slate-400 font-label-caps rounded-lg text-xs">BOWLING</button>
+</div>
+</div>
+<div class="p-lg overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-label-caps text-slate-500 border-b border-white/5">
+<th class="pb-md font-label-caps">PLAYER</th>
+<th class="pb-md font-label-caps text-right">RUNS</th>
+<th class="pb-md font-label-caps text-right">BALLS</th>
+<th class="pb-md font-label-caps text-right">SR</th>
+<th class="pb-md font-label-caps text-right">FORM</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<tr class="group hover:bg-white/5 transition-colors">
+<td class="py-md flex items-center gap-md">
+<div class="w-10 h-10 rounded-full border border-primary/30 p-0.5">
+<img alt="DW" class="rounded-full" data-alt="Headshot of a modern professional athlete with a clean-cut look, set against a dark background with a subtle emerald green rim light. The style is that of a premium digital trading card, high-contrast and professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_TbHysZaA_tP23LuNPHsK8KSIzUjMSY9WgYD-hnxtsEEl0gF5ooSWGpDCUswJQoIE_pacfONT1-jKz7ziCa_CdtyUdepbgWbGgYKBR0Mbe6GOj-5l5WOm1m7PIGINjDt_LDNsj2pXaKXDsjUiVL1wmb-mGk-0rZ3MJjRJpMNiURw-ftgQoRlB5cpRJRvQGFLP-ludPxp6lA30lVLqMVB-y20h3pmLxmE-Jxly8NLZ9wzcafnUkFzLcLXWjClvro4PmE4pt1gp"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">D. WARNER</p>
+<p class="text-[10px] text-primary">CAPTAIN</p>
+</div>
+</td>
+<td class="py-md text-right font-stat-lg text-on-surface">84</td>
+<td class="py-md text-right font-stat-sm text-slate-400">42</td>
+<td class="py-md text-right font-stat-sm text-emerald-400">200.0</td>
+<td class="py-md text-right">
+<div class="flex gap-[2px] justify-end">
+<div class="w-1.5 h-4 bg-primary rounded-full"></div>
+<div class="w-1.5 h-4 bg-primary rounded-full"></div>
+<div class="w-1.5 h-4 bg-primary rounded-full"></div>
+<div class="w-1.5 h-4 bg-primary/20 rounded-full"></div>
+</div>
+</td>
+</tr>
+<tr class="group hover:bg-white/5 transition-colors">
+<td class="py-md flex items-center gap-md">
+<div class="w-10 h-10 rounded-full border border-slate-700 p-0.5">
+<img alt="VK" class="rounded-full" data-alt="Professional sports portrait of a top-tier cricket batsman in a determined pose. The lighting is stylized with deep blues and crisp whites, highlighting the textures of the team jersey. Minimalist background with a futuristic HUD interface subtlely overlaid." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCckhgnLNNoIttuobeULoLX6LRjzSPRPXEM6RjA0I_lZYZQKK1l6tNA8E9YhjDoqsMdZ992smMJ5zv5vAMD5GsNA9AHc98PEnOWrtat66oWt5XAsI6DAU-MrraA_-RnhH-5yP9PF36dlDIPdYJ0VfX4ueaoWGsKv_LqckZwF-oXCH7SAVZBv8DlOCNMW2U0f4EtO89BVgX1mnWOK6HBz1FG88lYUMaeLogajfgsrwS-a0M-7SopKjvjoefnl2X8U4q3GMm5DloW"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">V. KOHLI</p>
+<p class="text-[10px] text-slate-500">STRIKER</p>
+</div>
+</td>
+<td class="py-md text-right font-stat-lg text-on-surface">52</td>
+<td class="py-md text-right font-stat-sm text-slate-400">38</td>
+<td class="py-md text-right font-stat-sm text-slate-400">136.8</td>
+<td class="py-md text-right">
+<div class="flex gap-[2px] justify-end">
+<div class="w-1.5 h-4 bg-primary rounded-full"></div>
+<div class="w-1.5 h-4 bg-primary rounded-full"></div>
+<div class="w-1.5 h-4 bg-primary/20 rounded-full"></div>
+<div class="w-1.5 h-4 bg-primary/20 rounded-full"></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Season History Timeline -->
+<div class="glass-card rounded-xl overflow-hidden">
+<div class="px-lg py-md border-b border-white/10">
+<h2 class="font-h2 text-h2 flex items-center gap-sm uppercase tracking-tight">
+<span class="material-symbols-outlined text-secondary">history</span>
+                            SEASON HISTORY
+                        </h2>
+</div>
+<div class="p-lg space-y-md">
+<div class="flex items-center gap-md relative">
+<div class="w-12 text-center">
+<span class="text-label-caps text-slate-500 block">MAY</span>
+<span class="text-h2 font-bold text-on-surface">14</span>
+</div>
+<div class="w-px h-full bg-white/10 absolute left-6 top-10"></div>
+<div class="flex-1 glass-card p-md rounded-lg flex justify-between items-center">
+<div>
+<p class="font-bold text-on-surface">VS PHOENIX KINGS</p>
+<p class="text-xs text-emerald-400 uppercase font-bold tracking-widest">WON BY 5 RUNS</p>
+</div>
+<div class="text-right">
+<p class="font-stat-sm text-slate-400">SCORE</p>
+<p class="font-h2 text-h2 text-on-surface">188/4</p>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="w-12 text-center">
+<span class="text-label-caps text-slate-500 block">MAY</span>
+<span class="text-h2 font-bold text-on-surface">10</span>
+</div>
+<div class="flex-1 glass-card p-md rounded-lg flex justify-between items-center opacity-70">
+<div>
+<p class="font-bold text-on-surface">VS TITAN ELITE</p>
+<p class="text-xs text-error uppercase font-bold tracking-widest">LOST BY 2 WICKETS</p>
+</div>
+<div class="text-right">
+<p class="font-stat-sm text-slate-400">SCORE</p>
+<p class="font-h2 text-h2 text-on-surface">162/9</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Trophy Cabinet (Right Column) -->
+<div class="lg:col-span-4 space-y-gutter">
+<section class="glass-card rounded-xl overflow-hidden h-full">
+<div class="px-lg py-md border-b border-white/10 bg-tertiary-container/10">
+<h2 class="font-h2 text-h2 flex items-center gap-sm text-tertiary">
+<span class="material-symbols-outlined font-variation-settings: 'FILL' 1;">emoji_events</span>
+                            TROPHY ROOM
+                        </h2>
+</div>
+<div class="p-lg grid grid-cols-2 gap-md">
+<!-- Trophy Item -->
+<div class="flex flex-col items-center text-center p-md glass-card rounded-xl border-tertiary/20 group hover:border-tertiary/50 transition-all achievement-glow">
+<div class="w-20 h-20 mb-sm relative">
+<div class="absolute inset-0 bg-tertiary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<img alt="League Champions" class="relative z-10" data-alt="A luxurious, high-detail 3D render of a gold sports trophy with sharp geometric facets. It sits on a dark obsidian pedestal, reflecting glints of emerald and amber light. The background is a deep, smoky slate with professional studio lighting that emphasizes the trophy's metallic texture and elite status." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUMW0YIx1jH3_AG6pW09SCN9VwXsYoofXVCZeVA0EUm1Zbw25TGE8lDmV2Zn8YssE66wCoqKFX9Tr86F2wOMmtqki2s5v7cWX1C81V5HE0UjaAWN7yl4-w9Rt9iYK4qBr5imOkeAhCZ3RUmSzZaXAZDBMBsiJlnD5wNk03hxZW5Egiplp-9VlqXMDpbLP1uuOuB1lcBAun_DrQm-k3pXPKeOhBekVbvyV0Ba0LmqEoZp36EAmG1RcgvpMBmcemq1CFICeMe8Q7"/>
+</div>
+<span class="text-label-caps text-tertiary mb-xs">SEASON 1</span>
+<p class="font-bold text-on-surface text-sm uppercase leading-tight">LEAGUE CHAMPIONS</p>
+</div>
+<!-- Trophy Item -->
+<div class="flex flex-col items-center text-center p-md glass-card rounded-xl border-white/5 opacity-80 hover:opacity-100 transition-all">
+<div class="w-20 h-20 mb-sm">
+<img alt="Best Run Rate" data-alt="A stylized digital award icon representing speed and efficiency, featuring a glowing emerald lightning bolt encased in a crystalline glass prism. The lighting is high-tech and energetic, with cyan and green neon trails. The style is ultra-modern HUD aesthetic, clean and impactful." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwlb5PMXVkL9RiHmKMUtdVXCqfoVFVNhLsGz7TeWshLE8ROwvSg_XcbKgdJfKpVzAkCNNFEb0z3KxTgqxJojtNl4LiBc90HqbXYPEt6dg7Kt7UC7nW1Cq0yB65hkKXpB3d37bdph2zHDy_w1jXS24m-7IQqS5zsjlE5SKeVgzTW6rjsITedX9wr1dwj6JrVClby4d1FHDP0fshlWPaG0hYXNaEuSGLmRV058OEpDk3gYaQWOtGxchgd81mIAAljUnRIpHN9AyO"/>
+</div>
+<span class="text-label-caps text-slate-500 mb-xs">MONTHLY</span>
+<p class="font-bold text-on-surface text-sm uppercase leading-tight">BEST RUN RATE</p>
+</div>
+<!-- Achievement Item -->
+<div class="flex flex-col items-center text-center p-md glass-card rounded-xl border-white/5 opacity-50">
+<div class="w-20 h-20 mb-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-[64px] text-slate-700">lock</span>
+</div>
+<span class="text-label-caps text-slate-500 mb-xs">LOCKED</span>
+<p class="font-bold text-slate-600 text-sm uppercase leading-tight">CENTURY STREAK</p>
+</div>
+<!-- Achievement Item -->
+<div class="flex flex-col items-center text-center p-md glass-card rounded-xl border-white/5 opacity-50">
+<div class="w-20 h-20 mb-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-[64px] text-slate-700">lock</span>
+</div>
+<span class="text-label-caps text-slate-500 mb-xs">LOCKED</span>
+<p class="font-bold text-slate-600 text-sm uppercase leading-tight">WALL OF DEFENSE</p>
+</div>
+</div>
+<!-- Stats Card at Bottom of Cabinet -->
+<div class="m-lg p-md bg-white/5 rounded-xl border border-white/5">
+<div class="flex justify-between items-center mb-sm">
+<span class="text-label-caps text-slate-400">COMPLETION</span>
+<span class="text-stat-sm text-primary">42%</span>
+</div>
+<div class="flex gap-1">
+<div class="h-1.5 flex-1 bg-primary rounded-full"></div>
+<div class="h-1.5 flex-1 bg-primary rounded-full"></div>
+<div class="h-1.5 flex-1 bg-slate-800 rounded-full"></div>
+<div class="h-1.5 flex-1 bg-slate-800 rounded-full"></div>
+<div class="h-1.5 flex-1 bg-slate-800 rounded-full"></div>
+</div>
+<p class="text-[10px] text-slate-500 mt-md text-center italic">WIN 3 MORE MATCHES TO UNLOCK 'DOMINATOR' BADGE</p>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-slate-950/90 backdrop-blur-xl text-emerald-500 font-inter text-[10px] font-bold uppercase tracking-widest fixed bottom-0 w-full z-50 h-20 border-t border-white/10 shadow-[0_-4px_30px_rgba(0,0,0,0.8)] md:hidden">
+<div class="flex justify-around items-center w-full px-2 pb-safe h-full">
+<div class="flex flex-col items-center justify-center text-slate-500 p-2 hover:text-slate-200 transition-colors active:scale-90 duration-150">
+<span class="material-symbols-outlined">groups</span>
+<span>Roster</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 p-2 hover:text-slate-200 transition-colors active:scale-90 duration-150">
+<span class="material-symbols-outlined">leaderboard</span>
+<span>Matches</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 p-2 hover:text-slate-200 transition-colors active:scale-90 duration-150">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span>Market</span>
+</div>
+<div class="flex flex-col items-center justify-center text-emerald-400 bg-emerald-500/10 rounded-xl p-2 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] active:scale-90 duration-150">
+<span class="material-symbols-outlined font-variation-settings: 'FILL' 1;">emoji_events</span>
+<span>Trophies</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 p-2 hover:text-slate-200 transition-colors active:scale-90 duration-150">
+<span class="material-symbols-outlined">person</span>
+<span>Profile</span>
+</div>
+</div>
+</nav>
+</body></html>

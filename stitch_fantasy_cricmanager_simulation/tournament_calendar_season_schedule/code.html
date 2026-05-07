@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-highest": "#2d3449",
+                    "inverse-primary": "#006c49",
+                    "surface-bright": "#31394d",
+                    "on-secondary-fixed-variant": "#004395",
+                    "tertiary-fixed-dim": "#ffb95f",
+                    "primary-fixed": "#6ffbbe",
+                    "on-surface-variant": "#bbcabf",
+                    "on-error": "#690005",
+                    "inverse-surface": "#dae2fd",
+                    "tertiary-fixed": "#ffddb8",
+                    "tertiary": "#ffb95f",
+                    "surface-tint": "#4edea3",
+                    "primary": "#4edea3",
+                    "error-container": "#93000a",
+                    "outline-variant": "#3c4a42",
+                    "on-surface": "#dae2fd",
+                    "on-secondary-fixed": "#001a42",
+                    "secondary-container": "#0566d9",
+                    "secondary": "#adc6ff",
+                    "surface-container-high": "#222a3d",
+                    "error": "#ffb4ab",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "on-tertiary-fixed": "#2a1700",
+                    "on-primary-container": "#00422b",
+                    "on-secondary-container": "#e6ecff",
+                    "surface-container-lowest": "#060e20",
+                    "secondary-fixed-dim": "#adc6ff",
+                    "surface-dim": "#0b1326",
+                    "outline": "#86948a",
+                    "on-error-container": "#ffdad6",
+                    "on-primary": "#003824",
+                    "on-tertiary": "#472a00",
+                    "inverse-on-surface": "#283044",
+                    "on-primary-fixed": "#002113",
+                    "secondary-fixed": "#d8e2ff",
+                    "background": "#0b1326",
+                    "primary-fixed-dim": "#4edea3",
+                    "on-background": "#dae2fd",
+                    "surface-container": "#171f33",
+                    "surface": "#0b1326",
+                    "tertiary-container": "#e29100",
+                    "on-tertiary-container": "#523200",
+                    "surface-container-low": "#131b2e",
+                    "on-primary-fixed-variant": "#005236",
+                    "surface-variant": "#2d3449",
+                    "primary-container": "#10b981",
+                    "on-secondary": "#002e6a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "1.5rem",
+                    "gutter": "1.5rem",
+                    "xs": "0.25rem",
+                    "sm": "0.5rem",
+                    "margin-safe": "2rem",
+                    "xl": "2rem",
+                    "md": "1rem",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "h2": ["Inter"],
+                    "label-caps": ["Space Grotesk"],
+                    "stat-sm": ["Space Grotesk"],
+                    "display-lg": ["Inter"],
+                    "h1": ["Inter"],
+                    "stat-lg": ["Space Grotesk"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                    "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.15em", "fontWeight": "600"}],
+                    "stat-sm": ["14px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "500"}],
+                    "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "stat-lg": ["24px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(23, 31, 51, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .stat-bar-segment {
+            height: 4px;
+            width: 100%;
+            border-radius: 2px;
+        }
+        .performance-ring {
+            position: relative;
+            padding: 2px;
+            background: conic-gradient(#4edea3 75%, transparent 0);
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar -->
+<header class="fixed top-0 z-50 w-full flex items-center justify-between px-8 py-4 bg-slate-950/60 backdrop-blur-xl border-b border-white/10 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+<div class="text-xl font-black italic tracking-tighter text-slate-50">BROADCAST HUB</div>
+<nav class="hidden md:flex items-center space-x-8">
+<a class="font-inter uppercase tracking-widest text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-all duration-300" href="#">Season Schedule</a>
+<a class="font-inter uppercase tracking-widest text-[11px] font-bold text-emerald-400 border-b-2 border-emerald-500 pb-1" href="#">Tournament</a>
+<a class="font-inter uppercase tracking-widest text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-all duration-300" href="#">Standings</a>
+</nav>
+<div class="flex items-center space-x-4">
+<button class="p-2 rounded-full hover:bg-white/5 transition-all duration-300 cursor-pointer active:scale-95">
+<span class="material-symbols-outlined text-on-surface">notifications</span>
+</button>
+<button class="p-2 rounded-full hover:bg-white/5 transition-all duration-300 cursor-pointer active:scale-95">
+<span class="material-symbols-outlined text-on-surface">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden border border-white/10">
+<img alt="User Profile" data-alt="Close up portrait of a professional e-sports manager in a high-tech studio environment. Dark slate tones dominate the background with emerald green glowing geometric patterns. Cinematic lighting accentuates his sharp profile, wearing a sleek black headset and a branded tactical jersey. The overall mood is elite and focused, consistent with a high-stakes fantasy sports platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkckrOyVi3MreCv0aCCzeBmzFQn5WH42_D3IHzur_ygrkSdgZB6JsvBlwor_hypVXrxvGYKrBuQu89QAZajPFekV0aixi1B_aydHNI7FMJSGM13YI-WMYoKMb5G4A7JUBbXdzxxPWZi75RMapREetNRY8KedCY2YpX27w3WKer4foVPS1oCQOdlIHbywvVZ9Xz5fU8Z37TTEXjm3NC7GqYUjdpKbEsIRD8jamtW0MlvnTNPYqxntHDqdlwrmUvyhvR93amBpwg"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-slate-950 border-r border-white/5 shadow-2xl shadow-black flex flex-col pt-20 pb-8 z-40">
+<div class="px-6 mb-8">
+<div class="text-emerald-500 font-black text-lg tracking-tight">LEAGUE OPERATIONS</div>
+<div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">ELITE SEASON 4</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center px-6 py-3 text-slate-500 hover:text-slate-300 hover:bg-slate-900 transition-colors font-inter text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center px-6 py-3 bg-emerald-500/10 text-emerald-400 border-r-2 border-emerald-500 font-inter text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3">calendar_month</span>
+                Schedule
+            </a>
+<a class="flex items-center px-6 py-3 text-slate-500 hover:text-slate-300 hover:bg-slate-900 transition-colors font-inter text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3">groups</span>
+                Rosters
+            </a>
+<a class="flex items-center px-6 py-3 text-slate-500 hover:text-slate-300 hover:bg-slate-900 transition-colors font-inter text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3">sports_kabaddi</span>
+                Draft
+            </a>
+<a class="flex items-center px-6 py-3 text-slate-500 hover:text-slate-300 hover:bg-slate-900 transition-colors font-inter text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3">payments</span>
+                Market
+            </a>
+</nav>
+<div class="mt-auto px-6">
+<button class="flex items-center w-full px-4 py-3 rounded-lg border border-white/5 text-slate-500 hover:text-slate-300 hover:bg-slate-900 transition-colors font-inter text-sm font-medium">
+<span class="material-symbols-outlined mr-3">logout</span>
+                Logout
+            </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-24 px-8 pb-12">
+<div class="flex flex-col lg:flex-row gap-gutter">
+<!-- Central Calendar/List View -->
+<div class="flex-1 space-y-6">
+<div class="flex items-center justify-between">
+<div>
+<h1 class="font-h1 text-h1 text-on-surface">Season 4 Schedule</h1>
+<p class="text-slate-400 mt-1 font-inter text-sm uppercase tracking-widest">Global Championship Series</p>
+</div>
+<div class="flex bg-surface-container-low p-1 rounded-lg border border-white/5">
+<button class="px-4 py-1.5 rounded bg-surface-container-highest text-primary font-bold text-xs uppercase tracking-tighter">List View</button>
+<button class="px-4 py-1.5 rounded text-slate-500 hover:text-slate-300 font-bold text-xs uppercase tracking-tighter transition-colors">Calendar View</button>
+</div>
+</div>
+<!-- Match Day 1 -->
+<section class="space-y-3">
+<div class="flex items-center space-x-4 px-2">
+<span class="text-label-caps font-label-caps text-on-surface-variant">Match Day 1</span>
+<div class="h-px flex-1 bg-white/5"></div>
+<span class="text-label-caps font-label-caps text-slate-500">October 12, 2024</span>
+</div>
+<div class="glass-card rounded-xl overflow-hidden divide-y divide-white/5">
+<!-- Fixture 1: My Team Win -->
+<div class="p-6 flex items-center justify-between group hover:bg-white/5 transition-all duration-300 cursor-pointer">
+<div class="flex items-center space-x-12 flex-1">
+<div class="flex flex-col items-center space-y-2 w-32">
+<div class="performance-ring">
+<img alt="Mumbai Mavericks" class="h-12 w-12 rounded-full bg-slate-800" data-alt="Professional sports team logo for Mumbai Mavericks featuring a stylized emerald green falcon swooping over a geometric shield. The logo uses high-contrast metallic textures and neon accents against a dark slate background, designed for a futuristic sports broadcast interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCjYNHnLMkDnr-fj2-cWunPpfa4CteNUYBo-_MY0A_0MZFqirq_2nwEhiDEUCSHfLH39jOM2_X3sIauhhn83_qxl65e7NjxYXO9vleMOvBP74VOHT3nQpxso710VWQoJ3eDXru2gIoYCDWCRzxycT7A1jC6wpq571XFp-YdlzEJFP5Tp03l4Y-UfupvuYu5IcFx3BH6Vqxgss0OKPKue1MLm4Tf9lRAZwIKMXCBePy53M9VZEzazqbBpDOR4tWzyn5aVxk1Wwo"/>
+</div>
+<span class="font-bold text-sm tracking-tight text-on-surface">Mumbai Mavericks</span>
+</div>
+<div class="flex flex-col items-center">
+<div class="text-stat-lg font-stat-lg text-primary">184/3</div>
+<span class="text-[10px] text-slate-500 font-bold uppercase mt-1">Final</span>
+</div>
+<div class="text-slate-700 font-black text-2xl italic tracking-tighter">VS</div>
+<div class="flex flex-col items-center">
+<div class="text-stat-lg font-stat-lg text-on-surface">162/9</div>
+<span class="text-[10px] text-slate-500 font-bold uppercase mt-1">20.0 OV</span>
+</div>
+<div class="flex flex-col items-center space-y-2 w-32">
+<div class="h-12 w-12 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center p-2">
+<img alt="Orc Raiders" data-alt="Fantasy sports team logo for Orc Raiders showing a stylized crimson orc skull silhouette framed by jagged obsidian shards. The design is bold and minimalist with a tactical dashboard aesthetic, utilizing muted red glows and dark chrome textures." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLnxyscewjfyw9GbYssYHxgSoYBZobICZJIDqRMKAzuV9Tv4zDA2rvLorpiwpmeTewUHC4v8ZVWo-jp7YFij4namGDRSkbSE1k_RQ85WWEJgNe_0zs3b7jCDYEJcyCwt1hdjuff58OBBkX0EfP0fdq0Gj2cZnl5Lk713TVXcVnobQUCDXw2OMS92QRn0hAuWv4L_pmFpdaZgW7WRTMw8gjbNhomZTd7Wfn7bU9Wyk72Q4eee-IaMqRnnctptDl_4TieUnvES9e"/>
+</div>
+<span class="font-bold text-sm tracking-tight text-on-surface">Orc Raiders</span>
+</div>
+</div>
+<div class="flex flex-col items-end pl-8">
+<span class="bg-primary/20 text-primary px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest border border-primary/30">Won by 22 Runs</span>
+<span class="text-slate-500 text-[10px] mt-2 font-bold">Stadium: The Citadel</span>
+</div>
+</div>
+<!-- Fixture 2: Standard Result -->
+<div class="p-6 flex items-center justify-between group hover:bg-white/5 transition-all duration-300 cursor-pointer">
+<div class="flex items-center space-x-12 flex-1">
+<div class="flex flex-col items-center space-y-2 w-32">
+<div class="h-12 w-12 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center p-2">
+<img alt="Desert Sharks" data-alt="Esports logo for Desert Sharks featuring a sleek minimalist shark fin cutting through golden sand dunes. The color palette consists of sandy gold and deep charcoal, with sharp vector lines and a clean, premium broadcast feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBv2po1rqXe5f1l-A8Buf4Cn6Wkaxuxr89Nq_ynX7Eb2c5AwnTByF4k9vsa06OrVH3tGxsipqWbpz1Tjx2FQ_yLRemnhtPvjb0j-n7RtgdQBLsNFuQVW_O6ES6wCAm4CAtMGzLE6pgYV95GSeWoK7R_NjCT86NLeoq3KBPSQMHJ_v9DTODIdIbj2ABvtyDaK5kb730ENvrSIlniwuGZuql_5cvSWnpdpvt2j0QNhaznzKnMHdyT0158jJllWJVTYG-ubyvmhL6v"/>
+</div>
+<span class="font-bold text-sm tracking-tight text-on-surface">Desert Sharks</span>
+</div>
+<div class="flex flex-col items-center">
+<div class="text-stat-lg font-stat-lg text-on-surface">145/10</div>
+<span class="text-[10px] text-slate-500 font-bold uppercase mt-1">Final</span>
+</div>
+<div class="text-slate-700 font-black text-2xl italic tracking-tighter">VS</div>
+<div class="flex flex-col items-center">
+<div class="text-stat-lg font-stat-lg text-on-surface">146/4</div>
+<span class="text-[10px] text-slate-500 font-bold uppercase mt-1">18.2 OV</span>
+</div>
+<div class="flex flex-col items-center space-y-2 w-32">
+<div class="h-12 w-12 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center p-2">
+<img alt="Sky Knights" data-alt="Tournament team logo for Sky Knights depicting a stylized knight helmet with wings, rendered in a futuristic navy and silver chrome finish. Lighting is high-contrast with subtle blue lens flares to create a professional sports broadcast atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdLJB3W1InWdqu8WtIiNrcMEjoAWqnyzBjn6WX8IE7bfKQCjTdk0MxzTtR48QYKPZbRHWCzp8ATty4OpvLz8hijM3VqUcTgCQZDOHO9KBwg7goPYS1qahjVo6ZJTJfA8GxG5sTXkTKtsB2pQMQ19zhdtR0z8zr84Qu1KzGn26lBDaZ-a1nyxrfpmLvO80-47RzEBIm6fBHF4X-egZVt-YEVfTvNHpF5Na2xm1vF6CovyFCOG3UQtQI8-l2zTaXBQbtv5pmDALE"/>
+</div>
+<span class="font-bold text-sm tracking-tight text-on-surface">Sky Knights</span>
+</div>
+</div>
+<div class="flex flex-col items-end pl-8">
+<span class="bg-slate-800 text-slate-400 px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest border border-white/5">Won by 6 Wkts</span>
+<span class="text-slate-500 text-[10px] mt-2 font-bold">Stadium: Sky Dome</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Match Day 2 -->
+<section class="space-y-3">
+<div class="flex items-center space-x-4 px-2">
+<span class="text-label-caps font-label-caps text-on-surface-variant">Match Day 2</span>
+<div class="h-px flex-1 bg-white/5"></div>
+<span class="text-label-caps font-label-caps text-slate-500">October 13, 2024</span>
+</div>
+<div class="glass-card rounded-xl overflow-hidden divide-y divide-white/5">
+<!-- Fixture 3: Live Match -->
+<div class="p-6 flex items-center justify-between group bg-primary/5 hover:bg-primary/10 transition-all duration-300 cursor-pointer">
+<div class="flex items-center space-x-12 flex-1">
+<div class="flex flex-col items-center space-y-2 w-32">
+<div class="h-12 w-12 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center p-2">
+<img alt="Void Flyers" data-alt="Digital sports logo for Void Flyers showing a stylized abstract spaceship silhouette with violet energy trails. Minimalist and sleek with deep purples and electric indigo accents against a black background, suitable for a professional gaming league dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB55Z9wcvCG7gYNJo03AYSM8DezJlnXAbaZ6G-CeUIZBz4hEq34ofpAn7oA1u6XGeHgWRAX-g740DeQFI10peeyLRdKuuYaavSlPXrmAGPik9deNSn7n6IfD3S3hse3jvMYI9rJ5qLTJduFOwgpZHLn_aOkm7j-qgtmUXshsGSHFyUpXWu37za8sCprIEQ0yJ3xrr6EBVv2A6Xww9UinyVUiPQnS7vt5kokPegDx34sUhUzyIm9dlttpM1vDmb6iFaFx-qZia0F"/>
+</div>
+<span class="font-bold text-sm tracking-tight text-on-surface">Void Flyers</span>
+</div>
+<div class="flex flex-col items-center">
+<div class="text-stat-lg font-stat-lg text-primary">78/1</div>
+<span class="text-[10px] text-primary font-bold uppercase mt-1 animate-pulse">Live - 8.4 OV</span>
+</div>
+<div class="text-slate-700 font-black text-2xl italic tracking-tighter">VS</div>
+<div class="flex flex-col items-center">
+<div class="text-stat-lg font-stat-lg text-slate-600">--</div>
+<span class="text-[10px] text-slate-500 font-bold uppercase mt-1">Yet to Bat</span>
+</div>
+<div class="flex flex-col items-center space-y-2 w-32">
+<div class="h-12 w-12 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center p-2">
+<img alt="Titan Core" data-alt="Heavy industrial-style team logo for Titan Core featuring a stylized molten iron core surrounded by dark geometric plating. The aesthetic is rugged and powerful with glowing orange highlights and deep metallic textures." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA03qDAQkHN-GXYtLOLr8B-wDHVNfe0-pSvRPjUqC2SO59Oth4pS5qAanKz5U-O3_oGktAoQ_9Y-EIWVDTrYmBRZ-h5A6HG7vHwMgrPk5t1blkepjXE8OaodbZBWslpHDiqsozeR68NLnn6BjCnrsTP-9RYUn6KibgwoG4XANli5j7JFSpLVHKnRiIiKxxcVmDcZFlF2Ev58UTlwZOIkU0t5KWJKvZgMCNdnO4XegyCGUX2-qExWRLrBmIhol5q0ApO4RqqiClG"/>
+</div>
+<span class="font-bold text-sm tracking-tight text-on-surface">Titan Core</span>
+</div>
+</div>
+<div class="flex flex-col items-end pl-8">
+<div class="flex items-center space-x-2 bg-error text-on-error px-2 py-0.5 rounded text-[9px] font-black uppercase">
+<span class="h-1.5 w-1.5 rounded-full bg-white animate-ping"></span>
+<span>Broadcasting</span>
+</div>
+<span class="text-slate-500 text-[10px] mt-2 font-bold">Watch Live on Channel 4</span>
+</div>
+</div>
+<!-- Fixture 4: Upcoming Match -->
+<div class="p-6 flex items-center justify-between group hover:bg-white/5 transition-all duration-300 cursor-pointer opacity-70 grayscale hover:grayscale-0 hover:opacity-100">
+<div class="flex items-center space-x-12 flex-1">
+<div class="flex flex-col items-center space-y-2 w-32">
+<div class="h-12 w-12 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center p-2">
+<img alt="Mumbai Mavericks" data-alt="Mumbai Mavericks team logo in a futuristic vector style, featuring a majestic green falcon motif. Sharp emerald lighting effects and a professional dark mode interface aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHm5zDKn30BsdTB-rJJiSugQQwfDK1M19WE9GL3eEzcAWVg0acPcWAGxhVNrNEFFPQ23xaSmG2pWe4Rm93xIQRw65BApHH0Fxf2pdrlgKEVaiezHZPqbANr7Cl2SI4Nb_BACKSxY59oYzxpwC9C6SJgmKTdFVBz835_PI51swbSgAWU6tSkwYtqQElPbEBhqGuAvZpKX7a4dFCjrpZssjAWhtpskkI_axjF7RCJ80PKZ0yYz6KRAOeSkSvTidFKOy-QoPYgrPq"/>
+</div>
+<span class="font-bold text-sm tracking-tight text-on-surface">Mumbai Mavericks</span>
+</div>
+<div class="flex flex-col items-center">
+<div class="text-stat-lg font-stat-lg text-slate-500">Upcoming</div>
+<span class="text-[10px] text-slate-500 font-bold uppercase mt-1">19:30 GMT</span>
+</div>
+<div class="text-slate-700 font-black text-2xl italic tracking-tighter">VS</div>
+<div class="flex flex-col items-center">
+<div class="text-stat-lg font-stat-lg text-slate-500">Upcoming</div>
+<span class="text-[10px] text-slate-500 font-bold uppercase mt-1">Oct 13</span>
+</div>
+<div class="flex flex-col items-center space-y-2 w-32">
+<div class="h-12 w-12 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center p-2">
+<img alt="Desert Sharks" data-alt="Sleek logo for Desert Sharks with gold and black color palette, representing speed and precision in a modern sports dashboard environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfEX06B-l7aiIak0bNaXNu910Ib0J6e-S73OpN1lvXbNLOgciE1q1wQKChwTZWTndF8SpUWmkolSzDcqn64NHhCvnDHrXXJHGBUem0n1ZMN_cPIIi3RO1d0dr7Y4wcAfW9E_C5A8tc0YBxwayHd9ibqxoi-_g70AVTHoTxNBPF9O5_t7XAJxvh8IcSsqcf5vdiBqWyT5RHRELIEGuJroDF6MA0udUAhhEQoyLKIaXrDudvt_nKUJOk46szE5z3KAn92fxZlzH-"/>
+</div>
+<span class="font-bold text-sm tracking-tight text-on-surface">Desert Sharks</span>
+</div>
+</div>
+<div class="flex flex-col items-end pl-8">
+<button class="px-4 py-2 bg-primary text-on-primary rounded font-black text-[10px] uppercase tracking-tighter hover:shadow-[0_0_15px_rgba(78,222,163,0.4)] transition-all">Set Reminder</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Sidebar/Right Panel: Current Standings -->
+<aside class="w-full lg:w-96 space-y-6">
+<div class="glass-card rounded-xl overflow-hidden">
+<div class="p-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
+<h2 class="text-label-caps font-label-caps text-on-surface">Current Standings</h2>
+<span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400 font-bold">Updated Live</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container-low/50">
+<th class="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Pos</th>
+<th class="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Team</th>
+<th class="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">P</th>
+<th class="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">W</th>
+<th class="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">NRR</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<tr class="bg-primary/5 group hover:bg-primary/10 transition-colors">
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-primary">1</td>
+<td class="px-4 py-4">
+<div class="flex items-center space-x-2">
+<img alt="MM" class="h-5 w-5 rounded-full bg-slate-800" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiIPoU2-YeLvbE4E0lwgrbb1o4oN3E8CDRlbwdJ0H1SKhnIvh_A8EHZPgT8Dq91-WddqJqYOMWjXdesFIkr1EuaZOIU5Ec77YxVXxQoQbU5RDCahLHyA5OzT817KeF6DIyzCCB6PqiGtGIgTbXuawT3yZFzQbSzS7tDx8ddbaTGrX7cvzyK7XSO_78ySXOwpCN-aWBy8qrAU0sDqdH462B1U1yVVYi18Z1a5bCIhLDXXT0lWG-riAyOg3tCvXCB9M7VDBCvhTZ"/>
+<span class="font-bold text-sm tracking-tight text-on-surface">MUM Mavericks</span>
+</div>
+</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-on-surface text-center">12</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-on-surface text-center">6</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-primary text-right">+1.420</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors">
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-slate-400">2</td>
+<td class="px-4 py-4">
+<div class="flex items-center space-x-2">
+<img alt="SK" class="h-5 w-5 rounded-full bg-slate-800" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgxmrgxUfxz-kFbHNyevqE1S25dfoy_WxQ8v2cpdYSKfzMcK6_z13XZ1vDMQWRcSSGxP3Up51ygnmU3SpzztDx1uPM5IlWBmyIffzA1PrDN3e_3_NNs3oSPrWFAAiQex-clFqqbmd7Dg6rpXjFADsglGkVG_7pdQUKgxdxq29n5vM07Yt-WL4cKZB4kiLnRvoxQVK9twh8I3lp2A--S9XJiaKcoxowbjxVt3qhRJGAbbVoZQo7d0DGZF5xegkWaBUAvePO8fUe"/>
+<span class="font-bold text-sm tracking-tight text-on-surface">Sky Knights</span>
+</div>
+</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-on-surface text-center">10</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-on-surface text-center">5</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-slate-400 text-right">+0.892</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors">
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-slate-400">3</td>
+<td class="px-4 py-4">
+<div class="flex items-center space-x-2">
+<img alt="VF" class="h-5 w-5 rounded-full bg-slate-800" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrWu-6L32V_g2gaGJ_Hf-yDduPastrDKwYiU-7inFk2IvwSlIqCBLtmS1fK9L8TXrRWtAxWERVWBYwkL_x7nO0JU5CVrcmgdhtj4tWyyBosq32rywU8cYyAtz1MRx_DRcqz_5XaqLcwMWk1KGncRiAZTQIAQr8991wFcl3V4H0MhOHr9j4IzLBZ5r-Z42CoQP3TsX2nLYJQ556TWMjyEPGpc-CNO-9dDaPCB07diDRNZXgmNwHuxK6p0cRjyxBXp7SPufLzvwn"/>
+<span class="font-bold text-sm tracking-tight text-on-surface">Void Flyers</span>
+</div>
+</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-on-surface text-center">8</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-on-surface text-center">4</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-slate-400 text-right">+0.315</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors">
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-slate-400">4</td>
+<td class="px-4 py-4">
+<div class="flex items-center space-x-2">
+<img alt="OR" class="h-5 w-5 rounded-full bg-slate-800" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRehJERfwbeCZZhF8vWyHC6M2ul3iO2uUb-eptdey-AI2TUw0cvfah2_f_kE20KkwSN4h9B2YFog-vIKOUrkGSyRhWYIfNx-d2-oih-R8ho9XgthFJ3QRjAGFIixv7Eg_05HtS5-_jQdZ03MOVurFcXs4yE3zrASUYFLmp82UiVeTunQ5z7E8h5-svUaQTmRwreNZ8gYVfN8SaSrDAYCC5nBBs8K7MVqYEqDoiGznByJedE3MYZSkBD8_9u8X9o9Gs2TA_4yaQ"/>
+<span class="font-bold text-sm tracking-tight text-on-surface">Orc Raiders</span>
+</div>
+</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-on-surface text-center">6</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-on-surface text-center">3</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-error text-right">-0.125</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors">
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-slate-400">5</td>
+<td class="px-4 py-4">
+<div class="flex items-center space-x-2">
+<img alt="TC" class="h-5 w-5 rounded-full bg-slate-800" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtq_3deBRtC9ELOJ_gmiLjsNQey5kKooZqeABMBqLOLKB4RA-3YcFhjH7qhT-7vnEI-0su2uF1sH41iH_KYCt607HpLG7P10Co2AdDEZbbUwsHZ-E-1_OPCZSI3ncDQ4jZYntft5nyPD3LjxQ48VlfbgnD6q1fvzqVt7cBbUYnZJ28VKftOBOCT4LMU53CM9bCm9twikxbcRDWUGSWrBPPM0CkcTM6eqkl-oZaRHt6OHionyNj1dJrbz9kV5cWBHItb-fhmyL9"/>
+<span class="font-bold text-sm tracking-tight text-on-surface">Titan Core</span>
+</div>
+</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-on-surface text-center">4</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-on-surface text-center">2</td>
+<td class="px-4 py-4 text-stat-sm font-stat-sm text-error text-right">-0.670</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 bg-white/5 flex justify-center">
+<button class="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">Full Standings Table</button>
+</div>
+</div>
+<!-- Featured Stat Card -->
+<div class="glass-card rounded-xl p-6 relative overflow-hidden">
+<div class="absolute -right-12 -top-12 h-32 w-32 bg-primary/20 blur-3xl rounded-full"></div>
+<h3 class="text-label-caps font-label-caps text-on-surface-variant relative z-10">Peak Performance</h3>
+<div class="mt-4 flex items-end justify-between relative z-10">
+<div>
+<div class="text-display-lg font-display-lg text-primary">94.2</div>
+<div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Efficiency Rating</div>
+</div>
+<div class="text-right">
+<span class="material-symbols-outlined text-primary text-3xl">trending_up</span>
+<div class="text-stat-sm font-stat-sm text-primary">+12% vs LW</div>
+</div>
+</div>
+<div class="mt-6 flex gap-1 relative z-10">
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary"></div>
+<div class="stat-bar-segment bg-primary/30"></div>
+<div class="stat-bar-segment bg-primary/30"></div>
+</div>
+</div>
+<!-- Achievement Banner -->
+<div class="bg-gradient-to-br from-[#e29100] to-[#653e00] rounded-xl p-6 text-white shadow-xl relative group cursor-pointer overflow-hidden">
+<div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="flex items-center space-x-4 relative z-10">
+<div class="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center border border-white/40">
+<span class="material-symbols-outlined font-variation-settings: 'FILL' 1;">workspace_premium</span>
+</div>
+<div>
+<div class="font-bold text-sm">ELITE TIER QUALIFIER</div>
+<div class="text-[10px] opacity-80 uppercase font-black tracking-widest">Mumbai Mavericks • Season 4</div>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+</body></html>

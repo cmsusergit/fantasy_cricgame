@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>League Rules &amp; Wiki | LEAGUE PRO</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed-dim": "#ffb95f",
+                    "inverse-primary": "#006c49",
+                    "on-surface-variant": "#bbcabf",
+                    "surface": "#0b1326",
+                    "surface-container-lowest": "#060e20",
+                    "on-error": "#690005",
+                    "secondary-fixed-dim": "#adc6ff",
+                    "surface-container-highest": "#2d3449",
+                    "surface-container": "#171f33",
+                    "on-primary-fixed": "#002113",
+                    "secondary": "#adc6ff",
+                    "error-container": "#93000a",
+                    "primary-fixed-dim": "#4edea3",
+                    "tertiary": "#ffb95f",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "on-background": "#dae2fd",
+                    "on-tertiary-fixed": "#2a1700",
+                    "on-primary": "#003824",
+                    "on-tertiary": "#472a00",
+                    "on-secondary-fixed-variant": "#004395",
+                    "surface-bright": "#31394d",
+                    "secondary-fixed": "#d8e2ff",
+                    "primary": "#4edea3",
+                    "on-tertiary-container": "#523200",
+                    "on-primary-fixed-variant": "#005236",
+                    "surface-variant": "#2d3449",
+                    "surface-dim": "#0b1326",
+                    "on-secondary": "#002e6a",
+                    "surface-container-low": "#131b2e",
+                    "outline-variant": "#3c4a42",
+                    "error": "#ffb4ab",
+                    "on-secondary-fixed": "#001a42",
+                    "tertiary-container": "#e29100",
+                    "primary-fixed": "#6ffbbe",
+                    "on-error-container": "#ffdad6",
+                    "on-primary-container": "#00422b",
+                    "surface-tint": "#4edea3",
+                    "secondary-container": "#0566d9",
+                    "primary-container": "#10b981",
+                    "on-secondary-container": "#e6ecff",
+                    "inverse-on-surface": "#283044",
+                    "tertiary-fixed": "#ffddb8",
+                    "on-surface": "#dae2fd",
+                    "inverse-surface": "#dae2fd",
+                    "surface-container-high": "#222a3d",
+                    "outline": "#86948a",
+                    "background": "#0b1326"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-safe": "2rem",
+                    "xs": "0.25rem",
+                    "md": "1rem",
+                    "lg": "1.5rem",
+                    "base": "4px",
+                    "xl": "2rem",
+                    "gutter": "1.5rem",
+                    "sm": "0.5rem"
+            },
+            "fontFamily": {
+                    "h1": ["Inter"],
+                    "stat-sm": ["Space Grotesk"],
+                    "display-lg": ["Inter"],
+                    "stat-lg": ["Space Grotesk"],
+                    "label-caps": ["Space Grotesk"],
+                    "h2": ["Inter"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "stat-sm": ["14px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "500"}],
+                    "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "stat-lg": ["24px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.15em", "fontWeight": "600"}],
+                    "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(23, 31, 51, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .stat-segment {
+            height: 6px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .stat-segment.active-emerald { background: #4edea3; box-shadow: 0 0 10px rgba(78, 222, 163, 0.4); }
+        .stat-segment.active-blue { background: #0566d9; }
+        
+        body {
+            background-color: #0b1326;
+            color: #dae2fd;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-background selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="bg-slate-950/80 backdrop-blur-md border-b border-white/10 shadow-xl fixed top-0 z-50 w-full">
+<div class="flex justify-between items-center px-4 h-16 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-4">
+<span class="text-xl font-black italic text-emerald-500 tracking-tighter font-inter">LEAGUE PRO</span>
+<nav class="hidden md:flex gap-6 ml-8">
+<a class="text-slate-400 hover:bg-white/5 transition-colors font-inter text-sm font-semibold uppercase tracking-widest px-2 py-1" href="#">Dashboard</a>
+<a class="text-slate-400 hover:bg-white/5 transition-colors font-inter text-sm font-semibold uppercase tracking-widest px-2 py-1" href="#">Roster</a>
+<a class="text-emerald-400 font-bold hover:bg-white/5 transition-colors font-inter text-sm font-semibold uppercase tracking-widest px-2 py-1" href="#">League Wiki</a>
+</nav>
+</div>
+<div class="flex items-center gap-3">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm" data-icon="search">search</span>
+<input class="bg-surface-container-low border border-white/10 rounded-lg pl-10 pr-4 py-1.5 text-sm w-64 focus:border-primary focus:ring-0 transition-all" placeholder="Search knowledge base..." type="text"/>
+</div>
+<button class="p-2 text-slate-400 hover:bg-white/5 transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-400 hover:bg-white/5 transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="hidden lg:flex flex-col h-screen py-8 bg-slate-900/90 backdrop-blur-lg border-r border-white/5 shadow-2xl h-full w-64 fixed left-0 top-0 pt-20">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3 p-3 glass-card rounded-xl">
+<div class="w-10 h-10 rounded-full border-2 border-emerald-500 p-0.5">
+<img alt="User Profile" class="w-full h-full rounded-full object-cover" data-alt="A professional male sports analyst portrait in a high-tech broadcast studio setting. He is wearing a sleek dark suit with emerald green accents in his tie, looking confidently at the camera. The background is filled with blurred holographic data screens and cool blue architectural lighting, creating an elite and authoritative atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiKLcBicBwHxoDh5QtiDNjEMJFtaKaWGaMBUDvKyHs6GvwoxYVGceFt09ie4fyLlYfFEopxY0KkrgrmFzN03gJRIgvKyi1pzSLhPFP8kT1m3U4LqeEF8rWUGv0XQ-S6ILYK-zlGbp7QlFOSJagbdUubo8RCCryfJOL2S4AscSJX0gGp4EYFv9pCbPbeQ2AbgbRMOPvv8lKH2bZaIsz4RmyG2iDpc5KUtN-a630mKsmtbEHAXP-KjgSGSW-t1vsp851aVQYYvI7"/>
+</div>
+<div>
+<p class="text-emerald-500 font-black font-inter text-xs tracking-tighter">PRO ANALYST</p>
+<p class="text-slate-500 font-inter text-[10px] uppercase tracking-widest">Elite Tier</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1 px-3">
+<div class="px-3 pb-2 text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">Wiki Navigation</div>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 ease-in-out font-inter text-sm font-semibold uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 ease-in-out font-inter text-sm font-semibold uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span>Roster</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-500/10 text-emerald-500 border-r-2 border-emerald-500 transition-all duration-200 ease-in-out font-inter text-sm font-semibold uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span>League Wiki</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 ease-in-out font-inter text-sm font-semibold uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Marketplace</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 ease-in-out font-inter text-sm font-semibold uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined" data-icon="query_stats">query_stats</span>
+<span>Strategy</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content -->
+<main class="lg:ml-64 pt-24 pb-20 px-4 md:px-lg max-w-7xl mx-auto">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Sidebar: Knowledge Categories -->
+<div class="lg:col-span-3 space-y-4">
+<div class="glass-card rounded-xl p-4">
+<h3 class="font-h2 text-lg text-primary-fixed mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="library_books">library_books</span>
+                        Categories
+                    </h3>
+<ul class="space-y-1">
+<li>
+<button class="w-full text-left px-3 py-2.5 rounded-lg text-slate-400 hover:bg-white/5 transition-colors font-label-caps text-sm">General Rules</button>
+</li>
+<li>
+<button class="w-full text-left px-3 py-2.5 rounded-lg bg-primary/10 text-primary font-bold border-l-2 border-primary font-label-caps text-sm">Factions</button>
+</li>
+<li>
+<button class="w-full text-left px-3 py-2.5 rounded-lg text-slate-400 hover:bg-white/5 transition-colors font-label-caps text-sm">Draft &amp; Auction</button>
+</li>
+<li>
+<button class="w-full text-left px-3 py-2.5 rounded-lg text-slate-400 hover:bg-white/5 transition-colors font-label-caps text-sm">Match Mechanics</button>
+</li>
+</ul>
+</div>
+<div class="glass-card rounded-xl p-4 overflow-hidden relative">
+<div class="relative z-10">
+<h4 class="font-stat-sm text-tertiary-fixed mb-2">QUICK TIPS</h4>
+<p class="text-xs text-slate-400 leading-relaxed italic">"Always check Faction synergy before final lock-in. Chemistry can bridge a 10-point skill gap."</p>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-6xl" data-icon="lightbulb">lightbulb</span>
+</div>
+</div>
+</div>
+<!-- Center Content: Article & Tables -->
+<div class="lg:col-span-9 space-y-gutter">
+<!-- Article Header -->
+<section class="glass-card rounded-xl p-8 border-l-4 border-emerald-500">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+<div>
+<span class="text-primary font-stat-sm bg-primary/10 px-3 py-1 rounded-full">CORE MECHANICS</span>
+<h1 class="font-display-lg text-on-surface mt-2">Faction Bonuses</h1>
+<p class="text-slate-400 mt-2 max-w-2xl">Understanding how faction alignment influences your team's tactical ceiling and raw performance metrics. Bonuses are additive to base player stats.</p>
+</div>
+<div class="flex gap-2">
+<button class="p-2 glass-card rounded-lg hover:border-primary transition-all"><span class="material-symbols-outlined" data-icon="share">share</span></button>
+<button class="p-2 glass-card rounded-lg hover:border-primary transition-all"><span class="material-symbols-outlined" data-icon="bookmark">bookmark</span></button>
+</div>
+</div>
+<!-- Faction Cards: Bento Grid Style -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+<!-- Humans -->
+<div class="bg-surface-container-low border border-white/5 p-5 rounded-xl hover:bg-white/5 transition-all group">
+<div class="flex items-center justify-between mb-4">
+<span class="material-symbols-outlined text-blue-400 text-3xl" data-icon="person">person</span>
+<span class="font-stat-sm text-blue-400">+5%</span>
+</div>
+<h4 class="font-h2 text-base mb-1">Humans</h4>
+<p class="text-xs text-slate-500 mb-4">Team Chemistry</p>
+<div class="flex gap-1">
+<div class="flex-1 stat-segment active-blue"></div>
+<div class="flex-1 stat-segment active-blue"></div>
+<div class="flex-1 stat-segment"></div>
+<div class="flex-1 stat-segment"></div>
+<div class="flex-1 stat-segment"></div>
+</div>
+</div>
+<!-- Elves -->
+<div class="bg-surface-container-low border border-white/5 p-5 rounded-xl hover:bg-white/5 transition-all group">
+<div class="flex items-center justify-between mb-4">
+<span class="material-symbols-outlined text-emerald-400 text-3xl" data-icon="auto_fix_high">auto_fix_high</span>
+<span class="font-stat-sm text-emerald-400">+10%</span>
+</div>
+<h4 class="font-h2 text-base mb-1">Elves</h4>
+<p class="text-xs text-slate-500 mb-4">Accuracy</p>
+<div class="flex gap-1">
+<div class="flex-1 stat-segment active-emerald"></div>
+<div class="flex-1 stat-segment active-emerald"></div>
+<div class="flex-1 stat-segment active-emerald"></div>
+<div class="flex-1 stat-segment active-emerald"></div>
+<div class="flex-1 stat-segment"></div>
+</div>
+</div>
+<!-- Orcs -->
+<div class="bg-surface-container-low border border-white/5 p-5 rounded-xl hover:bg-white/5 transition-all group">
+<div class="flex items-center justify-between mb-4">
+<span class="material-symbols-outlined text-orange-400 text-3xl" data-icon="mace">mitre</span>
+<span class="font-stat-sm text-orange-400">+15%</span>
+</div>
+<h4 class="font-h2 text-base mb-1">Orcs</h4>
+<p class="text-xs text-slate-500 mb-4">Power Hitting</p>
+<div class="flex gap-1">
+<div class="flex-1 stat-segment bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.4)]"></div>
+<div class="flex-1 stat-segment bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.4)]"></div>
+<div class="flex-1 stat-segment bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.4)]"></div>
+<div class="flex-1 stat-segment bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.4)]"></div>
+<div class="flex-1 stat-segment bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.4)]"></div>
+</div>
+</div>
+</div>
+<!-- Article Section -->
+<div class="prose prose-invert max-w-none space-y-6">
+<div>
+<h3 class="font-h2 text-xl text-on-surface border-b border-white/10 pb-2 mb-4">Draft Rules Summary</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<ul class="space-y-3 list-none p-0">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-1" data-icon="check_circle">check_circle</span>
+<span class="text-sm text-slate-300"><strong class="text-on-surface">Snake Draft Format:</strong> Rounds alternate order to maintain parity.</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-1" data-icon="check_circle">check_circle</span>
+<span class="text-sm text-slate-300"><strong class="text-on-surface">60s Clock:</strong> Each manager has 60 seconds to finalize a pick before auto-draft triggers.</span>
+</li>
+</ul>
+<ul class="space-y-3 list-none p-0">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-1" data-icon="check_circle">check_circle</span>
+<span class="text-sm text-slate-300"><strong class="text-on-surface">Waiver Priority:</strong> Determined by inverse standings after Week 1.</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-1" data-icon="check_circle">check_circle</span>
+<span class="text-sm text-slate-300"><strong class="text-on-surface">Faction Locking:</strong> Faction choice must be declared by the end of Round 3.</span>
+</li>
+</ul>
+</div>
+</div>
+<!-- Data Table -->
+<div class="mt-12">
+<h3 class="font-h2 text-xl text-on-surface border-b border-white/10 pb-2 mb-4">Sponsorship Tiers</h3>
+<div class="overflow-hidden rounded-xl border border-white/10 bg-slate-950/40">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high">
+<th class="p-4 font-label-caps text-slate-400 border-b border-white/10">Tier Name</th>
+<th class="p-4 font-label-caps text-slate-400 border-b border-white/10">Budget Multiplier</th>
+<th class="p-4 font-label-caps text-slate-400 border-b border-white/10">Requirement</th>
+<th class="p-4 font-label-caps text-slate-400 border-b border-white/10 text-right">Perk</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<tr class="hover:bg-white/5 transition-colors">
+<td class="p-4 font-stat-sm text-on-surface">Local Hero</td>
+<td class="p-4 font-stat-sm text-secondary">1.0x</td>
+<td class="p-4 text-xs text-slate-400 italic">None (Default)</td>
+<td class="p-4 text-right"><span class="bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase">Basic Gear</span></td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors">
+<td class="p-4 font-stat-sm text-on-surface">Regional Lead</td>
+<td class="p-4 font-stat-sm text-secondary">1.2x</td>
+<td class="p-4 text-xs text-slate-400 italic">Level 10 Rank</td>
+<td class="p-4 text-right"><span class="bg-blue-900/50 text-blue-300 px-2 py-1 rounded text-[10px] font-bold uppercase">Travel Stipend</span></td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors">
+<td class="p-4 font-stat-sm text-on-surface">Global Elite</td>
+<td class="p-4 font-stat-sm text-secondary">1.5x</td>
+<td class="p-4 text-xs text-slate-400 italic">Top 100 Leaderboard</td>
+<td class="p-4 text-right"><span class="bg-emerald-900/50 text-emerald-300 px-2 py-1 rounded text-[10px] font-bold uppercase">Advanced Training</span></td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors">
+<td class="p-4 font-stat-sm text-tertiary">Pro Syndicate</td>
+<td class="p-4 font-stat-sm text-secondary">2.0x</td>
+<td class="p-4 text-xs text-slate-400 italic">Pro Circuit Invitation</td>
+<td class="p-4 text-right"><span class="bg-yellow-900/50 text-yellow-300 px-2 py-1 rounded text-[10px] font-bold uppercase">Legendary Facade</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer Navigation -->
+<div class="flex justify-between items-center px-4">
+<button class="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+<span class="font-label-caps">General Rules</span>
+</button>
+<button class="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors">
+<span class="font-label-caps">Draft Mechanics</span>
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="lg:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-2 py-3 pb-safe bg-slate-950/90 backdrop-blur-xl border-t border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] z-50 rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-slate-500 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-inter text-[10px] font-bold uppercase">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="sports_football">sports_football</span>
+<span class="font-inter text-[10px] font-bold uppercase">Team</span>
+</a>
+<a class="flex flex-col items-center justify-center text-emerald-500 bg-emerald-500/5 rounded-lg py-1 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-inter text-[10px] font-bold uppercase">Wiki</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-inter text-[10px] font-bold uppercase">Profile</span>
+</a>
+</nav>
+<!-- Decorative HUD Element -->
+<div class="fixed top-20 right-8 hidden xl:block opacity-20 pointer-events-none">
+<div class="flex flex-col gap-1 items-end">
+<div class="h-0.5 w-24 bg-emerald-500"></div>
+<div class="h-0.5 w-16 bg-emerald-500"></div>
+<p class="font-stat-sm text-[8px] mt-2">LEAGUE_PROTOCOL_V4.2</p>
+</div>
+</div>
+</body></html>

@@ -53,7 +53,7 @@ function calculatePrice(role: PlayerRole, stats: PlayerStats): number {
   return Math.floor((avgStat * 5000 + randomInt(-2000, 5000)) * roleBonus);
 }
 
-export function generatePlayer(role: PlayerRole): Player {
+export function generatePlayer(role: PlayerRole, isYouth: boolean = false): Player {
   const faction = randomElement([
     'human', 'human', 'human',
     'elf', 'elf',
@@ -63,17 +63,17 @@ export function generatePlayer(role: PlayerRole): Player {
     'nightelf'
   ]) as FactionType;
 
-  // Balanced base stats for 180-200 run target
+  // Balanced base stats for 180-200 run target. Youth players have much lower starting stats.
   const baseStats = {
-    batsman: { batting: 12, bowling: 5, power: 10, technique: 12, fielding: 12 },
-    allrounder: { batting: 10, bowling: 10, power: 8, technique: 8, fielding: 14 },
-    bowler: { batting: 5, bowling: 14, power: 9, technique: 8, fielding: 10 },
-    wicketkeeper: { batting: 10, bowling: 4, power: 8, technique: 14, fielding: 16 }
+    batsman: { batting: isYouth ? 6 : 12, bowling: 3, power: isYouth ? 5 : 10, technique: isYouth ? 6 : 12, fielding: isYouth ? 8 : 12 },
+    allrounder: { batting: isYouth ? 5 : 10, bowling: isYouth ? 5 : 10, power: isYouth ? 4 : 8, technique: isYouth ? 4 : 8, fielding: isYouth ? 10 : 14 },
+    bowler: { batting: 3, bowling: isYouth ? 7 : 14, power: isYouth ? 4 : 9, technique: isYouth ? 4 : 8, fielding: isYouth ? 6 : 10 },
+    wicketkeeper: { batting: isYouth ? 5 : 10, bowling: 2, power: isYouth ? 4 : 8, technique: isYouth ? 7 : 14, fielding: isYouth ? 10 : 16 }
   }[role];
 
   // 15% chance of being WK, 10% chance of captain potential
   const isWK = role === 'batsman' && Math.random() < 0.15;
-  const isCaptain = Math.random() < 0.10;
+  const isCaptain = !isYouth && Math.random() < 0.10; // Youth can't be captains
 
   let bowlingType: any = 'none';
   if (role === 'bowler' || role === 'allrounder') {
@@ -104,6 +104,9 @@ export function generatePlayer(role: PlayerRole): Player {
       battingRole = 'Finisher';
   }
 
+  const price = isYouth ? randomInt(2000, 8000) : calculatePrice(role, stats);
+  const age = isYouth ? randomInt(18, 20) : randomInt(21, 38);
+
   return {
     id: generatePlayerId(),
     name,
@@ -122,15 +125,24 @@ export function generatePlayer(role: PlayerRole): Player {
     fatigue: 0,
     morale: 50,
     isAvailable: true,
-    price: calculatePrice(role, stats),
-    form: randomInt(-5, 5),
-    matches: randomInt(0, 50),
-    runsScored: randomInt(0, 500),
-    wickets: role === 'bowler' ? randomInt(0, 30) : 0
+    price: price,
+    form: isYouth ? 0 : randomInt(-5, 5),
+    matches: isYouth ? 0 : randomInt(0, 50),
+    runsScored: isYouth ? 0 : randomInt(0, 500),
+    wickets: (role === 'bowler' && !isYouth) ? randomInt(0, 30) : 0,
+    age: age,
+    marketValue: price,
+    potential: isYouth ? generateStatValue(85, 12) : generateStatValue(80, 10),
+    isScouted: !isYouth, // Youth players are NOT scouted by default
+    portraitId: randomInt(1, 1000),
+    tournamentStats: {
+      runs: 0,
+      wickets: 0
+    }
   };
 }
 
-export function generatePlayerPool(count: number = 30): Player[] {
+export function generatePlayerPool(count: number = 30, generateYouth: boolean = false): Player[] {
   const players: Player[] = [];
   const roles: PlayerRole[] = ['batsman', 'allrounder', 'bowler', 'wicketkeeper'];
   
@@ -148,7 +160,7 @@ export function generatePlayerPool(count: number = 30): Player[] {
       }
     }
     
-    players.push(generatePlayer(role));
+    players.push(generatePlayer(role, generateYouth));
   }
   
   return players;

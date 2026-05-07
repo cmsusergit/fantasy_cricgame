@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<title>Elite Manager | Global Marketplace</title>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#0566d9",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "on-background": "#dae2fd",
+                        "on-secondary": "#002e6a",
+                        "inverse-on-surface": "#283044",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "on-tertiary-fixed": "#2a1700",
+                        "primary": "#4edea3",
+                        "surface-container-lowest": "#060e20",
+                        "outline": "#86948a",
+                        "surface-dim": "#0b1326",
+                        "on-secondary-container": "#e6ecff",
+                        "surface": "#0b1326",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "on-secondary-fixed": "#001a42",
+                        "surface-container-high": "#222a3d",
+                        "tertiary-container": "#e29100",
+                        "on-primary-fixed": "#002113",
+                        "primary-fixed-dim": "#4edea3",
+                        "on-secondary-fixed-variant": "#004395",
+                        "surface-container-low": "#131b2e",
+                        "outline-variant": "#3c4a42",
+                        "primary-fixed": "#6ffbbe",
+                        "on-primary-fixed-variant": "#005236",
+                        "secondary": "#adc6ff",
+                        "on-primary": "#003824",
+                        "background": "#0b1326",
+                        "on-primary-container": "#00422b",
+                        "surface-tint": "#4edea3",
+                        "inverse-primary": "#006c49",
+                        "surface-variant": "#2d3449",
+                        "primary-container": "#10b981",
+                        "on-error-container": "#ffdad6",
+                        "tertiary": "#ffb95f",
+                        "surface-container": "#171f33",
+                        "on-surface": "#dae2fd",
+                        "on-tertiary-container": "#523200",
+                        "surface-container-highest": "#2d3449",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#d8e2ff",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-surface-variant": "#bbcabf",
+                        "surface-bright": "#31394d",
+                        "on-error": "#690005",
+                        "on-tertiary": "#472a00",
+                        "error-container": "#93000a",
+                        "inverse-surface": "#dae2fd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "margin-safe": "2rem",
+                        "lg": "1.5rem",
+                        "gutter": "1.5rem",
+                        "md": "1rem",
+                        "xs": "0.25rem",
+                        "xl": "2rem",
+                        "sm": "0.5rem"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "label-caps": ["Space Grotesk"],
+                        "stat-sm": ["Space Grotesk"],
+                        "h2": ["Inter"],
+                        "h1": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "stat-lg": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.15em", "fontWeight": "600"}],
+                        "stat-sm": ["14px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "500"}],
+                        "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "stat-lg": ["24px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(19, 27, 46, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .stat-bar-segment {
+            height: 6px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        .stat-bar-active {
+            background: #4edea3;
+            box-shadow: 0 0 10px rgba(78, 222, 163, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-surface-dim text-on-surface font-body-md overflow-x-hidden">
+<!-- Top Navigation -->
+<header class="bg-slate-950/80 backdrop-blur-xl text-emerald-500 dark:text-emerald-400 font-inter tracking-tight docked full-width top-0 z-50 border-b border-white/10 shadow-2xl shadow-emerald-900/20 flex justify-between items-center w-full px-6 h-16 fixed">
+<div class="flex items-center gap-8">
+<h1 class="text-xl font-black italic tracking-tighter text-emerald-500 uppercase">ELITE MANAGER</h1>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-400 font-medium hover:bg-white/5 hover:text-emerald-300 transition-colors px-3 py-1 rounded" href="#">DASHBOARD</a>
+<a class="text-emerald-400 font-bold border-b-2 border-emerald-500 px-3 py-1" href="#">MARKET</a>
+<a class="text-slate-400 font-medium hover:bg-white/5 hover:text-emerald-300 transition-colors px-3 py-1 rounded" href="#">ROSTER</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<span class="material-symbols-outlined text-slate-400 cursor-pointer p-2 rounded-full hover:bg-white/5 transition-all">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full"></span>
+</div>
+<span class="material-symbols-outlined text-slate-400 cursor-pointer p-2 rounded-full hover:bg-white/5 transition-all">settings</span>
+<div class="w-8 h-8 rounded-full border border-primary/30 p-0.5 overflow-hidden">
+<img alt="Manager profile" class="w-full h-full object-cover rounded-full" data-alt="A professional studio portrait of a futuristic sports manager with sleek, tactical apparel. The lighting is dramatic and high-contrast, featuring emerald green rim lights that accentuate the sharp contours of their focused expression. The background is a dark, tech-infused control room with blurred holographic displays in deep slate and cyan tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGNlXmMmVzbLO1UbpFPmPJtokuR-UdXk4Wdr8qXyO7WfJzXQT5BGy963Cndl3aW5Zu8jO-Z2n_5DafAqJefZsvNcYmwxpkMzKcGG2VRrLMFgFBtmV-pbC-ys019vkIbEdyz45oGMwIZkI3hdP4GH_-fank2Og0wjc8dKAVXnKth6s6QNEAs3ezXqwQy97qcyB_lG8T9mbLu-9Wx02BXJJQ_VEKqFgpSsflf5z7bI7cVPommlGMHtNd-GsPOlPu9teqfRrsRS3z"/>
+</div>
+</div>
+</header>
+<div class="flex min-h-screen pt-16">
+<!-- Sidebar Navigation -->
+<aside class="bg-slate-950/90 backdrop-blur-lg text-emerald-500 dark:text-emerald-400 font-inter text-sm font-semibold docked left-0 h-screen w-64 hidden md:flex flex-col border-r border-white/10 fixed overflow-y-auto">
+<div class="p-6 border-b border-white/5">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container">sports_cricket</span>
+</div>
+<div>
+<div class="text-lg font-black text-emerald-500">GLOBAL LEAGUE</div>
+<div class="text-xs text-slate-500 uppercase tracking-widest">Season 4 • Tier 1</div>
+</div>
+</div>
+</div>
+<nav class="flex-1 py-4">
+<div class="text-slate-500 hover:text-slate-200 px-4 py-3 flex items-center gap-3 cursor-pointer transition-transform">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</div>
+<div class="text-slate-500 hover:text-slate-200 px-4 py-3 flex items-center gap-3 cursor-pointer transition-transform">
+<span class="material-symbols-outlined">leaderboard</span>
+<span>Leagues</span>
+</div>
+<div class="text-slate-500 hover:text-slate-200 px-4 py-3 flex items-center gap-3 cursor-pointer transition-transform">
+<span class="material-symbols-outlined">event_note</span>
+<span>Fixtures</span>
+</div>
+<div class="text-slate-500 hover:text-slate-200 px-4 py-3 flex items-center gap-3 cursor-pointer transition-transform">
+<span class="material-symbols-outlined">groups</span>
+<span>Roster</span>
+</div>
+<div class="bg-emerald-500/10 text-emerald-400 border-l-4 border-emerald-500 px-4 py-3 flex items-center gap-3 cursor-pointer transition-transform">
+<span class="material-symbols-outlined">payments</span>
+<span>Market</span>
+</div>
+</nav>
+<div class="p-4">
+<button class="w-full py-3 bg-primary text-on-primary font-bold rounded-lg shadow-lg shadow-primary/20 active:scale-95 duration-200">
+                    MANAGE DRAFT
+                </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 p-6 lg:p-8 flex flex-col gap-8 pb-32">
+<!-- Market Header & Filters -->
+<section class="flex flex-col gap-6">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<span class="text-primary font-label-caps uppercase text-xs tracking-widest">Global Marketplace</span>
+<h2 class="font-h1 text-h1 text-on-background">Find Your Next Star</h2>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant bg-surface-container rounded-full px-4 py-2 border border-outline-variant">
+<span class="material-symbols-outlined text-sm">account_balance_wallet</span>
+<span class="font-stat-sm text-on-primary-fixed-variant">$42.5M Remaining</span>
+</div>
+</div>
+<div class="glass-card rounded-2xl p-4 flex flex-wrap items-center gap-4">
+<div class="flex-1 min-w-[240px] relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">search</span>
+<input class="w-full bg-slate-900/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 focus:ring-1 focus:ring-primary focus:border-primary text-sm outline-none" placeholder="Search players by name..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<select class="bg-slate-900/50 border border-white/10 rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary outline-none">
+<option>All Factions</option>
+<option>Northern Alliance</option>
+<option>Cyber Raiders</option>
+<option>Void Stalkers</option>
+</select>
+<select class="bg-slate-900/50 border border-white/10 rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary outline-none">
+<option>All Roles</option>
+<option>Batter</option>
+<option>Bowler</option>
+<option>All-Rounder</option>
+</select>
+<select class="bg-slate-900/50 border border-white/10 rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary outline-none">
+<option>Price Range</option>
+<option>$0 - $5M</option>
+<option>$5M - $15M</option>
+<option>$15M+</option>
+</select>
+<button class="bg-slate-800 p-3 rounded-xl hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Player Grid & Side Panel Layout -->
+<section class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+<!-- Marketplace Grid -->
+<div class="xl:col-span-8 grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
+<!-- Player Card 1 -->
+<div class="glass-card rounded-2xl overflow-hidden group cursor-pointer hover:border-primary/50 transition-all border-white/5">
+<div class="h-48 relative overflow-hidden bg-slate-900">
+<img alt="Player Alpha" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="A dynamic, wide-angle shot of a high-tech athlete in a metallic emerald and slate grey cricket uniform. They are captured mid-motion under vibrant stadium floodlights that cast long, dramatic shadows. The aesthetic is ultra-modern, blending professional sports photography with a cinematic science-fiction mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSFVJZEwMaH9hi4JaRrSQ_d60WhhnZMMM2UJzUOKHAEnqCbIZwzJp914T9QvVm4AIMzsg_amYBdTuh7HXaW_AAfG8nFiAe8ax8yTlK1oO2e9oi2mKSfoaKNvjsytTxLlho40gMwfBnDONAZyMM-7zACprzeJ-EpFRpTbjp7XHw700snOHwfTe314SOg-Co9gdsBDwvAo85mJNw2YVpjfR8D4YCVjRUa-mjd-0iZCt11V7-jRTPozbA9Ivfdta4gkv0SNSRJqCf"/>
+<div class="absolute top-4 left-4 bg-slate-950/80 backdrop-blur px-3 py-1 rounded-full flex items-center gap-2 border border-white/10">
+<span class="material-symbols-outlined text-primary text-sm" data-weight="fill">shield</span>
+<span class="text-[10px] font-bold tracking-widest uppercase">Cyber Raiders</span>
+</div>
+<div class="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-slate-950 to-transparent">
+<div class="flex items-end justify-between">
+<div>
+<div class="text-primary font-bold text-xs uppercase tracking-tighter">Batter</div>
+<div class="font-h2 text-lg">Marcus "Volt" Chen</div>
+</div>
+<div class="text-right">
+<div class="font-stat-lg text-primary">88</div>
+<div class="text-[10px] text-slate-400 font-bold uppercase">OVR Rating</div>
+</div>
+</div>
+</div>
+</div>
+<div class="p-4 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-slate-500 text-xs font-bold uppercase">Market Value</span>
+<span class="font-stat-sm text-on-background">$12.4M</span>
+</div>
+<button class="bg-primary/10 hover:bg-primary text-primary hover:text-on-primary px-4 py-2 rounded-lg text-xs font-bold transition-all">SCOUT DATA</button>
+</div>
+</div>
+<!-- Player Card 2 -->
+<div class="glass-card rounded-2xl overflow-hidden group cursor-pointer border-primary/50 transition-all border-white/5 ring-1 ring-primary/20">
+<div class="h-48 relative overflow-hidden bg-slate-900">
+<img alt="Player Beta" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="A focused studio portrait of a elite cricket bowler wearing a dark obsidian suit with emerald glowing accents. The lighting is surgical and precise, highlighting the intense look in their eyes. The background features a blurred geometric pattern in slate and neon teal, evoking a futuristic scouting agency atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2qPvyXje_6OFsp4qg_H2svhQDlYwG10L9RQITcgHvH5YsMWCAzka7R411yR7Crsd91arVkxjOaOCcJsBbZZzVyEIRTRaCX0Jr5m8lm4NRY0ghYAVP5U2LxC97-fQfjZMsdBBltLw0zyKu0l-qZSBwVfGZePv67uJsXZ3orQPPny6KKAEB9B_zh2Tk4K6Pc-IbK7XZw6AArkfZ-o6a3SCpsqzTF_XOo1Ijp5hXVUHrGAsVV2xBs6UyKxNad_taNmFAdf5yhbeA"/>
+<div class="absolute top-4 left-4 bg-slate-950/80 backdrop-blur px-3 py-1 rounded-full flex items-center gap-2 border border-white/10">
+<span class="material-symbols-outlined text-primary text-sm" data-weight="fill">token</span>
+<span class="text-[10px] font-bold tracking-widest uppercase">Northern Alliance</span>
+</div>
+<div class="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-slate-950 to-transparent">
+<div class="flex items-end justify-between">
+<div>
+<div class="text-primary font-bold text-xs uppercase tracking-tighter">Bowler</div>
+<div class="font-h2 text-lg">Vikram "The Wall" Singh</div>
+</div>
+<div class="text-right">
+<div class="font-stat-lg text-primary">92</div>
+<div class="text-[10px] text-slate-400 font-bold uppercase">OVR Rating</div>
+</div>
+</div>
+</div>
+</div>
+<div class="p-4 flex items-center justify-between bg-primary/5">
+<div class="flex flex-col">
+<span class="text-slate-500 text-xs font-bold uppercase">Market Value</span>
+<span class="font-stat-sm text-on-background">$18.9M</span>
+</div>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-lg text-xs font-bold shadow-lg shadow-primary/20">SELECTED</button>
+</div>
+</div>
+<!-- Player Card 3 -->
+<div class="glass-card rounded-2xl overflow-hidden group cursor-pointer hover:border-primary/50 transition-all border-white/5">
+<div class="h-48 relative overflow-hidden bg-slate-900">
+<img alt="Player Gamma" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="A sleek action shot of a professional sports player in a dark navy and emerald gear, set against a high-contrast cinematic backdrop. The environment is a dimly lit, high-tech training facility with floating digital statistics hovering in the air. The mood is elite and tactical, focusing on the precision of the athlete's form." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpK8r97iXvYfk2WuWePQneoym8WGAxvbu_s9BWZM6kkTkri73LJEjqDLJLImbRiI-8TyocPIU2XgEpFpHo5QgfsrYeKZSiqWr1n4ZLkFstWAKgmbEGnEb91-agzwrLsz9Zjz5Sm3Yv7IrthM0NlRhkVaEBltqi9Knh5YxdXZj81x1ANVyJhEqGmuKOLVCQe2mcfRY4wUN5vOMSQC5jB5VXbDZ72BfgD-KOHRlrNNnKirG0jS2iqKvbspxDrCHoNiAhGHMksvMH"/>
+<div class="absolute top-4 left-4 bg-slate-950/80 backdrop-blur px-3 py-1 rounded-full flex items-center gap-2 border border-white/10">
+<span class="material-symbols-outlined text-primary text-sm" data-weight="fill">bolt</span>
+<span class="text-[10px] font-bold tracking-widest uppercase">Void Stalkers</span>
+</div>
+<div class="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-slate-950 to-transparent">
+<div class="flex items-end justify-between">
+<div>
+<div class="text-primary font-bold text-xs uppercase tracking-tighter">All-Rounder</div>
+<div class="font-h2 text-lg">Sloan "Phantom" Ryder</div>
+</div>
+<div class="text-right">
+<div class="font-stat-lg text-primary">84</div>
+<div class="text-[10px] text-slate-400 font-bold uppercase">OVR Rating</div>
+</div>
+</div>
+</div>
+</div>
+<div class="p-4 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-slate-500 text-xs font-bold uppercase">Market Value</span>
+<span class="font-stat-sm text-on-background">$9.2M</span>
+</div>
+<button class="bg-primary/10 hover:bg-primary text-primary hover:text-on-primary px-4 py-2 rounded-lg text-xs font-bold transition-all">SCOUT DATA</button>
+</div>
+</div>
+</div>
+<!-- Side Comparison Panel -->
+<div class="xl:col-span-4">
+<div class="glass-card rounded-2xl p-6 sticky top-24 border-primary/20 bg-slate-900/80">
+<div class="flex items-center justify-between mb-8">
+<h3 class="font-h2 text-lg text-on-background">Market Comparison</h3>
+<span class="material-symbols-outlined text-primary">compare_arrows</span>
+</div>
+<!-- Comparison Header -->
+<div class="grid grid-cols-2 gap-4 mb-8">
+<div class="text-center">
+<div class="relative w-16 h-16 mx-auto mb-3">
+<img alt="Vikram Singh Avatar" class="w-full h-full rounded-full object-cover border-2 border-primary p-1" data-alt="A high-detail circular profile picture of an elite athlete with sharp features and a determined gaze. They are wearing a dark tactical collar with integrated emerald electronics. The portrait is set against a dark, tech-patterned background with soft lens flare and cinematic lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJZbrXZsuru3aPgo3rzdIQnQ5QvY2fZoixC4xuW6RNRLEPm5W0M3RfEhSyhAlKJsoj1rxkW5SDn7KOVq8ZFTLPs0a0fywkqDutsA_LokFjnX25_0cKXt8DUyQODnV-FhWsKvAAZ4JhzLEj5srq3FabNWdF74CkqxR01V_cDCsdFGWgO6XZtPEBI3SJ2UxFeBNeBh2H3nIXrtba-m6mBlUdJnGH4LRxYZ20HRrJGqEc0-3WoU_mnkVBJpe-gF_TV-EvEhd6PR_L"/>
+<div class="absolute -bottom-1 -right-1 bg-primary text-on-primary text-[10px] font-black rounded-full w-6 h-6 flex items-center justify-center">92</div>
+</div>
+<div class="text-sm font-bold truncate">Vikram Singh</div>
+<div class="text-[10px] text-primary uppercase font-bold">Market Choice</div>
+</div>
+<div class="text-center opacity-70">
+<div class="relative w-16 h-16 mx-auto mb-3">
+<img alt="User Player Avatar" class="w-full h-full rounded-full object-cover border-2 border-slate-700 p-1" data-alt="A detailed digital portrait of a professional cricket player in a dark navy jersey. The lighting is focused and cinematic, creating strong highlights on their focused facial features. The background is a clean, dark grey studio environment with subtle atmospheric dust motes and a hint of emerald ambient light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZ13r89PwZ7kGOzamtAnHh-mbaTqOxLslOO__bU7h1WtR7n8yrGqXrfSWczawZNSeDbd3nhg-1nwca3kco5xDvh7_ez3UE93vTpnGAiThSyblUy3sZ7tMLxU40GIn1uBamXtt1TPTlZr26d4ylP1Xpg63zBd4OzvhJocxCOnIYimWDplSKNbWY_sAp9VsUNbZmVEfWg77RjzBQFXC0n1AhVrTMDhLbMM6Ju3y0XncM7Jy4E1uvhoFLtfYriwYl9m_KHhyLJsCZ"/>
+<div class="absolute -bottom-1 -right-1 bg-slate-700 text-white text-[10px] font-black rounded-full w-6 h-6 flex items-center justify-center">89</div>
+</div>
+<div class="text-sm font-bold truncate">Aiden "Ace" Khan</div>
+<div class="text-[10px] text-slate-500 uppercase font-bold">Your Squad</div>
+</div>
+</div>
+<!-- Comparison Metrics -->
+<div class="space-y-6">
+<!-- Metric 1 -->
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-bold uppercase tracking-widest text-slate-400">
+<span>Pace</span>
+<span class="text-primary">+12% Gain</span>
+</div>
+<div class="flex gap-1 h-2">
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment"></div>
+</div>
+</div>
+<!-- Metric 2 -->
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-bold uppercase tracking-widest text-slate-400">
+<span>Accuracy</span>
+<span class="text-error">-4% Loss</span>
+</div>
+<div class="flex gap-1 h-2">
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment"></div>
+<div class="stat-bar-segment"></div>
+<div class="stat-bar-segment"></div>
+</div>
+</div>
+<!-- Metric 3 -->
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-bold uppercase tracking-widest text-slate-400">
+<span>Endurance</span>
+<span class="text-primary">+20% Gain</span>
+</div>
+<div class="flex gap-1 h-2">
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment stat-bar-active"></div>
+<div class="stat-bar-segment"></div>
+<div class="stat-bar-segment"></div>
+</div>
+</div>
+</div>
+<div class="mt-10 pt-6 border-t border-white/5 flex flex-col gap-4">
+<div class="flex justify-between items-center">
+<span class="text-slate-400 text-sm">Purchase Price</span>
+<span class="font-stat-lg text-on-background">$18.9M</span>
+</div>
+<button class="w-full py-4 bg-primary text-on-primary font-black uppercase tracking-widest rounded-xl hover:shadow-[0_0_20px_rgba(78,222,163,0.4)] transition-all active:scale-95">
+                                CONFIRM TRANSFER
+                            </button>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+<!-- Bottom Navigation Mobile -->
+<nav class="fixed bottom-0 w-full flex justify-around items-center px-4 py-3 md:hidden bg-slate-900/95 backdrop-blur-md border-t border-white/10 z-50 rounded-t-2xl shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.5)]">
+<div class="flex flex-col items-center justify-center text-slate-500 scale-90 active:scale-100 transition-transform">
+<span class="material-symbols-outlined">emoji_events</span>
+<span class="font-inter text-[10px] font-bold uppercase tracking-widest">Standings</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 scale-90 active:scale-100 transition-transform">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="font-inter text-[10px] font-bold uppercase tracking-widest">Schedule</span>
+</div>
+<div class="flex flex-col items-center justify-center text-emerald-400 bg-emerald-500/10 rounded-xl px-3 py-1 scale-90 active:scale-100 transition-transform">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-inter text-[10px] font-bold uppercase tracking-widest">Market</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 scale-90 active:scale-100 transition-transform">
+<span class="material-symbols-outlined">person</span>
+<span class="font-inter text-[10px] font-bold uppercase tracking-widest">My Team</span>
+</div>
+</nav>
+</body></html>

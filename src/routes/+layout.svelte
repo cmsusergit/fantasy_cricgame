@@ -1,28 +1,21 @@
 <script lang="ts">
   import '../app.css';
   import { onMount } from 'svelte';
-  import { resetGame, initializeGame, saveCurrentGame } from '$lib/stores/gameState';
+  import { resetGame, initializeGame, saveCurrentGame, gamePhase } from '$lib/stores/gameState';
   
   let { children } = $props();
   let theme = $state('dark');
   let isResetting = $state(false);
   let newTeamName = $state('Your Team');
   let newManagerName = $state('You');
-  let newLogoUrl = $state('https://api.dicebear.com/7.x/shapes/svg?seed=Felix&backgroundColor=b6e3f4');
+  let newCoat = $state('🛡️');
   
   const teamAdjectives = ['Mighty', 'Super', 'Royal', 'Flying', 'Golden', 'Fierce', 'Cosmic', 'Thunder', 'Shadow'];
   const teamNouns = ['Lions', 'Eagles', 'Titans', 'Warriors', 'Knights', 'Dragons', 'Strikers', 'Phoenix', 'Panthers'];
   const managerFirstNames = ['John', 'Mike', 'David', 'Chris', 'James', 'Sarah', 'Emma', 'Alex', 'Liam', 'Sophia'];
   const managerLastNames = ['Smith', 'Johnson', 'Brown', 'Taylor', 'Wilson', 'Davis', 'Miller', 'Moore'];
 
-  const predefinedLogos = [
-    'https://api.dicebear.com/7.x/shapes/svg?seed=Felix&backgroundColor=b6e3f4',
-    'https://api.dicebear.com/7.x/shapes/svg?seed=Aneka&backgroundColor=c0aede',
-    'https://api.dicebear.com/7.x/shapes/svg?seed=Liam&backgroundColor=ffdfbf',
-    'https://api.dicebear.com/7.x/shapes/svg?seed=Tigger&backgroundColor=d1d4f9',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Bot1&backgroundColor=ffb8b8',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Team'
-  ];
+  const predefinedCoats = ['🛡️', '🦅', '🦁', '🐺', '⚔️', '👑', '🐉', '⚓', '⚡', '🏹'];
 
   function randomizeTeam() {
     newTeamName = `${teamAdjectives[Math.floor(Math.random() * teamAdjectives.length)]} ${teamNouns[Math.floor(Math.random() * teamNouns.length)]}`;
@@ -51,7 +44,7 @@
 
   function confirmReset() {
     resetGame();
-    initializeGame(newTeamName || 'Your Team', newManagerName || 'You', newLogoUrl);
+    initializeGame(newTeamName || 'Your Team', newManagerName || 'You', newCoat);
     saveCurrentGame(100000);
     isResetting = false;
     window.location.href = '/';
@@ -66,8 +59,27 @@
   <header>
     <nav>
       <a href="/">Dashboard</a>
-      <a href="/squad">Squad</a>
-      <a href="/draft">Draft</a>
+      
+      {#if $gamePhase !== 'match'}
+        <a href="/squad">Squad</a>
+      {/if}
+      
+      {#if $gamePhase === 'auction'}
+        <a href="/auction" style="color: var(--warning);">Live Auction</a>
+      {/if}
+      
+      {#if $gamePhase === 'scouting'}
+        <a href="/scouting" style="color: var(--info);">Scouting</a>
+      {/if}
+      
+      {#if $gamePhase === 'retention'}
+        <a href="/retention" style="color: var(--danger);">Retention</a>
+      {/if}
+      
+      {#if $gamePhase === 'season_end'}
+        <a href="/season-review" style="color: var(--success);">Season Review</a>
+      {/if}
+
       <a href="/training">Training</a>
       <a href="/tournament">Tournament</a>
     </nav>
@@ -109,20 +121,20 @@
       </div>
       
       <div class="form-group">
-        <label>Team Logo (Optional)</label>
+        <label>Coat of Arms</label>
         <div style="display: flex; gap: 12px; margin-bottom: 8px; flex-wrap: wrap;">
-          {#each predefinedLogos as logo}
+          {#each predefinedCoats as coat}
             <button 
               class="logo-option" 
-              class:selected={newLogoUrl === logo} 
-              onclick={() => newLogoUrl = logo}
-              style="padding: 0; border: 2px solid {newLogoUrl === logo ? 'var(--success)' : 'var(--border-color)'}; border-radius: 8px; background: transparent; cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center;"
+              class:selected={newCoat === coat} 
+              onclick={() => newCoat = coat}
+              style="font-size: 2rem; padding: 0; width: 48px; height: 48px; border: 2px solid {newCoat === coat ? 'var(--success)' : 'var(--border-color)'}; border-radius: 8px; background: var(--bg-tertiary); cursor: pointer; display: flex; align-items: center; justify-content: center;"
             >
-              <img src={logo} alt="Logo option" style="width: 48px; height: 48px; display: block;" />
+              {coat}
             </button>
           {/each}
         </div>
-        <input id="logoUrl" type="text" bind:value={newLogoUrl} placeholder="Or enter custom URL..." />
+        <input id="logoUrl" type="text" bind:value={newCoat} placeholder="Or enter custom emoji/character..." style="font-size: 1.5rem;" />
       </div>
       
       <div class="modal-actions">
@@ -138,6 +150,7 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    font-family: 'Lora', serif; /* Fallback if global fails */
   }
   
   header {
@@ -159,10 +172,12 @@
     color: var(--text-secondary);
     font-weight: 600;
     transition: color 0.2s ease;
+    font-family: 'Cinzel', serif; /* Use fantasy heading font for nav */
+    letter-spacing: 0.5px;
   }
   
   nav a:hover {
-    color: var(--text-primary);
+    color: var(--accent-gold); /* Fantasy hover color */
     text-decoration: none;
   }
   
@@ -196,6 +211,7 @@
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    backdrop-filter: blur(2px);
   }
   
   .modal-content {
@@ -208,7 +224,7 @@
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
   }
   
-  .modal-content h2 { margin-bottom: 8px; color: var(--text-primary); }
+  .modal-content h2 { margin-bottom: 8px; color: var(--text-primary); font-family: 'Cinzel', serif; }
   .modal-content p { color: var(--text-secondary); margin-bottom: 24px; font-size: 0.95rem; }
   
   .form-group {
@@ -226,6 +242,7 @@
     background: var(--bg-tertiary);
     color: var(--text-primary);
     font-size: 1rem;
+    font-family: 'Lora', serif;
   }
   
   .dice-btn {
@@ -260,6 +277,7 @@
     font-weight: 600;
     border: 1px solid var(--border-color);
     cursor: pointer;
+    font-family: inherit;
   }
   
   .btn-confirm {
@@ -270,6 +288,7 @@
     font-weight: 600;
     border: none;
     cursor: pointer;
+    font-family: inherit;
   }
   
   @media (max-width: 640px) {

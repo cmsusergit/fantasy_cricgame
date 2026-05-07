@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Player } from '$lib/models/player';
-  import { FACTIONS } from '$lib/models/faction';
+  import { FACTIONS, getAvatarUrl } from '$lib/models/faction';
   import { getEffectiveStats } from '$lib/models/player';
   
   interface Props {
@@ -11,6 +11,7 @@
   let { player, onClose }: Props = $props();
   
   let faction = $derived(FACTIONS[player.faction]);
+  let avatarUrl = $derived(getAvatarUrl(player.faction, player.portraitId || 1));
   let effectiveStats = $derived(getEffectiveStats(player));
   
   function getStatClass(value: number): string {
@@ -21,11 +22,16 @@
 </script>
 
 <div class="modal-overlay" onclick={onClose} role="dialog">
-  <div class="modal" onclick={(e) => e.stopPropagation()} role="document">
+  <div class="modal" onclick={(e) => e.stopPropagation()} role="document" data-faction={player.faction}>
     <button class="close-btn" onclick={onClose}>×</button>
     
     <div class="player-header">
-      <span class="faction-icon">{player.faction === 'human' ? '⚔' : player.faction === 'elf' ? '🌿' : player.faction === 'orc' ? '🪓' : player.faction === 'dwarf' ? '⛏' : player.faction === 'goblin' ? '💎' : '🌙'}</span>
+      <div class="avatar-container">
+        <img src={avatarUrl} alt={player.name} class="avatar-img" />
+        <div class="faction-badge" title="Faction: {faction.name}">
+          {player.faction === 'human' ? '⚔' : player.faction === 'elf' ? '🌿' : player.faction === 'orc' ? '🪓' : player.faction === 'dwarf' ? '⛏' : player.faction === 'goblin' ? '💎' : '🌙'}
+        </div>
+      </div>
       <div class="player-info">
         <h2>{player.name}</h2>
         <span class="role">{player.role} • {player.battingType || 'RHB'} • {player.battingRole || 'Middle Order'}{player.bowlingType && player.bowlingType !== 'none' ? ` • ${player.bowlingType}` : ''}</span>
@@ -127,7 +133,7 @@
     
     <div class="faction-bonus">
       <h3>Faction Bonus</h3>
-      <p>Tech: ×{faction.modifiers.tech.toFixed(2)}, Power: ×{faction.modifiers.power.toFixed(2)}</p>
+      <p>Tech: ×{faction.modifiers.tech.toFixed(2)}, Power: ×{faction.modifiers.power.toFixed(2)}, Fatigue Buildup: ×{faction.modifiers.fatigue.toFixed(2)}</p>
     </div>
   </div>
 </div>
@@ -171,14 +177,51 @@
   
   .player-header {
     display: flex;
-    gap: 16px;
+    gap: 20px;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 16px;
   }
   
-  .faction-icon {
-    font-size: 40px;
+  .avatar-container {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    flex-shrink: 0;
   }
+  
+  .avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--bg-secondary);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  }
+  
+  .faction-badge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  
+  .modal[data-faction="human"] .avatar-img { border: 3px solid var(--accent-human); box-shadow: 0 0 20px rgba(9, 105, 218, 0.3); }
+  .modal[data-faction="elf"] .avatar-img { border: 3px solid var(--accent-elf); box-shadow: 0 0 20px rgba(26, 127, 55, 0.3); }
+  .modal[data-faction="orc"] .avatar-img { border: 3px solid var(--accent-orc); box-shadow: 0 0 20px rgba(207, 34, 46, 0.3); }
+  .modal[data-faction="dwarf"] .avatar-img { border: 3px solid var(--accent-dwarf); box-shadow: 0 0 20px rgba(154, 103, 0, 0.3); }
+  .modal[data-faction="goblin"] .avatar-img { border: 3px solid var(--accent-goblin); box-shadow: 0 0 20px rgba(130, 80, 223, 0.3); }
+  .modal[data-faction="nightelf"] .avatar-img { border: 3px solid var(--accent-nightelf); box-shadow: 0 0 20px rgba(5, 152, 188, 0.3); }
   
   .player-info h2 {
     margin: 0;

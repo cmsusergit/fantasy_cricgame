@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#adc6ff",
+                    "error-container": "#93000a",
+                    "primary-fixed-dim": "#4edea3",
+                    "secondary-fixed-dim": "#adc6ff",
+                    "surface-container-highest": "#2d3449",
+                    "surface-container": "#171f33",
+                    "on-primary-fixed": "#002113",
+                    "surface": "#0b1326",
+                    "surface-container-lowest": "#060e20",
+                    "on-error": "#690005",
+                    "tertiary-fixed-dim": "#ffb95f",
+                    "inverse-primary": "#006c49",
+                    "on-surface-variant": "#bbcabf",
+                    "on-tertiary": "#472a00",
+                    "on-secondary-fixed-variant": "#004395",
+                    "on-tertiary-fixed": "#2a1700",
+                    "on-primary": "#003824",
+                    "tertiary": "#ffb95f",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "on-background": "#dae2fd",
+                    "primary-fixed": "#6ffbbe",
+                    "on-error-container": "#ffdad6",
+                    "error": "#ffb4ab",
+                    "surface-container-low": "#131b2e",
+                    "outline-variant": "#3c4a42",
+                    "tertiary-container": "#e29100",
+                    "on-secondary-fixed": "#001a42",
+                    "surface-variant": "#2d3449",
+                    "surface-dim": "#0b1326",
+                    "on-tertiary-container": "#523200",
+                    "on-primary-fixed-variant": "#005236",
+                    "on-secondary": "#002e6a",
+                    "surface-bright": "#31394d",
+                    "secondary-fixed": "#d8e2ff",
+                    "primary": "#4edea3",
+                    "inverse-surface": "#dae2fd",
+                    "on-surface": "#dae2fd",
+                    "outline": "#86948a",
+                    "background": "#0b1326",
+                    "surface-container-high": "#222a3d",
+                    "inverse-on-surface": "#283044",
+                    "tertiary-fixed": "#ffddb8",
+                    "primary-container": "#10b981",
+                    "on-secondary-container": "#e6ecff",
+                    "surface-tint": "#4edea3",
+                    "secondary-container": "#0566d9",
+                    "on-primary-container": "#00422b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "1rem",
+                    "lg": "1.5rem",
+                    "base": "4px",
+                    "margin-safe": "2rem",
+                    "xs": "0.25rem",
+                    "sm": "0.5rem",
+                    "xl": "2rem",
+                    "gutter": "1.5rem"
+            },
+            "fontFamily": {
+                    "stat-lg": ["Space Grotesk"],
+                    "label-caps": ["Space Grotesk"],
+                    "h2": ["Inter"],
+                    "stat-sm": ["Space Grotesk"],
+                    "display-lg": ["Inter"],
+                    "h1": ["Inter"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "stat-lg": ["24px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.15em", "fontWeight": "600"}],
+                    "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                    "stat-sm": ["14px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "500"}],
+                    "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(23, 31, 51, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .stat-segment {
+            height: 8px;
+            width: 100%;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            display: flex;
+            gap: 2px;
+        }
+        .stat-segment-fill {
+            height: 100%;
+            background: #4edea3;
+        }
+        .sparkline-svg {
+            stroke: #4edea3;
+            stroke-width: 2;
+            fill: none;
+            filter: drop-shadow(0 0 4px rgba(78, 222, 163, 0.4));
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="bg-slate-900/80 backdrop-blur-md text-emerald-500 font-inter tracking-tight docked full-width top-0 sticky z-50 border-b border-white/10 shadow-2xl shadow-emerald-900/20 flex justify-between items-center px-6 py-4 w-full max-w-full">
+<div class="flex items-center gap-8">
+<span class="text-xl font-black italic text-emerald-500 uppercase tracking-tighter">ELITE MANAGER</span>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-400 hover:text-slate-200" href="#">Roster</a>
+<a class="text-slate-400 hover:text-slate-200" href="#">Market</a>
+<a class="text-slate-400 hover:text-slate-200" href="#">League</a>
+<a class="text-slate-400 hover:text-slate-200" href="#">Analytics</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex gap-2">
+<button class="p-2 rounded-full hover:bg-white/5 transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="p-2 rounded-full hover:bg-white/5 transition-colors"><span class="material-symbols-outlined">settings</span></button>
+</div>
+<button class="bg-primary text-on-primary px-4 py-2 font-bold rounded-lg hover:opacity-80 scale-95 transition-all">DRAFT LIVE</button>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-4 md:px-lg py-xl pb-32">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Side: Roster Selection -->
+<div class="lg:col-span-8 space-y-md">
+<div class="flex justify-between items-end mb-sm">
+<div>
+<h1 class="font-h1 text-h1 text-on-surface">Retention Board</h1>
+<p class="text-on-surface-variant opacity-70">Secure your core talent for the upcoming season.</p>
+</div>
+<div class="text-right">
+<span class="font-label-caps text-label-caps text-tertiary">DEADLINE: 24H 12M</span>
+</div>
+</div>
+<!-- Squad List Container -->
+<div class="glass-card rounded-xl overflow-hidden">
+<div class="grid grid-cols-12 px-6 py-4 border-b border-white/5 font-label-caps text-label-caps text-on-surface-variant/60">
+<div class="col-span-4">PLAYER / FACTION</div>
+<div class="col-span-2 text-center">TREND</div>
+<div class="col-span-1 text-center">AGE</div>
+<div class="col-span-3 text-right px-4">VALUE</div>
+<div class="col-span-2 text-right">STATUS</div>
+</div>
+<!-- Player Row 1 -->
+<div class="grid grid-cols-12 px-6 py-6 border-b border-white/5 items-center hover:bg-white/5 transition-colors group">
+<div class="col-span-4 flex items-center gap-md">
+<div class="relative">
+<img alt="Player" class="w-12 h-12 rounded-full border-2 border-primary object-cover" data-alt="A professional sports headshot of a focused athlete with intense eyes, captured in a high-contrast cinematic lighting style against a dark, moody background. The athlete has a modern grooming style and is wearing a sleek, professional team jersey with emerald green accents. The overall aesthetic is elite, powerful, and premium." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZH2gBPRtqGFTME_KJsBWLnL0jkROKtxEOgT_voCTQ7CiXHMBdsx4dcl8dmcAR_stLlmZ7CJUOYbRWumfqfr7ozBfPoTLWAC_GNCMuNBQN3RTf74PNucXMww51fHZLD-H677ilQNGrbpDZ2vJnu1ovOjGY6Pf8VWzrkLqp2LFGQ87dpz8ib01ywxPBluxihFGI78LdjkwGgW-gcIk_XQlTX1bzIV5O6ynSS3OkuxfOFtXA-P1_4XOCmweuE2bHl7DFjr0-XZYp"/>
+<div class="absolute -bottom-1 -right-1 bg-surface p-1 rounded-full border border-white/10">
+<span class="material-symbols-outlined text-[14px] text-primary" data-weight="fill">shield</span>
+</div>
+</div>
+<div>
+<div class="font-h2 text-body-md font-bold text-on-surface">V. Kohli</div>
+<div class="font-label-caps text-[10px] text-primary">STORM CHASERS</div>
+</div>
+</div>
+<div class="col-span-2 flex justify-center">
+<svg class="w-16 h-8 sparkline-svg" viewbox="0 0 100 40">
+<path d="M0 30 Q 25 10, 50 25 T 100 15"></path>
+</svg>
+</div>
+<div class="col-span-1 text-center font-stat-sm text-stat-sm text-on-surface">34</div>
+<div class="col-span-3 text-right px-4">
+<div class="font-stat-sm text-stat-sm text-on-surface">$17,500</div>
+<div class="text-[10px] text-primary font-bold">+12.5%</div>
+</div>
+<div class="col-span-2 flex justify-end">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-12 h-6 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+</label>
+</div>
+</div>
+<!-- Player Row 2 -->
+<div class="grid grid-cols-12 px-6 py-6 border-b border-white/5 items-center hover:bg-white/5 transition-colors group">
+<div class="col-span-4 flex items-center gap-md">
+<div class="relative">
+<img alt="Player" class="w-12 h-12 rounded-full border-2 border-tertiary object-cover" data-alt="A side-profile cinematic portrait of a seasoned professional athlete, showing experience and determination. The lighting is dramatic, highlighting the contours of the face with amber and cool blue tones. The background is a dark, blurred stadium interior, creating a sense of scale and importance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDYSSg21IuOc5Ol3CuxWBdsC8cA-g1SlqDUYd4KkUSvwrZrhSyfqEcadxY8oYbl8eKKayu_m2J5OXy_ktLFjkoMFjuH8BzK47s7zj_bR4xZywDt3J4fn5XD9fSDHXOUxqeXS6y2vAyAkD6WBRVHON0YUhA_FsjV5hpneRy1eUzW_8PYh9qoZlizM0lli2g67aH8Lo0gHk5V1lA1PKI8-yAu3upntcknoI1zzDx_No56v3vgFWtJGtxdYbUOX2ThSgQxq7AlgWs"/>
+<div class="absolute -bottom-1 -right-1 bg-surface p-1 rounded-full border border-white/10">
+<span class="material-symbols-outlined text-[14px] text-tertiary" data-weight="fill">bolt</span>
+</div>
+</div>
+<div>
+<div class="font-h2 text-body-md font-bold text-on-surface">R. Khan</div>
+<div class="font-label-caps text-[10px] text-tertiary">TITAN FORCE</div>
+</div>
+</div>
+<div class="col-span-2 flex justify-center">
+<svg class="w-16 h-8 sparkline-svg" viewbox="0 0 100 40">
+<path class="stroke-tertiary opacity-70" d="M0 10 Q 30 40, 60 10 T 100 20"></path>
+</svg>
+</div>
+<div class="col-span-1 text-center font-stat-sm text-stat-sm text-on-surface">24</div>
+<div class="col-span-3 text-right px-4">
+<div class="font-stat-sm text-stat-sm text-on-surface">$12,000</div>
+<div class="text-[10px] text-error font-bold">-4.2%</div>
+</div>
+<div class="col-span-2 flex justify-end">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-12 h-6 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+</label>
+</div>
+</div>
+<!-- Player Row 3 -->
+<div class="grid grid-cols-12 px-6 py-6 border-b border-white/5 items-center hover:bg-white/5 transition-colors group">
+<div class="col-span-4 flex items-center gap-md">
+<div class="relative">
+<img alt="Player" class="w-12 h-12 rounded-full border-2 border-primary object-cover" data-alt="A portrait of a rising young athlete, looking directly at the camera with confidence. The visual style is crisp and modern, featuring soft-box lighting that gives a professional studio feel. The colors are deep slates and emerald green accents, matching a premium sports dashboard aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1uZfK09m-MJTXbBJjlU1nAbcl9kGuiAq40kyqrMfovQlbk8QqBe-ebuF6uPC4kDtNMSJuNbv6LmR0qFrNZElqFvK2-wIsrVh3MhaLaA-1SbemP8VivGyY-offdZlYJPoSlT_ZvM2KDpnEpea7MkYGpfhSG8rV7pMg6f6VZL9DQALF6_hXd3lo6GSSLLZbdWfY6U6veZq_5g1RdjzAF68KKMW5UmfbN4J6Dc-wxTkTxPoWQiykwuOwduIfhlld0jGORWUp5xFw"/>
+<div class="absolute -bottom-1 -right-1 bg-surface p-1 rounded-full border border-white/10">
+<span class="material-symbols-outlined text-[14px] text-primary" data-weight="fill">verified</span>
+</div>
+</div>
+<div>
+<div class="font-h2 text-body-md font-bold text-on-surface">J. Bumrah</div>
+<div class="font-label-caps text-[10px] text-primary">STORM CHASERS</div>
+</div>
+</div>
+<div class="col-span-2 flex justify-center">
+<svg class="w-16 h-8 sparkline-svg" viewbox="0 0 100 40">
+<path d="M0 35 L 20 25 L 40 30 L 60 10 L 80 15 L 100 5"></path>
+</svg>
+</div>
+<div class="col-span-1 text-center font-stat-sm text-stat-sm text-on-surface">29</div>
+<div class="col-span-3 text-right px-4">
+<div class="font-stat-sm text-stat-sm text-on-surface">$15,500</div>
+<div class="text-[10px] text-primary font-bold">+8.1%</div>
+</div>
+<div class="col-span-2 flex justify-end">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-12 h-6 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Side: Retention Summary -->
+<div class="lg:col-span-4">
+<div class="glass-card rounded-xl p-6 sticky top-24 space-y-lg border-primary/20 bg-primary/5">
+<div class="border-b border-white/10 pb-md">
+<h2 class="font-h2 text-h2 text-on-surface">Retention Summary</h2>
+<p class="text-on-surface-variant text-sm opacity-60">Review your budget impacts</p>
+</div>
+<div class="space-y-md">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Slots Used</span>
+<span class="font-stat-lg text-stat-lg text-primary">2 / 5</span>
+</div>
+<div class="w-full bg-white/5 h-2 rounded-full overflow-hidden flex gap-1 p-0.5">
+<div class="h-full bg-primary rounded-full w-1/5"></div>
+<div class="h-full bg-primary rounded-full w-1/5"></div>
+<div class="h-full bg-white/10 rounded-full w-1/5"></div>
+<div class="h-full bg-white/10 rounded-full w-1/5"></div>
+<div class="h-full bg-white/10 rounded-full w-1/5"></div>
+</div>
+</div>
+<div class="space-y-sm">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Retention Cost</span>
+<span class="font-stat-lg text-stat-lg text-on-surface">$33,000</span>
+</div>
+<div class="flex justify-between items-center text-error">
+<span class="font-label-caps text-[10px]">Estimated Tax</span>
+<span class="font-stat-sm text-stat-sm">+$2,450</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest/50 p-4 rounded-lg border border-white/5">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-label-caps text-label-caps text-secondary">Auction Budget</span>
+</div>
+<div class="font-display-lg text-[40px] font-black text-on-surface">$64,550</div>
+<div class="text-[10px] text-on-surface-variant/60 font-bold tracking-widest uppercase">Remaining of $100k</div>
+</div>
+<div class="p-md bg-tertiary/10 border border-tertiary/20 rounded-lg flex gap-md">
+<span class="material-symbols-outlined text-tertiary">warning</span>
+<p class="text-[11px] text-on-tertiary-container font-medium">Releasing R. Khan will increase your auction purse but might forfeit faction bonuses.</p>
+</div>
+<button class="w-full bg-primary text-on-primary font-bold py-4 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+<span>Finalize Roster</span>
+<span class="material-symbols-outlined">rocket_launch</span>
+</button>
+<p class="text-center text-[10px] text-on-surface-variant/40 font-medium">Decisions are final after season lock.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden bg-slate-950/90 backdrop-blur-xl text-emerald-500 font-bold uppercase tracking-widest fixed bottom-0 w-full z-50 border-t border-white/5 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] flex justify-around items-center pt-3 pb-safe px-4">
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-60 hover:text-emerald-300">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-[10px]">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-60 hover:text-emerald-300">
+<span class="material-symbols-outlined">groups</span>
+<span class="text-[10px]">Squad</span>
+</div>
+<div class="flex flex-col items-center justify-center text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] scale-110">
+<span class="material-symbols-outlined">currency_exchange</span>
+<span class="text-[10px]">Retention</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-60 hover:text-emerald-300">
+<span class="material-symbols-outlined">search_insights</span>
+<span class="text-[10px]">Scout</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-60 hover:text-emerald-300">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px]">Profile</span>
+</div>
+</nav>
+</body></html>

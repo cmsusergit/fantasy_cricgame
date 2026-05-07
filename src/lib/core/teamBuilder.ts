@@ -135,7 +135,7 @@ export function generateAITeam(
 ): Team {
   const faction = (['human', 'elf', 'orc', 'dwarf', 'goblin', 'nightelf'] as const)[index % 6];
   const teamPlayers = playerPool
-    .slice(index * 12, index * 12 + 12)
+    .slice(index * 15, index * 15 + 15)
     .map(p => ({ ...p, isAvailable: false }));
   
   const tendency = createTeamTendency(personality);
@@ -152,17 +152,17 @@ export function generateAITeam(
     matchesPlayed: 0,
     runsFor: 0,
     runsAgainst: 0,
-    isUserTeam: false,
-    fanProfile: { homeAdvantage: 0, popularity: 50, revenue: 0, matchBonus: 0 },
-    sponsorship: null,
-    injuries: [],
-    personality,
+          isUserTeam: false,
+          fanProfile: { homeAdvantage: 0, popularity: 50, revenue: 0, matchBonus: 0 },
+          sponsorships: [],
+          tournamentWins: 0,
+          injuries: [],    personality,
     tendency
   };
 }
 
 export function generateUserTeam(playerPool: Player[]): Team {
-  const teamPlayers = playerPool.slice(0, 12).map(p => ({ ...p, isAvailable: false }));
+  const teamPlayers = playerPool.slice(0, 15).map(p => ({ ...p, isAvailable: false }));
   const tendency = createTeamTendency('balanced');
   
   return {
@@ -179,7 +179,8 @@ export function generateUserTeam(playerPool: Player[]): Team {
     runsAgainst: 0,
     isUserTeam: true,
     fanProfile: { homeAdvantage: 0, popularity: 50, revenue: 0, matchBonus: 0 },
-    sponsorship: null,
+    sponsorships: [],
+    tournamentWins: 0,
     injuries: [],
     personality: 'balanced',
     tendency

@@ -40,6 +40,18 @@ export interface Player {
   matches: number;    // career matches
   runsScored: number; // career runs
   wickets: number;   // career wickets
+  
+  // Phase 1: Season Transition & Economy
+  age: number;
+  marketValue: number;
+  potential: number;
+  isScouted: boolean;
+  retiring?: boolean;
+  portraitId: number;
+  tournamentStats?: {
+    runs: number;
+    wickets: number;
+  };
 }
 
 // Lower base stats to target 180-200 average runs
@@ -93,6 +105,6 @@ export function createDefaultSpecial(): PlayerSpecial {
   };
 }
 
-export function getFactionMultipliers(faction: FactionType): { tech: number; power: number } {
+export function getFactionMultipliers(faction: FactionType): { tech: number; power: number; fatigue: number } {
   return FACTIONS[faction].modifiers;
 }

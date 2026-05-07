@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&amp;family=Space+Grotesk:wght@500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary": "#4ae176",
+                      "surface-tint": "#fbbc00",
+                      "inverse-on-surface": "#283044",
+                      "on-surface-variant": "#d4c5ab",
+                      "on-tertiary": "#263143",
+                      "tertiary-fixed": "#d8e3fb",
+                      "on-tertiary-fixed-variant": "#3c475a",
+                      "outline-variant": "#504532",
+                      "outline": "#9c8f78",
+                      "inverse-primary": "#795900",
+                      "background": "#0b1326",
+                      "tertiary": "#dbe6fe",
+                      "secondary-fixed": "#6bff8f",
+                      "primary-container": "#ffbf00",
+                      "surface-container-low": "#131b2e",
+                      "on-secondary-fixed-variant": "#005321",
+                      "surface": "#0b1326",
+                      "surface-bright": "#31394d",
+                      "on-secondary-fixed": "#002109",
+                      "on-primary": "#402d00",
+                      "on-error": "#690005",
+                      "on-background": "#dae2fd",
+                      "surface-container-high": "#222a3d",
+                      "secondary-container": "#00b954",
+                      "primary-fixed": "#ffdfa0",
+                      "surface-dim": "#0b1326",
+                      "on-surface": "#dae2fd",
+                      "on-tertiary-fixed": "#111c2d",
+                      "on-primary-fixed": "#261a00",
+                      "error": "#ffb4ab",
+                      "error-container": "#93000a",
+                      "surface-container-highest": "#2d3449",
+                      "on-tertiary-container": "#4a5569",
+                      "surface-container": "#171f33",
+                      "primary": "#ffe2ab",
+                      "on-primary-container": "#6d5000",
+                      "on-secondary": "#003915",
+                      "on-error-container": "#ffdad6",
+                      "on-secondary-container": "#004119",
+                      "on-primary-fixed-variant": "#5c4300",
+                      "tertiary-fixed-dim": "#bcc7de",
+                      "tertiary-container": "#bfcae1",
+                      "surface-variant": "#2d3449",
+                      "primary-fixed-dim": "#fbbc00",
+                      "surface-container-lowest": "#060e20",
+                      "secondary-fixed-dim": "#4ae176",
+                      "inverse-surface": "#dae2fd"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "sm": "16px",
+                      "md": "24px",
+                      "lg": "40px",
+                      "margin": "24px",
+                      "gutter": "16px",
+                      "xs": "8px",
+                      "base": "4px",
+                      "xl": "64px"
+              },
+              "fontFamily": {
+                      "label-caps": ["Space Grotesk"],
+                      "body-base": ["Inter"],
+                      "data-mono": ["Space Grotesk"],
+                      "display-lg": ["Inter"],
+                      "headline-md": ["Inter"]
+              },
+              "fontSize": {
+                      "label-caps": ["12px", {"lineHeight": "1", "fontWeight": "700"}],
+                      "body-base": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "data-mono": ["14px", {"lineHeight": "1.2", "fontWeight": "500"}],
+                      "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                      "headline-md": ["24px", {"lineHeight": "1.2", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .circular-chart {
+            display: block;
+            margin: 10px auto;
+            max-width: 80%;
+            max-height: 250px;
+        }
+        .circle-bg {
+            fill: none;
+            stroke: #1e293b;
+            stroke-width: 2.8;
+        }
+        .circle {
+            fill: none;
+            stroke-width: 2.8;
+            stroke-linecap: round;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-base antialiased">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-slate-950/90 backdrop-blur-xl border-b border-white/10 shadow-2xl">
+<div class="text-xl font-black tracking-tighter text-amber-500">CRICKET STRATEGIST</div>
+<nav class="hidden md:flex items-center space-x-8">
+<a class="text-slate-400 hover:text-white transition-colors font-sans tracking-tight text-sm uppercase font-semibold" href="#">Match Center</a>
+<a class="text-slate-400 hover:text-white transition-colors font-sans tracking-tight text-sm uppercase font-semibold" href="#">Roster</a>
+<a class="text-slate-400 hover:text-white transition-colors font-sans tracking-tight text-sm uppercase font-semibold" href="#">Transfers</a>
+<a class="text-amber-500 border-b-2 border-amber-500 pb-1 font-sans tracking-tight text-sm uppercase font-semibold" href="#">Analytics</a>
+</nav>
+<div class="flex items-center space-x-4">
+<button class="p-2 text-slate-400 hover:bg-white/5 transition-all rounded">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-400 hover:bg-white/5 transition-all rounded">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-white/20">
+<img alt="User Profile Avatar" data-alt="Close-up portrait of a professional sports manager with a focused expression, wearing a sleek navy blue polo shirt with subtle gold branding. The background is a soft-focus high-tech digital control room with ambient amber lighting, creating an atmosphere of prestigious athletic leadership and analytical expertise." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB84jX-xUSQpe0js3uh-gi2f7b3o9hpWknSWK_yKGTB9QzokZg3nbSMXMTtu8Sil7AMOWsaXVEEOgShR16gP4YntiqjLQk6bCbAhm8-kmg4d5cqgDObdgcEI6pmCa30wSoHGdWXKscT0Xmc-apum4GBOfGTcsRa3cSk_0MEzeQ1fe9H6_LmaiPImq7gLU7EiLy39hwauYzMSzwnJdoqPhPW1bVBjdPA5TW2xU9tFq1FMMi9HmQGBxJljpn1VEaf2maUzAcYsD38"/>
+</div>
+</div>
+</header>
+<main class="mt-16 pb-xl max-w-7xl mx-auto px-margin">
+<!-- Result Banner -->
+<section class="py-lg">
+<div class="glass-panel p-lg rounded-xl flex flex-col md:flex-row items-center justify-between gap-lg relative overflow-hidden">
+<!-- Background visual element -->
+<div class="absolute -right-20 -top-20 w-64 h-64 bg-primary-container/10 blur-[100px] rounded-full"></div>
+<div class="flex items-center gap-md z-10">
+<div class="text-center">
+<div class="w-20 h-20 bg-surface-container rounded-lg flex items-center justify-center border border-white/10 mb-xs">
+<span class="material-symbols-outlined text-display-lg text-primary-container">sports_cricket</span>
+</div>
+<p class="font-label-caps text-label-caps text-slate-400">ELITE STRIKERS</p>
+</div>
+<div class="text-center">
+<p class="font-display-lg text-display-lg text-primary-container">214/4</p>
+<p class="font-data-mono text-data-mono text-slate-500">(20.0 OV)</p>
+</div>
+</div>
+<div class="text-center z-10">
+<h1 class="font-display-lg text-[40px] text-white tracking-tighter mb-base">VICTORY BY 45 RUNS</h1>
+<div class="inline-block px-sm py-1 bg-secondary/20 text-secondary border border-secondary/30 font-label-caps text-label-caps tracking-widest">POST-MATCH ANALYSIS REPORT</div>
+</div>
+<div class="flex items-center gap-md z-10">
+<div class="text-center">
+<p class="font-display-lg text-display-lg text-slate-300">169/9</p>
+<p class="font-data-mono text-data-mono text-slate-500">(20.0 OV)</p>
+</div>
+<div class="text-center">
+<div class="w-20 h-20 bg-surface-container rounded-lg flex items-center justify-center border border-white/10 mb-xs">
+<span class="material-symbols-outlined text-display-lg text-slate-500">security</span>
+</div>
+<p class="font-label-caps text-label-caps text-slate-400">THUNDER KINGS</p>
+</div>
+</div>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Column: Player of the Match -->
+<div class="lg:col-span-3 space-y-gutter">
+<div class="glass-panel p-md rounded-xl border-t-2 border-primary-container">
+<p class="font-label-caps text-label-caps text-primary-container mb-md">PLAYER OF THE MATCH</p>
+<div class="relative mb-md">
+<img class="w-full h-48 object-cover rounded-lg grayscale hover:grayscale-0 transition-all duration-500" data-alt="Professional cricket player in a dynamic action pose, wearing a team jersey with primary gold and deep navy colors. The lighting is dramatic and focused, emphasizing the player's athletic build and determination. The style is cinematic and high-contrast, fitting for a prestigious sports performance dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwW0ERa0k6byu3cxQilAgDvk16rhzsiqEjdvzDlf_Si_0FEXysqa9RW84vDOOqja7vO5Ftp83WRA_GXtQ-GDA7S5mLSxYDbgSB62ssPOAkLLHhKk_W7tS7-erfJdTZ2_pTjvp_UQ7I1SeXZCfNte_Cb_M0ERGxoOf1zfpbAgdulwAXi0UmJGRyJBdTXGPqpEkuDhBkNKwP5cfiEIVAFox080cVg6HCjQf67FSyeDNz51fvmHNLbb-eNv3Y_BjmEDPL9Ow5nzjo"/>
+<div class="absolute bottom-0 left-0 right-0 p-sm bg-gradient-to-t from-slate-950 to-transparent">
+<p class="font-headline-md text-white">RAHUL SHARMA</p>
+<p class="font-label-caps text-label-caps text-primary-container">ALL-ROUNDER</p>
+</div>
+</div>
+<div class="space-y-sm">
+<div class="flex justify-between items-center border-b border-white/10 pb-xs">
+<span class="text-slate-400 text-data-mono">RUNS</span>
+<span class="text-white font-bold">84 (42)</span>
+</div>
+<div class="flex justify-between items-center border-b border-white/10 pb-xs">
+<span class="text-slate-400 text-data-mono">WICKETS</span>
+<span class="text-white font-bold">2/18</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-slate-400 text-data-mono">IMPACT SCORE</span>
+<span class="text-secondary font-bold">+24.5</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Dashboard Area -->
+<div class="lg:col-span-9 space-y-gutter">
+<!-- KPI Section -->
+<div class="glass-panel p-md rounded-xl">
+<p class="font-label-caps text-label-caps text-slate-400 mb-lg">KEY PERFORMANCE INDICATORS</p>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<div class="text-center">
+<div class="relative h-32 w-32 mx-auto">
+<svg class="circular-chart" viewbox="0 0 36 36">
+<path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+<path class="circle stroke-primary-container" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke-dasharray="85, 100"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="font-headline-md text-white">85%</span>
+</div>
+</div>
+<p class="font-label-caps text-[10px] tracking-widest text-slate-500 mt-xs">BATTING EFFICIENCY</p>
+</div>
+<div class="text-center">
+<div class="relative h-32 w-32 mx-auto">
+<svg class="circular-chart" viewbox="0 0 36 36">
+<path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+<path class="circle stroke-secondary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke-dasharray="72, 100"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="font-headline-md text-white">7.2</span>
+</div>
+</div>
+<p class="font-label-caps text-[10px] tracking-widest text-slate-500 mt-xs">BOWLING ECONOMY</p>
+</div>
+<div class="text-center">
+<div class="relative h-32 w-32 mx-auto">
+<svg class="circular-chart" viewbox="0 0 36 36">
+<path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+<path class="circle stroke-on-surface-variant" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke-dasharray="64, 100"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="font-headline-md text-white">64%</span>
+</div>
+</div>
+<p class="font-label-caps text-[10px] tracking-widest text-slate-500 mt-xs">FIELD PRESSURE</p>
+</div>
+</div>
+</div>
+<!-- Top Performers Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Batsmen -->
+<div class="glass-panel rounded-xl overflow-hidden border-t-2 border-primary-container/50">
+<div class="bg-white/5 px-md py-sm border-b border-white/10 flex justify-between items-center">
+<p class="font-label-caps text-label-caps text-white">TOP BATSMEN</p>
+<span class="material-symbols-outlined text-primary-container">sports_cricket</span>
+</div>
+<div class="p-md space-y-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="text-slate-600 font-bold">01</span>
+<div>
+<p class="text-white font-bold">R. Sharma</p>
+<p class="text-slate-500 text-xs">SR: 200.0</p>
+</div>
+</div>
+<p class="text-primary-container font-black text-headline-md">84</p>
+</div>
+<div class="flex items-center justify-between opacity-80">
+<div class="flex items-center gap-sm">
+<span class="text-slate-600 font-bold">02</span>
+<div>
+<p class="text-white font-bold">D. Miller</p>
+<p class="text-slate-500 text-xs">SR: 145.2</p>
+</div>
+</div>
+<p class="text-white font-black text-headline-md">52</p>
+</div>
+<div class="flex items-center justify-between opacity-60">
+<div class="flex items-center gap-sm">
+<span class="text-slate-600 font-bold">03</span>
+<div>
+<p class="text-white font-bold">S. Curran</p>
+<p class="text-slate-500 text-xs">SR: 132.8</p>
+</div>
+</div>
+<p class="text-white font-black text-headline-md">31</p>
+</div>
+</div>
+</div>
+<!-- Bowlers -->
+<div class="glass-panel rounded-xl overflow-hidden border-t-2 border-secondary/50">
+<div class="bg-white/5 px-md py-sm border-b border-white/10 flex justify-between items-center">
+<p class="font-label-caps text-label-caps text-white">TOP BOWLERS</p>
+<span class="material-symbols-outlined text-secondary">sports_baseball</span>
+</div>
+<div class="p-md space-y-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="text-slate-600 font-bold">01</span>
+<div>
+<p class="text-white font-bold">J. Bumrah</p>
+<p class="text-slate-500 text-xs">ECON: 4.5</p>
+</div>
+</div>
+<p class="text-secondary font-black text-headline-md">3/18</p>
+</div>
+<div class="flex items-center justify-between opacity-80">
+<div class="flex items-center gap-sm">
+<span class="text-slate-600 font-bold">02</span>
+<div>
+<p class="text-white font-bold">R. Khan</p>
+<p class="text-slate-500 text-xs">ECON: 5.2</p>
+</div>
+</div>
+<p class="text-white font-black text-headline-md">2/21</p>
+</div>
+<div class="flex items-center justify-between opacity-60">
+<div class="flex items-center gap-sm">
+<span class="text-slate-600 font-bold">03</span>
+<div>
+<p class="text-white font-bold">A. Nortje</p>
+<p class="text-slate-500 text-xs">ECON: 6.8</p>
+</div>
+</div>
+<p class="text-white font-black text-headline-md">2/27</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Tactical Review -->
+<div class="glass-panel p-md rounded-xl">
+<p class="font-label-caps text-label-caps text-slate-400 mb-md">TACTICAL REVIEW</p>
+<div class="space-y-sm">
+<div class="flex items-start gap-sm p-sm bg-white/5 rounded">
+<span class="material-symbols-outlined text-secondary mt-1">check_circle</span>
+<div>
+<p class="text-white font-bold">Aggressive batting in Powerplay paid off</p>
+<p class="text-slate-400 text-sm">Maintained 10+ runs per over in the first 6 overs, building high early momentum.</p>
+</div>
+</div>
+<div class="flex items-start gap-sm p-sm bg-white/5 rounded">
+<span class="material-symbols-outlined text-secondary mt-1">check_circle</span>
+<div>
+<p class="text-white font-bold">Spinners contained the middle overs well</p>
+<p class="text-slate-400 text-sm">Restricted the opposition to 45 runs between overs 7-15, forcing mistakes.</p>
+</div>
+</div>
+<div class="flex items-start gap-sm p-sm bg-white/5 rounded border border-primary-container/20">
+<span class="material-symbols-outlined text-primary-container mt-1">info</span>
+<div>
+<p class="text-white font-bold">Pace transition at Death Overs</p>
+<p class="text-slate-400 text-sm">Effective use of slower ball variations limited the 'Thunder Kings' to just 32 runs in the final 5 overs.</p>
+</div>
+</div>
+<div class="flex items-start gap-sm p-sm bg-white/5 rounded opacity-75">
+<span class="material-symbols-outlined text-on-surface-variant mt-1">warning</span>
+<div>
+<p class="text-white font-bold">Wicketkeeping lapse at 14.2 OV</p>
+<p class="text-slate-400 text-sm">Dropped catch cost approximately 12 additional fantasy points; focus on fielding drills.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<footer class="mt-xl flex flex-col md:flex-row items-center justify-between gap-md border-t border-white/10 pt-lg">
+<div class="flex flex-col md:flex-row gap-sm w-full md:w-auto">
+<button class="bg-primary-container text-on-primary-container font-label-caps text-label-caps py-md px-xl flex items-center justify-center gap-xs hover:brightness-110 transition-all">
+                    NEXT MATCH <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<button class="bg-surface-container-high text-white border border-white/10 font-label-caps text-label-caps py-md px-xl flex items-center justify-center gap-xs hover:bg-white/10 transition-all">
+                    VIEW FULL SCORECARD <span class="material-symbols-outlined">list_alt</span>
+</button>
+</div>
+<div class="flex items-center gap-md text-slate-500">
+<span class="font-data-mono text-xs">REPORT GENERATED: OCT 24, 2023 - 22:45 IST</span>
+<div class="flex gap-xs">
+<button class="p-2 hover:text-white transition-colors"><span class="material-symbols-outlined text-sm">share</span></button>
+<button class="p-2 hover:text-white transition-colors"><span class="material-symbols-outlined text-sm">download</span></button>
+</div>
+</div>
+</footer>
+</main>
+<!-- Side Navigation Shell (Hidden on Mobile) -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 z-40 hidden lg:flex flex-col bg-slate-950 border-r border-white/10">
+<div class="p-6 border-b border-white/10">
+<div class="flex items-center space-x-3 mb-xs">
+<div class="w-8 h-8 rounded bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">stars</span>
+</div>
+<div>
+<p class="text-white font-bold text-xs uppercase tracking-widest">Elite Strikers</p>
+<p class="text-slate-500 text-[10px] uppercase font-bold tracking-widest">Tier 1 League</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 py-4">
+<a class="flex items-center space-x-3 text-slate-400 px-6 py-4 hover:bg-white/5 transition-all font-sans text-xs font-bold uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span>War Room</span>
+</a>
+<a class="flex items-center space-x-3 text-slate-400 px-6 py-4 hover:bg-white/5 transition-all font-sans text-xs font-bold uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span>Team View</span>
+</a>
+<a class="flex items-center space-x-3 text-slate-400 px-6 py-4 hover:bg-white/5 transition-all font-sans text-xs font-bold uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span>Marketplace</span>
+</a>
+<a class="flex items-center space-x-3 text-amber-500 bg-amber-500/10 border-r-4 border-amber-500 px-6 py-4 transition-all font-sans text-xs font-bold uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>Reports</span>
+</a>
+<a class="flex items-center space-x-3 text-slate-400 px-6 py-4 hover:bg-white/5 transition-all font-sans text-xs font-bold uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined">history</span>
+<span>History</span>
+</a>
+</nav>
+<div class="p-6">
+<button class="w-full bg-primary-container text-on-primary-container font-label-caps text-[10px] py-sm tracking-widest hover:brightness-110">
+                NEW TRANSFER
+            </button>
+</div>
+</aside>
+</body></html>

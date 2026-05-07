@@ -65,7 +65,7 @@ function createTeamStore() {
           id: teamId,
           name: generateTeamName(faction),
           coach: generateCoachName(faction),
-          budget: isUserTeam ? (userTeam?.budget ?? 100000) : 50000,
+          budget: isUserTeam ? (userTeam?.budget ?? 1000000) : 800000,
           players: teamPlayers,
           wins: 0,
           losses: 0,
@@ -75,7 +75,8 @@ function createTeamStore() {
           runsAgainst: 0,
           isUserTeam,
           fanProfile: { homeAdvantage: 0, popularity: 50, revenue: 0, matchBonus: 0 },
-          sponsorship: null,
+          sponsorships: [],
+          tournamentWins: 0,
           injuries: [],
           personality: isUserTeam ? 'balanced' : TEAM_PERSONALITIES[i - 1] || 'balanced',
           tendency: createTeamTendency(isUserTeam ? 'balanced' : TEAM_PERSONALITIES[i - 1] || 'balanced'),
@@ -147,11 +148,11 @@ function createTeamStore() {
         })
       );
     },
-    setSponsorship: (teamId: string, sponsorship: any) => {
+    addSponsorship: (teamId: string, sponsorship: any) => {
       update(teams =>
         teams.map(t => {
           if (t.id === teamId) {
-            return { ...t, sponsorship };
+            return { ...t, sponsorships: [...(t.sponsorships || []), sponsorship] };
           }
           return t;
         })
@@ -289,7 +290,7 @@ export function initializeGame(teamName: string = 'Your Team', managerName: stri
         name: isUserTeam ? teamName : PERSONALITY_NAMES[personality],
         coach: isUserTeam ? managerName : generateCoachName(faction),
         logo: isUserTeam ? logoUrl : undefined,
-        budget: isUserTeam ? 100000 : 50000,
+        budget: isUserTeam ? 1000000 : 800000,
         players: teamPlayers,
         wins: 0,
         losses: 0,
@@ -299,7 +300,8 @@ export function initializeGame(teamName: string = 'Your Team', managerName: stri
         runsAgainst: 0,
         isUserTeam,
         fanProfile: { homeAdvantage: 0, popularity: 50, revenue: 0, matchBonus: 0 },
-        sponsorship: null,
+        sponsorships: [],
+        tournamentWins: 0,
         injuries: [],
         personality,
         tendency,

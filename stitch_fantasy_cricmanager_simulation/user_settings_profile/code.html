@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(11, 19, 38, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .performance-ring {
+            background: conic-gradient(from 0deg, #4edea3 0% 75%, transparent 75% 100%);
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0b1326; }
+        ::-webkit-scrollbar-thumb { background: #171f33; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4edea3; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "inverse-primary": "#006c49",
+                        "on-surface-variant": "#bbcabf",
+                        "surface": "#0b1326",
+                        "surface-container-lowest": "#060e20",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "surface-container-highest": "#2d3449",
+                        "surface-container": "#171f33",
+                        "on-primary-fixed": "#002113",
+                        "secondary": "#adc6ff",
+                        "error-container": "#93000a",
+                        "primary-fixed-dim": "#4edea3",
+                        "tertiary": "#ffb95f",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "on-background": "#dae2fd",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-primary": "#003824",
+                        "on-tertiary": "#472a00",
+                        "on-secondary-fixed-variant": "#004395",
+                        "surface-bright": "#31394d",
+                        "secondary-fixed": "#d8e2ff",
+                        "primary": "#4edea3",
+                        "on-tertiary-container": "#523200",
+                        "on-primary-fixed-variant": "#005236",
+                        "surface-variant": "#2d3449",
+                        "surface-dim": "#0b1326",
+                        "on-secondary": "#002e6a",
+                        "surface-container-low": "#131b2e",
+                        "outline-variant": "#3c4a42",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed": "#001a42",
+                        "tertiary-container": "#e29100",
+                        "primary-fixed": "#6ffbbe",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-container": "#00422b",
+                        "surface-tint": "#4edea3",
+                        "secondary-container": "#0566d9",
+                        "primary-container": "#10b981",
+                        "on-secondary-container": "#e6ecff",
+                        "inverse-on-surface": "#283044",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-surface": "#dae2fd",
+                        "inverse-surface": "#dae2fd",
+                        "surface-container-high": "#222a3d",
+                        "outline": "#86948a",
+                        "background": "#0b1326"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-safe": "2rem",
+                        "xs": "0.25rem",
+                        "md": "1rem",
+                        "lg": "1.5rem",
+                        "base": "4px",
+                        "xl": "2rem",
+                        "gutter": "1.5rem",
+                        "sm": "0.5rem"
+                    },
+                    "fontFamily": {
+                        "h1": ["Inter"],
+                        "stat-sm": ["Space Grotesk"],
+                        "display-lg": ["Inter"],
+                        "stat-lg": ["Space Grotesk"],
+                        "label-caps": ["Space Grotesk"],
+                        "h2": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "h1": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "stat-sm": ["14px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "500"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "stat-lg": ["24px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.15em", "fontWeight": "600"}],
+                        "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-body-md selection:bg-primary/30 min-h-screen pb-24">
+<!-- TopAppBar -->
+<nav class="fixed top-0 w-full flex justify-between items-center px-6 h-16 bg-slate-950/80 backdrop-blur-xl border-b border-white/10 z-50 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+<div class="text-xl font-black italic text-emerald-500 uppercase font-inter tracking-tight">CRICKET ELITE</div>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-white/5 transition-colors active:scale-95 transition-transform text-slate-400">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 hover:bg-white/5 transition-colors active:scale-95 transition-transform text-slate-400">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</button>
+<div class="w-8 h-8 rounded-full border border-primary/50 overflow-hidden">
+<img alt="User avatar with performance ring" class="w-full h-full object-cover" data-alt="A close-up portrait of a professional sports manager wearing a sleek headset, set against a dark, high-tech background with glowing emerald accents. The lighting is cinematic and high-contrast, emphasizing a focused and elite persona. The aesthetic is modern and surgical, consistent with a premium sports management interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAf3P1gue6tdHtHMISxBn0goSer2vt27VTl64oAwZo02tl9cpmRfr5Xr_22uGDwdgMmjGI2sqwxB_GFhSQfmifpvx8k1zL7g0JEfnDnl2vWbcSLjinUfVb2lQQsTFBWwINKxTLsmsDrs5DW3bOwGmagR4YnYscsIU6P16znI95aETq_pnbYs1j837P049A-IxigDFJSoDHM-zLkKY75PVlViGe6EI5RMYuaC3_n10JGcPEEuWymIjHTDoEwRr-C3VmLEdLQLd6o"/>
+</div>
+</div>
+</nav>
+<main class="pt-24 px-4 md:px-lg max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Profile Hero Header (Bento Style) -->
+<section class="lg:col-span-12 glass-panel rounded-xl p-lg flex flex-col md:flex-row items-center gap-lg relative overflow-hidden">
+<div class="absolute top-0 right-0 p-lg">
+<div class="bg-primary/10 border border-primary/20 px-4 py-2 rounded-full">
+<span class="font-label-caps text-primary text-label-caps uppercase">Global Rank #402</span>
+</div>
+</div>
+<div class="relative">
+<div class="w-32 h-32 rounded-full p-1 performance-ring relative z-10">
+<div class="w-full h-full rounded-full border-4 border-surface overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A detailed digital portrait of a high-performance cricket coach in a dark studio setting. The coach has a sharp, authoritative expression, wearing professional team gear with subtle emerald stitching. Soft green atmospheric lighting highlights the contours of the face, creating a prestigious, broadcast-ready visual style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDr1tX_wkB1OwMeHc6fcLc-TfdEpHY7tenMM1gQT936F_fDkE3rnuIWXARWRvE9ZVBfVvrGXd2AP5kZKol4s2IHreU61GLH6XShkvvTnxE1b2ET-Mv9abaBbbB4-KYivHhs6PE1C4y3UJKdpwRNgA-nzMUeznfT2VnKbAq40bpQh7OdRlEmb0Qg5cw-Kp2HXpn7pVy3xTX3eaUNgLCWlwu31orlONvUsLIbnwrL0qTz_oEJeKXwf48zbGOo3IYQHfS5OL8TvBdU"/>
+</div>
+</div>
+<div class="absolute -bottom-2 -right-2 bg-surface border border-white/10 p-2 rounded-lg shadow-xl">
+<img alt="Team Logo" class="w-10 h-10 object-contain" data-alt="A minimalist and powerful team logo featuring a stylized falcon wing integrated with a cricket bat, using a palette of deep slate and vibrant emerald green. The logo is displayed on a high-gloss metallic badge with subtle reflections, conveying a sense of elite sports branding and competitive heritage." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkOC2PtyVX4UHqzCa1FSL_lVuPdh0dB-STOPxZml5q2GyOh67NQ9fKvRQXlK0imwaTrf7xSb2IAUoLE932MSTrhyi1XvFj7NnWBrYJEPlnRVhIMgJHKM1tS-nCeRXt0DeKB-5SlxKn6qVnq67PqHs9r6xBs4iOuEvt40FFXjMy2lz9wF8TJt0v7KXNcTGZeqdSPJ_yOENL_A-Q1faginMLhB4SmLdN942iTsduLYNX-IzQZMaJNUGYWPioVgDxTzN5JpsbOOHm"/>
+</div>
+</div>
+<div class="text-center md:text-left">
+<h1 class="font-h1 text-h1 text-on-surface mb-xs">Vikram 'The Tactician' Seth</h1>
+<p class="text-on-surface-variant font-body-md">Elite Tier Manager • Mumbai Mavericks</p>
+<div class="mt-md flex flex-wrap justify-center md:justify-start gap-sm">
+<div class="flex items-center gap-xs px-3 py-1 bg-surface-container rounded-lg border border-white/5">
+<span class="material-symbols-outlined text-primary text-sm">military_tech</span>
+<span class="font-stat-sm text-stat-sm text-primary">Lvl 84</span>
+</div>
+<div class="flex items-center gap-xs px-3 py-1 bg-surface-container rounded-lg border border-white/5">
+<span class="material-symbols-outlined text-tertiary text-sm">verified_user</span>
+<span class="font-stat-sm text-stat-sm text-tertiary">PRO LICENSE</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Team Identity Section -->
+<section class="lg:col-span-7 glass-panel rounded-xl p-lg space-y-lg">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">badge</span>
+<h2 class="font-h2 text-h2 uppercase tracking-tight">Team Identity</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<div class="space-y-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant">Team Name</label>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-4 py-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" type="text" value="Mumbai Mavericks"/>
+</div>
+<div class="space-y-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant">Coach Name</label>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-4 py-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" type="text" value="Vikram Seth"/>
+</div>
+</div>
+<div class="space-y-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant">Logo Gallery</label>
+<div class="grid grid-cols-4 md:grid-cols-6 gap-sm">
+<div class="aspect-square bg-primary-container/20 border-2 border-primary rounded-xl flex items-center justify-center p-2 cursor-pointer transition-transform active:scale-90">
+<img class="w-full h-full object-contain" data-alt="Team logo 1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxVswhYkLrPrtnr6364fXGecW3r2OI9rzXOBp73r505bGTfPrWUJ_WCEAEafg9kNUBcEJx_fOjeXXCS3fNvH-zwBxdSo_-7lh4IdBua3X9MJw6VxOLwDKnOll-KMJnstx0PoZjKbYH_3_xagq6LFpiaQynRMHPw_TxsIaB93lL93i4DnXIINWxX5EbQl8wqSw5cnZHIdnFdNg3MD8sziEl1enrlvfxDzdXX9zZrMuKn6Azvyf5b1XlskwdrdlEWMPRCL8_QrTU"/>
+</div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center p-2 cursor-pointer hover:bg-white/5 border border-white/5 transition-transform active:scale-90">
+<img class="w-full h-full object-contain opacity-50" data-alt="Alternative team logo with a fierce lion head, styled in neon green and deep blacks, featuring sharp digital vectors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCA7b-6ye8UK0uinKx714-OXDOrLUXZsuEL0MqELuVxL5JcZHiFK1o9d6YppYLnQ9W9w_NytZmFBnEJPLsdn0RGWhhT8LnPP2FfyBiEPElCW1YbTE24ax_qTxli5SCsQoQKO08gIiSbQ4bf5e0P_p7T5lLn9SKgtSXrx_ZWJvr5YUusXXLctWRsCHExktr9pzHOjzLuzzRey5oo2StDstuJiEttC0aexkJod4r04QFYRiGGwbqNjeG-tB66pJL3jEuTab7fMSjC"/>
+</div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center p-2 cursor-pointer hover:bg-white/5 border border-white/5 transition-transform active:scale-90">
+<img class="w-full h-full object-contain opacity-50" data-alt="Modern sports crest showing a stylized cricket pitch within a shield, glowing with emerald energy on a dark background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIXXY13a-pxeoyBDGx-qfIhKKUcVPTuOLdbkxGpWdnjmcJNMxQBvPP2l8rK_s6wefUkkSQ2UKHSpPMixL_N2ZV9fZZxP-eXddcYi3KErZpuZt9J-Vg5w1DLBJttUZ_ByJTIeMNp-bsRVZqZQ-EB2mSA9VEvzknZNffvysUOZkMEoZxmQkzzmFymmpzwB5vLMnqhpS1fEqqu_4unAhTCvJwkjPsk1W6r7AmMvTBy2tuCiZM0efYFZAwKpIGQXvg_j3fd3Zl9--h"/>
+</div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center p-2 cursor-pointer hover:bg-white/5 border border-white/5 border-dashed flex-col gap-1">
+<span class="material-symbols-outlined text-on-surface-variant">add_photo_alternate</span>
+<span class="text-[8px] font-label-caps">UPLOAD</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Account Settings -->
+<section class="lg:col-span-5 glass-panel rounded-xl p-lg space-y-lg">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">lock</span>
+<h2 class="font-h2 text-h2 uppercase tracking-tight">Account</h2>
+</div>
+<div class="space-y-md">
+<div class="space-y-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant">Email Address</label>
+<div class="relative">
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-4 py-3 outline-none opacity-80 cursor-not-allowed" type="email" value="v.seth@cricket-elite.pro"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-sm text-on-surface-variant">verified</span>
+</div>
+</div>
+<div class="space-y-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant">New Password</label>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-4 py-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="••••••••••••" type="password"/>
+</div>
+<button class="w-full bg-primary text-on-primary font-label-caps py-3 rounded-lg hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all active:scale-95">Update Credentials</button>
+</div>
+</section>
+<!-- Gameplay Preferences -->
+<section class="lg:col-span-6 glass-panel rounded-xl p-lg space-y-lg">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">settings_input_component</span>
+<h2 class="font-h2 text-h2 uppercase tracking-tight">Preferences</h2>
+</div>
+<div class="space-y-md">
+<div class="flex justify-between items-center py-2 border-b border-white/5">
+<div>
+<p class="font-body-md text-on-surface">Auto-Accept Sponsorships</p>
+<p class="text-[12px] text-on-surface-variant">Process Tier 1 &amp; 2 deals automatically</p>
+</div>
+<div class="w-12 h-6 bg-primary rounded-full relative cursor-pointer">
+<div class="absolute right-1 top-1 w-4 h-4 bg-on-primary rounded-full"></div>
+</div>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-white/5">
+<div>
+<p class="font-body-md text-on-surface">Simulation Speed Default</p>
+<p class="text-[12px] text-on-surface-variant">Global playback for matches</p>
+</div>
+<div class="flex gap-1">
+<button class="px-2 py-1 bg-surface-container-highest rounded text-xs font-label-caps text-primary">2X</button>
+<button class="px-2 py-1 bg-surface-container rounded text-xs font-label-caps text-on-surface-variant">4X</button>
+<button class="px-2 py-1 bg-surface-container rounded text-xs font-label-caps text-on-surface-variant">INSTANT</button>
+</div>
+</div>
+<div class="flex justify-between items-center py-2">
+<div>
+<p class="font-body-md text-on-surface">Notifications</p>
+<p class="text-[12px] text-on-surface-variant">Push alerts for auction activity</p>
+</div>
+<div class="w-12 h-6 bg-surface-container-highest rounded-full relative cursor-pointer">
+<div class="absolute left-1 top-1 w-4 h-4 bg-on-surface-variant rounded-full"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Achievements Grid -->
+<section class="lg:col-span-6 glass-panel rounded-xl p-lg space-y-lg">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-tertiary">military_tech</span>
+<h2 class="font-h2 text-h2 uppercase tracking-tight">Achievements</h2>
+</div>
+<span class="font-stat-sm text-stat-sm text-tertiary">12/48 Unlocked</span>
+</div>
+<div class="grid grid-cols-3 sm:grid-cols-4 gap-md">
+<div class="flex flex-col items-center gap-xs">
+<div class="w-16 h-16 rounded-full bg-gradient-to-br from-tertiary to-tertiary-container p-[2px]">
+<div class="w-full h-full rounded-full bg-surface-container-lowest flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-3xl text-tertiary" style="font-variation-settings: 'FILL' 1;">gavel</span>
+</div>
+</div>
+<p class="text-[10px] font-label-caps text-center">Auction Master</p>
+</div>
+<div class="flex flex-col items-center gap-xs">
+<div class="w-16 h-16 rounded-full bg-gradient-to-br from-tertiary to-tertiary-container p-[2px]">
+<div class="w-full h-full rounded-full bg-surface-container-lowest flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-3xl text-tertiary" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+</div>
+</div>
+<p class="text-[10px] font-label-caps text-center">Invincible Season</p>
+</div>
+<div class="flex flex-col items-center gap-xs">
+<div class="w-16 h-16 rounded-full bg-surface-container border border-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl text-white/10">person_search</span>
+</div>
+<p class="text-[10px] font-label-caps text-center text-on-surface-variant opacity-40">Elite Scout</p>
+</div>
+<div class="flex flex-col items-center gap-xs">
+<div class="w-16 h-16 rounded-full bg-surface-container border border-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl text-white/10">stadium</span>
+</div>
+<p class="text-[10px] font-label-caps text-center text-on-surface-variant opacity-40">Arena King</p>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-4 pt-2 bg-slate-950/90 backdrop-blur-lg z-50 border-t border-white/5 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:text-emerald-300 active:scale-90 duration-150">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-[10px] font-bold uppercase tracking-widest font-inter">Lobby</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:text-emerald-300 active:scale-90 duration-150">
+<span class="material-symbols-outlined">groups</span>
+<span class="text-[10px] font-bold uppercase tracking-widest font-inter">Squad</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:text-emerald-300 active:scale-90 duration-150">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-[10px] font-bold uppercase tracking-widest font-inter">Market</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:text-emerald-300 active:scale-90 duration-150">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="text-[10px] font-bold uppercase tracking-widest font-inter">Stats</span>
+</div>
+<div class="flex flex-col items-center justify-center text-emerald-400 bg-emerald-500/10 rounded-xl py-1 px-3 shadow-[0_0_10px_rgba(16,185,129,0.2)] active:scale-90 duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu</span>
+<span class="text-[10px] font-bold uppercase tracking-widest font-inter">Menu</span>
+</div>
+</nav>
+</body></html>

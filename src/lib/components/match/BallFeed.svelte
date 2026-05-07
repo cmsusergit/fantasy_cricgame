@@ -9,7 +9,7 @@
 </script>
 
 <div class="ball-feed">
-  {#each events.slice(-20).reverse() as event (event.ballNumber)}
+  {#each events.slice(-20).reverse() as event (event)}
     <div class="ball-event" class:wicket={event.isWicket} class:four={event.result === 'four'} class:six={event.result === 'six'}>
       <span class="ball-number">{event.over}.{event.ball}</span>
       <span class="runs" class:dot={event.runs === 0}>
