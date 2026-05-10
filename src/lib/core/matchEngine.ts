@@ -50,25 +50,43 @@ export function calculateWicketChance(
   currentOver: number,
   totalOvers: number,
   weather: WeatherType = 'sunny',
-  pitch: PitchType = 'balanced'
+  pitch: PitchType = 'balanced',
+  bowlingIntent: IntentType = 'balanced'
 ): number {
   const batterStats = getEffectiveStats(batter);
   const bowlerStats = getEffectiveStats(bowler);
+  
+  // Apply Stat Synergies
+  if (batter.faction === 'human' && intent === 'balanced') batterStats.technique += 10;
+  if (bowler.faction === 'human' && (bowlingIntent === 'balanced' || bowlingIntent === 'defensive') && currentOver < 6) bowlerStats.bowling += 10;
+  if (batter.faction === 'nightelf' && intent === 'aggressive') batterStats.power = batterStats.technique;
+  if (bowler.faction === 'nightelf' && currentOver >= 16) bowlerStats.bowling *= 1.15;
+  if (bowler.faction === 'goblin' && bowlingIntent === 'aggressive' && bowler.bowlingType === 'spinner') bowlerStats.bowling += 20;
+
   const faction = FACTIONS[batter.faction];
-  const intentMult = INTENT_MULTIPLIERS[intent];
-  const fatigueMult = 1 + (batter.fatigue / 100 * 0.2 * currentOver / totalOvers);
+  let intentMult = INTENT_MULTIPLIERS[intent];
+  
+  // Elven Synergy: Masterful Defense
+  if (batter.faction === 'elf' && (intent === 'defensive' || intent === 'very_defensive')) {
+    intentMult *= 0.6; // Even lower wicket chance when playing defensively
+  }
+
+  let batterFatigue = batter.fatigue;
+  if (batter.faction === 'dwarf' && currentOver >= 16 && (intent === 'aggressive' || intent === 'very_aggressive')) batterFatigue = 0;
+
+  const fatigueMult = 1 + (batterFatigue / 100 * 0.2 * currentOver / totalOvers);
   
   // Morale modifiers
   const batterMoraleMod = 1 + ((batter.morale - 50) / 100) * 0.20;
   const bowlerMoraleMod = 1 + ((bowler.morale - 50) / 100) * 0.20;
   
-  const baseChance = 0.09;
-  const techReduction = (batterStats.technique * batterMoraleMod) * 0.0005;
+  const baseChance = 0.07;
+  const techReduction = (batterStats.technique * batterMoraleMod) * 0.00012;
   const synergyMult = getPitchSynergyMultiplier(bowler.bowlingType, pitch);
-  const bowlerBoost = (bowlerStats.bowling * bowlerMoraleMod * synergyMult) * 0.0004;
+  const bowlerBoost = (bowlerStats.bowling * bowlerMoraleMod * synergyMult) * 0.00007;
   const weatherMod = WEATHER_EFFECTS[weather].wicketChance;
   
-  const wicketChance = (baseChance * intentMult) + (faction.modifiers.fatigue * (batter.fatigue / 100) * 0.2 * fatigueMult) 
+  const wicketChance = (baseChance * intentMult) + (faction.modifiers.fatigue * (batterFatigue / 100) * 0.2 * fatigueMult) 
                    - techReduction + bowlerBoost;
   
   return clamp(wicketChance * weatherMod, 0.02, 0.16);
@@ -101,10 +119,20 @@ export function calculateShotQuality(
   weather: WeatherType = 'sunny',
   pitch: PitchType = 'balanced',
   homeAdvantage: number = 0,
-  bowlingEffort: number = 1.0
+  bowlingEffort: number = 1.0,
+  currentOver: number = 0,
+  bowlingIntent: IntentType = 'balanced'
 ): number {
   const batterStats = getEffectiveStats(batter);
   const bowlerStats = getEffectiveStats(bowler);
+  
+  // Apply Stat Synergies
+  if (batter.faction === 'human' && intent === 'balanced') batterStats.technique += 10;
+  if (bowler.faction === 'human' && (bowlingIntent === 'balanced' || bowlingIntent === 'defensive') && currentOver < 6) bowlerStats.bowling += 10;
+  if (batter.faction === 'nightelf' && intent === 'aggressive') batterStats.power = batterStats.technique;
+  if (bowler.faction === 'nightelf' && currentOver >= 16) bowlerStats.bowling *= 1.15;
+  if (bowler.faction === 'goblin' && bowlingIntent === 'aggressive' && bowler.bowlingType === 'spinner') bowlerStats.bowling += 20;
+
   const weatherMod = WEATHER_EFFECTS[weather];
   const pitchMod = PITCH_EFFECTS[pitch];
   
@@ -115,11 +143,23 @@ export function calculateShotQuality(
   const synergyMult = getPitchSynergyMultiplier(bowler.bowlingType, pitch);
   const effectiveBowling = bowlerStats.bowling * bowlerMoraleMod * synergyMult;
   
-  const fatigueFactor = 1 - (batter.fatigue / 350);
+  let batterFatigue = batter.fatigue;
+  let bowlerFatigue = bowler.fatigue;
+  if (batter.faction === 'dwarf' && currentOver >= 16 && (intent === 'aggressive' || intent === 'very_aggressive')) batterFatigue = 0;
+  if (bowler.faction === 'dwarf' && (bowlingIntent === 'aggressive' || bowlingIntent === 'very_aggressive')) bowlerFatigue = Math.max(0, bowlerFatigue - 20);
+
+  const fatigueFactor = 1 - (batterFatigue / 350);
   const lastOverBonus = isLastOver ? 0.03 : 0;
   
   // Intent bonuses
-  const battingIntentBonus = intent === 'aggressive' ? 0.08 : intent === 'defensive' ? -0.05 : 0;
+  let battingIntentBonus = intent === 'aggressive' ? 0.08 : intent === 'defensive' ? -0.05 : 0;
+  if (intent === 'very_aggressive') battingIntentBonus = 0.15;
+  if (intent === 'very_defensive') battingIntentBonus = -0.10;
+  
+  // Orcish Synergy: Brutal Aggression
+  if (batter.faction === 'orc' && (intent === 'aggressive' || intent === 'very_aggressive')) {
+    battingIntentBonus *= 1.5; // Huge boost to boundary hitting when slogging
+  }
   
   // Injury penalty for batter
   let injuryPenalty = 0;
@@ -135,12 +175,12 @@ export function calculateShotQuality(
   if (bowler.bowlingType === 'fast' && pitch === 'bouncing') typeAdvantage = 2.0;
   if (bowler.bowlingType === 'swinger' && weather === 'cloudy') typeAdvantage = 2.5;
 
-  const techMitigation = batterStats.technique * batterMoraleMod * 0.08;
+  const techMitigation = batterStats.technique * batterMoraleMod * 0.016;
   const netTypeAdvantage = Math.max(0, typeAdvantage - techMitigation);
   
   // Balanced formula from simulation
-  const battingPower = (batterStats.batting * 0.22 + batterStats.power * 0.11) * batterMoraleMod * fatigueFactor;
-  const bowlingDefense = (effectiveBowling * 0.09 + bowlerStats.technique * bowlerMoraleMod * 0.04) * bowlingEffort + netTypeAdvantage;
+  const battingPower = (batterStats.batting * 0.055 + batterStats.power * 0.028) * batterMoraleMod * fatigueFactor;
+  const bowlingDefense = (effectiveBowling * 0.018 + bowlerStats.technique * bowlerMoraleMod * 0.008) * bowlingEffort + netTypeAdvantage;
   
   // Home advantage bonus
   const homeBonus = homeAdvantage * 0.015;
@@ -200,8 +240,8 @@ export function calculateNoBall(shotQuality: number): { isNoBall: boolean; runs:
   return { isNoBall: false, runs: 0, freeHit: false, commentary: '' };
 }
 
-export function calculateWideBall(): { isWide: boolean; runs: number; commentary: string } {
-  if (Math.random() < T20_RULES.WIDE_CHANCE) {
+export function calculateWideBall(chanceMultiplier: number = 1.0): { isWide: boolean; runs: number; commentary: string } {
+  if (Math.random() < T20_RULES.WIDE_CHANCE * chanceMultiplier) {
     return {
       isWide: true,
       runs: 1,
@@ -235,7 +275,7 @@ export function resolveBall(
   isFreeHit: boolean = false,
   bowlingIntent: IntentType = 'balanced',
   avoidSingles: boolean = false,
-  fieldingAverage: number = 12,
+  fieldingAverage: number = 60,
   ballType: BallType = 'normal'
 ): BallEvent {
   const ballNumber = currentBalls + 1;
@@ -243,7 +283,12 @@ export function resolveBall(
   const isLastOver = currentOver >= totalOvers - 1;
   const isPowerplay = isPowerplayOver(currentOver);
   
-  const bowlingEffort = BOWLING_INTENT_EFFECT[bowlingIntent] || 1.0;
+  let bowlingEffort = BOWLING_INTENT_EFFECT[bowlingIntent] || 1.0;
+  
+  // Orcish Synergy: Intimidation
+  if (bowler.faction === 'orc' && (bowlingIntent === 'aggressive' || bowlingIntent === 'very_aggressive')) {
+    bowlingEffort *= 1.25; // Massive boost to bowling quality, but we will increase extras chance later
+  }
   let ballTypeEffect = 1.0;
 
   // Apply ball type specific effects
@@ -273,7 +318,7 @@ export function resolveBall(
   }
   const finalBowlingEffort = bowlingEffort * ballTypeEffect;
 
-  const { isNoBall, runs: noBallRuns, freeHit, commentary: noBallCommentary } = calculateNoBall(calculateShotQuality(batter, bowler, battingIntent, isLastOver, weather, pitch, homeAdvantage, finalBowlingEffort));
+  const { isNoBall, runs: noBallRuns, freeHit, commentary: noBallCommentary } = calculateNoBall(calculateShotQuality(batter, bowler, battingIntent, isLastOver, weather, pitch, homeAdvantage, finalBowlingEffort, currentOver, bowlingIntent));
   
   if (isNoBall) {
     return {
@@ -290,7 +335,11 @@ export function resolveBall(
     };
   }
 
-  const { isWide, runs: wideRuns, commentary: wideCommentary } = calculateWideBall();
+  let wideChanceMult = 1.0;
+  if (bowler.faction === 'orc' && (bowlingIntent === 'aggressive' || bowlingIntent === 'very_aggressive')) {
+      wideChanceMult = 2.0; // Double chance of bowling a wide when bowling aggressively as an Orc
+  }
+  const { isWide, runs: wideRuns, commentary: wideCommentary } = calculateWideBall(wideChanceMult);
   
   if (isWide) {
     return {
@@ -313,7 +362,7 @@ export function resolveBall(
     const wicketType = wicketTypes[randomInt(0, wicketTypes.length - 1)];
 
     if (wicketType === 'caught' || wicketType === 'run out') {
-      const dropChance = Math.max(0.02, 0.25 - (fieldingAverage * 0.015)); // Higher fielding = lower drop chance
+      const dropChance = Math.max(0.02, 0.25 - (fieldingAverage * 0.003)); // Higher fielding = lower drop chance
       
       if (Math.random() < dropChance) {
          // Dropped!
@@ -347,8 +396,14 @@ export function resolveBall(
     };
   }
 
-  const shotQuality = calculateShotQuality(batter, bowler, battingIntent, isLastOver, weather, pitch, homeAdvantage, bowlingEffort);
+  const shotQuality = calculateShotQuality(batter, bowler, battingIntent, isLastOver, weather, pitch, homeAdvantage, bowlingEffort, currentOver, bowlingIntent);
   let { result, runs } = determineBallResult(shotQuality, isFreeHit, isPowerplay);
+
+  // Goblin Synergy: Cheeky Thieves
+  if (batter.faction === 'goblin' && battingIntent === 'defensive' && result === 'dot') {
+    result = 'single';
+    runs = 1;
+  }
 
   if (avoidSingles && result === 'single') {
     result = 'dot';
@@ -462,6 +517,7 @@ export interface MatchResult {
   team2Wickets: number;
   sponsorshipEarnings: { team1: number; team2: number };
   matchEarnings: { team1: number; team2: number };
+  operatingEarnings: { team1: number; team2: number };
   potmReward: number;
   injuries: Array<{ playerId: string; playerName: string; type: string }>;
   fanUpdates: { team1: { popularity: number; homeAdvantage: number }; team2: { popularity: number; homeAdvantage: number } };
@@ -543,6 +599,16 @@ export function resolveMatch(
   if (team1Won) matchEarningsTeam1 += 50000; // Win bonus
   if (team2Won) matchEarningsTeam2 += 50000;
   
+  let operatingEarningsTeam1 = 0;
+  let operatingEarningsTeam2 = 0;
+  if (homeTeamId === team1.id) {
+    const stadiumLvl = team1.facilities?.stadiumLevel || 1;
+    operatingEarningsTeam1 = 50000 * stadiumLvl;
+  } else if (homeTeamId === team2.id) {
+    const stadiumLvl = team2.facilities?.stadiumLevel || 1;
+    operatingEarningsTeam2 = 50000 * stadiumLvl;
+  }
+  
   // Calculate POTM (Simple approximation: 1 run = 1 pt, 1 wicket = 25 pts)
   const playerPoints: Record<string, number> = {};
   const playerNames: Record<string, string> = {};
@@ -603,6 +669,7 @@ export function resolveMatch(
     team2Wickets: innings2.wickets,
     sponsorshipEarnings: { team1: team1Earnings, team2: team2Earnings },
     matchEarnings: { team1: matchEarningsTeam1, team2: matchEarningsTeam2 },
+    operatingEarnings: { team1: operatingEarningsTeam1, team2: operatingEarningsTeam2 },
     potmReward,
     injuries: [...team1Injuries, ...team2Injuries],
     fanUpdates: {

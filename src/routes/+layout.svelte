@@ -59,6 +59,9 @@
   <header>
     <nav>
       <a href="/">Dashboard</a>
+      <a href="/teams">League Teams</a>
+      <a href="/club">Club Management</a>
+      <a href="/guide" style="color: var(--accent-gold);">📖 Guide</a>
       
       {#if $gamePhase !== 'match'}
         <a href="/squad">Squad</a>

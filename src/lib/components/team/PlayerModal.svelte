@@ -65,9 +65,9 @@
           <span class="stat-label">Technique</span>
           <span class="stat-value {getStatClass(effectiveStats.technique)}">{effectiveStats.technique}</span>
         </div>
-        <div class="stat-item">
+        <div class="stat-row">
           <span class="stat-label">Fielding</span>
-          <span class="stat-value {getStatClass(effectiveStats.fielding || 10)}">{effectiveStats.fielding || 10}</span>
+          <span class="stat-value {getStatClass(effectiveStats.fielding || 60)}">{effectiveStats.fielding || 60}</span>
         </div>
       </div>
     </div>
@@ -91,9 +91,9 @@
           <span class="stat-label">Technique</span>
           <span class="stat-value">{player.stats.technique}</span>
         </div>
-        <div class="stat-item">
+        <div class="stat-row">
           <span class="stat-label">Fielding</span>
-          <span class="stat-value">{player.stats.fielding || 10}</span>
+          <span class="stat-value">{player.stats.fielding || 60}</span>
         </div>
       </div>
     </div>
@@ -249,7 +249,7 @@
   
   .badge.captain {
     background: var(--warning);
-    color: #000;
+    color: white;
   }
   
   .badge.wk {

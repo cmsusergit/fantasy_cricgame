@@ -40,7 +40,7 @@ function simulateInnings(battingTeam: {players: Player[]}, bowlingTeam: {players
         const striker = battingTeam.players.find(p => p.id === inn.currentBatsmen[0])!;
         const bowler = bowlers[currentBowlerIndex % bowlers.length];
         
-        const bowlingFieldingAvg = bowlingTeam.players.slice(0, 11).reduce((sum, p) => sum + (p.stats.fielding || 12), 0) / 11;
+        const bowlingFieldingAvg = bowlingTeam.players.slice(0, 11).reduce((sum, p) => sum + (p.stats.fielding || 60), 0) / 11;
         const ballEvent = resolveBall(striker, bowler, inn.balls, totalOvers, 'balanced', 'sunny', 'balanced', 0, false, 'balanced', false, bowlingFieldingAvg);
         
         if (ballEvent.result !== 'wide' && ballEvent.result !== 'noball') {

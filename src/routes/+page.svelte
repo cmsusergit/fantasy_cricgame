@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { initializeGame, resetGame, teamStore, playerStore, tournamentStore, scheduleStore, gamePhase, currentSeason } from '$lib/stores/gameState';
+  import { initializeGame, resetGame, teamStore, playerStore, tournamentStore, scheduleStore, gamePhase, currentSeason, isFirstLogin } from '$lib/stores/gameState';
   import { getMatchesForDay, simulateAllMatchesForDay } from '$lib/core/schedule';
   import PlayerCard from '$lib/components/team/PlayerCard.svelte';
   import type { TournamentSchedule, GameDay, ScheduledMatch } from '$lib/core/schedule';
@@ -14,7 +14,8 @@
   let players = $state<any[]>([]);
   let schedule = $state<TournamentSchedule | null>(null);
   let day = $state(1);
-  let budget = $state(1000000);
+  let budget = $state(4000000);
+  let operatingBudget = $state(1000000);
   let selectedDay = $state(1);
   let sponsorshipOffers = $state<SponsorshipContract[]>([]);
 
@@ -29,7 +30,10 @@
     const unsubTeam = teamStore.subscribe(t => {
       teams = t;
       const user = t.find((team: any) => team.isUserTeam);
-      if (user) budget = user.budget;
+      if (user) {
+        budget = user.budget;
+        operatingBudget = user.operatingBudget || 1000000;
+      }
     });
     const unsubPlayer = playerStore.subscribe(p => players = p);
     const unsubSchedule = scheduleStore.subscribe(s => {
@@ -117,13 +121,15 @@
     const result = resolveMatch(team1, team2, innings1, innings2, userNextMatch.team1Id);
     
     // Apply Earnings
-    const totalEarningsTeam1 = result.sponsorshipEarnings.team1 + result.matchEarnings.team1;
-    const totalEarningsTeam2 = result.sponsorshipEarnings.team2 + result.matchEarnings.team2;
-    
-    if (totalEarningsTeam1 > 0) teamStore.updateBudget(team1.id, totalEarningsTeam1);
-    if (totalEarningsTeam2 > 0) teamStore.updateBudget(team2.id, totalEarningsTeam2);
-    
-    if (result.playerOfTheMatch && result.potmReward > 0) {
+                  const totalEarningsTeam1 = result.sponsorshipEarnings.team1 + result.matchEarnings.team1;
+                  const totalEarningsTeam2 = result.sponsorshipEarnings.team2 + result.matchEarnings.team2;
+                  
+                  if (totalEarningsTeam1 > 0) teamStore.updateBudget(team1.id, totalEarningsTeam1);
+                  if (totalEarningsTeam2 > 0) teamStore.updateBudget(team2.id, totalEarningsTeam2);
+                  if (result.operatingEarnings.team1 > 0) teamStore.updateOperatingBudget(team1.id, result.operatingEarnings.team1);
+                  if (result.operatingEarnings.team2 > 0) teamStore.updateOperatingBudget(team2.id, result.operatingEarnings.team2);
+                  
+                  if (result.playerOfTheMatch) {
         teamStore.updateBudget(result.playerOfTheMatch.teamId, result.potmReward);
     }
     
@@ -237,7 +243,7 @@
                   let pStoreMatch = updatedPlayers.find(up => up.id === p.id);
                   if (pStoreMatch) {
                       if (!pStoreMatch.tournamentStats) pStoreMatch.tournamentStats = { runs: 0, wickets: 0 };
-                      pStoreMatch.tournamentStats.runs += Math.floor((match.result.team1Score / t1Batters.length) * (0.5 + Math.random()));
+                      pStoreMatch.tournamentStats.runs += Math.floor(((match.result?.team1Score || 0) / t1Batters.length) * (0.5 + Math.random()));
                   }
               });
               
@@ -247,7 +253,7 @@
                   let pStoreMatch = updatedPlayers.find(up => up.id === p.id);
                   if (pStoreMatch) {
                       if (!pStoreMatch.tournamentStats) pStoreMatch.tournamentStats = { runs: 0, wickets: 0 };
-                      pStoreMatch.tournamentStats.runs += Math.floor((match.result.team2Score / t2Batters.length) * (0.5 + Math.random()));
+                      pStoreMatch.tournamentStats.runs += Math.floor(((match.result?.team2Score || 0) / t2Batters.length) * (0.5 + Math.random()));
                   }
               });
 
@@ -289,6 +295,14 @@
       goto('/season-review');
     }
   }
+  function closeWelcomeModal() {
+    isFirstLogin.set(false);
+  }
+
+  function goToGuide() {
+    isFirstLogin.set(false);
+    goto('/guide');
+  }
 </script>
 
 <svelte:head>
@@ -296,6 +310,22 @@
 </svelte:head>
 
 <div class="dashboard">
+  {#if $isFirstLogin}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="modal-overlay" style="z-index: 2000; padding: 20px;" onclick={closeWelcomeModal}>
+      <div class="modal-content" style="background: var(--bg-secondary); border: 2px solid var(--accent-gold); border-radius: 12px; padding: 32px; max-width: 600px; text-align: center;" onclick={(e) => e.stopPropagation()}>
+        <h2 style="font-family: 'Cinzel', serif; color: var(--accent-gold); font-size: 2rem; margin-bottom: 16px;">Welcome, Manager!</h2>
+        <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 24px; color: var(--text-primary);">You have just taken the reins of a brand new franchise. Before you head into the high-stakes Auction Room to draft your squad, would you like a quick tour of the rules and mechanics?</p>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 32px; font-style: italic;">Fantasy CricManager features unique tactical mechanics and fantasy faction synergies that are crucial to understand.</p>
+        <div style="display: flex; gap: 16px; justify-content: center;">
+          <button class="btn-cancel" onclick={closeWelcomeModal} style="background: var(--bg-tertiary); color: var(--text-primary);">I know what I'm doing</button>
+          <button class="btn-confirm" onclick={goToGuide} style="background: var(--success); font-weight: bold; color: white;">Read Quick Start Guide</button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <header class="hero">
     <div class="hero-content">
       <h1>🏏 Fantasy Cricket</h1>
@@ -336,7 +366,14 @@
           <span class="stat-icon">💰</span>
           <div class="stat-content">
             <span class="stat-value">${budget.toLocaleString()}</span>
-            <span class="stat-label">Budget (Click for Details)</span>
+            <span class="stat-label">Transfer Budget</span>
+          </div>
+        </a>
+        <a href="/club" class="stat-card budget" style="text-decoration: none; cursor: pointer; transition: transform 0.2s;">
+          <span class="stat-icon">🏢</span>
+          <div class="stat-content">
+            <span class="stat-value">${operatingBudget.toLocaleString()}</span>
+            <span class="stat-label">Operating Budget</span>
           </div>
         </a>
         <div class="stat-card wins">
@@ -406,7 +443,7 @@
           {#each currentDayGames as match}
             <div class="match-card {match.status}" class:user-match={match.team1Id === 'user_team' || match.team2Id === 'user_team'}>
               <div class="match-teams">
-                <span class="team">{match.team1Name}</span>
+                <span class="team">{match.team1Name} <span style="font-size: 0.7em; color: var(--text-secondary);">(Home)</span></span>
                 <span class="vs">vs</span>
                 <span class="team">{match.team2Name}</span>
               </div>
@@ -447,7 +484,7 @@
            {:else if phase === 'scouting'}
               <a href="/scouting" class="advance-btn" style="display: inline-block; width: auto; padding: 8px 16px; background: var(--info); color: white; text-decoration: none; margin-top: 12px;">Go to Scouting Network</a>
            {:else if phase === 'auction'}
-              <a href="/auction" class="advance-btn" style="display: inline-block; width: auto; padding: 8px 16px; background: var(--warning); color: black; text-decoration: none; margin-top: 12px;">Go to Live Auction</a>
+              <a href="/auction" class="advance-btn" style="display: inline-block; width: auto; padding: 8px 16px; background: var(--warning); color: white; text-decoration: none; margin-top: 12px;">Go to Live Auction</a>
            {/if}
          </div>
       {/if}
@@ -557,7 +594,7 @@
 {/if}
 
 <style>
-  .dashboard { max-width: 1100px; margin: 0 auto; }
+  .dashboard { max-width: 1400px; margin: 0 auto; padding: 0 16px; }
   .hero { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px 32px; margin-bottom: 24px; }
   .hero h1 { font-size: 32px; margin-bottom: 4px; }
   .tagline { color: var(--text-secondary); font-size: 14px; }

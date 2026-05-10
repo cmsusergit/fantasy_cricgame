@@ -43,14 +43,14 @@ function generatePlayerId(): string {
 
 function generateStatValue(base: number, variance: number): number {
   const value = base + randomInt(-variance, variance);
-  return Math.max(10, Math.min(99, value));
+  return Math.max(20, Math.min(100, value));
 }
 
 function calculatePrice(role: PlayerRole, stats: PlayerStats): number {
   const avgStat = (stats.batting + stats.bowling + stats.power + stats.technique) / 4;
   const roleBonus = role === 'allrounder' ? 1.3 : role === 'batsman' ? 1.2 : 1.0;
-  // Lower base, scaled price appropriately
-  return Math.floor((avgStat * 5000 + randomInt(-2000, 5000)) * roleBonus);
+  // Scaled price appropriately for 20-100 stats
+  return Math.floor((avgStat * 1000 + randomInt(-2000, 5000)) * roleBonus);
 }
 
 export function generatePlayer(role: PlayerRole, isYouth: boolean = false): Player {
@@ -63,12 +63,12 @@ export function generatePlayer(role: PlayerRole, isYouth: boolean = false): Play
     'nightelf'
   ]) as FactionType;
 
-  // Balanced base stats for 180-200 run target. Youth players have much lower starting stats.
+  // Balanced base stats for 180-200 run target in the 20-100 scale. Youth players have much lower starting stats.
   const baseStats = {
-    batsman: { batting: isYouth ? 6 : 12, bowling: 3, power: isYouth ? 5 : 10, technique: isYouth ? 6 : 12, fielding: isYouth ? 8 : 12 },
-    allrounder: { batting: isYouth ? 5 : 10, bowling: isYouth ? 5 : 10, power: isYouth ? 4 : 8, technique: isYouth ? 4 : 8, fielding: isYouth ? 10 : 14 },
-    bowler: { batting: 3, bowling: isYouth ? 7 : 14, power: isYouth ? 4 : 9, technique: isYouth ? 4 : 8, fielding: isYouth ? 6 : 10 },
-    wicketkeeper: { batting: isYouth ? 5 : 10, bowling: 2, power: isYouth ? 4 : 8, technique: isYouth ? 7 : 14, fielding: isYouth ? 10 : 16 }
+    batsman: { batting: isYouth ? 30 : 60, bowling: 15, power: isYouth ? 25 : 50, technique: isYouth ? 30 : 60, fielding: isYouth ? 40 : 60 },
+    allrounder: { batting: isYouth ? 25 : 50, bowling: isYouth ? 25 : 50, power: isYouth ? 20 : 40, technique: isYouth ? 20 : 40, fielding: isYouth ? 50 : 70 },
+    bowler: { batting: 15, bowling: isYouth ? 35 : 70, power: isYouth ? 20 : 25, technique: isYouth ? 20 : 25, fielding: isYouth ? 30 : 50 },
+    wicketkeeper: { batting: isYouth ? 25 : 50, bowling: 10, power: isYouth ? 20 : 40, technique: isYouth ? 35 : 70, fielding: isYouth ? 50 : 80 }
   }[role];
 
   // 15% chance of being WK, 10% chance of captain potential
@@ -80,13 +80,13 @@ export function generatePlayer(role: PlayerRole, isYouth: boolean = false): Play
       bowlingType = randomElement(['pacer', 'fast', 'swinger', 'spinner']);
   }
 
-  // Reduced variance for more balanced gameplay
+  // Increased variance for wider spread across 20-100 scale
   const stats: PlayerStats = {
-    batting: generateStatValue(baseStats.batting, 5),
-    bowling: generateStatValue(baseStats.bowling, 4),
-    power: generateStatValue(baseStats.power, 4),
-    technique: generateStatValue(baseStats.technique, 4),
-    fielding: generateStatValue(baseStats.fielding, 5)
+    batting: generateStatValue(baseStats.batting, 15),
+    bowling: generateStatValue(baseStats.bowling, 15),
+    power: generateStatValue(baseStats.power, 15),
+    technique: generateStatValue(baseStats.technique, 15),
+    fielding: generateStatValue(baseStats.fielding, 15)
   };
 
   const firstName = randomElement(FIRST_NAMES[faction]);
@@ -98,9 +98,9 @@ export function generatePlayer(role: PlayerRole, isYouth: boolean = false): Play
   let battingRole: 'Top Order' | 'Middle Order' | 'Finisher' | 'Tail Ender' = 'Middle Order';
   if (role === 'bowler') {
       battingRole = 'Tail Ender';
-  } else if (stats.technique >= stats.power + 2) {
+  } else if (stats.technique >= stats.power + 10) {
       battingRole = 'Top Order';
-  } else if (stats.power >= stats.technique + 2) {
+  } else if (stats.power >= stats.technique + 10) {
       battingRole = 'Finisher';
   }
 
@@ -118,9 +118,9 @@ export function generatePlayer(role: PlayerRole, isYouth: boolean = false): Play
     stats,
     special: {
       isCaptain: isCaptain,
-      captainBonus: isCaptain ? randomInt(-3, 5) : 0,
+      captainBonus: isCaptain ? randomInt(-15, 25) : 0,
       isWicketKeeper: isWK,
-      wkBonus: isWK ? randomInt(2, 5) : 0
+      wkBonus: isWK ? randomInt(10, 25) : 0
     },
     fatigue: 0,
     morale: 50,

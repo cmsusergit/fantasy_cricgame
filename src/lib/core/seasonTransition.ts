@@ -9,6 +9,7 @@ export interface SeasonAwards {
   topWicketTaker: Player | null;
   prizeMoney: number;
   finalStanding: number;
+  salaryPaid: number;
 }
 
 export function processSeasonEnd(teams: Team[], players: Player[], userTeamId: string): SeasonAwards {
@@ -17,17 +18,27 @@ export function processSeasonEnd(teams: Team[], players: Player[], userTeamId: s
   const userStandingIndex = standings.findIndex(s => s.teamId === userTeamId);
   const userStanding = userStandingIndex + 1;
 
-  // 2. Distribute Prize Money based on standings
-  // 1st: 200,000, 2nd: 150,000, 3rd: 100,000, others: 50,000 to 10,000
+  // 2. Distribute Prize Money and Deduct Salaries
   const prizePool = [200000, 150000, 100000, 75000, 50000, 40000, 30000, 20000];
   const userPrizeMoney = prizePool[userStandingIndex] || 10000;
+  
+  let userSalaryPaid = 0;
 
   // Distribute to all teams
   teamStore.update(currentTeams => {
     return currentTeams.map(t => {
       const idx = standings.findIndex(s => s.teamId === t.id);
       const prize = prizePool[idx] || 10000;
-      return { ...t, budget: t.budget + prize };
+      
+      const playerSalaries = t.players.reduce((sum, p) => sum + p.price * 0.05, 0);
+      const staffSalaries = 250000;
+      const totalSalaries = playerSalaries + staffSalaries;
+      
+      if (t.id === userTeamId) {
+          userSalaryPaid = totalSalaries;
+      }
+      
+      return { ...t, budget: t.budget + prize - totalSalaries };
     });
   });
 
@@ -112,6 +123,7 @@ export function processSeasonEnd(teams: Team[], players: Player[], userTeamId: s
     topScorer,
     topWicketTaker,
     prizeMoney: userPrizeMoney,
-    finalStanding: userStanding
+    finalStanding: userStanding,
+    salaryPaid: userSalaryPaid
   };
 }

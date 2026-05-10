@@ -15,6 +15,7 @@
   --accent-sapphire: #3498db; /* Sapphire Blue */
   --accent-amethyst: #9b59b6; /* Amethyst Purple */
   --accent-shadow: #1abc9c; /* Shadow Teal */
+  --accent-fire: #e67e22; /* Fire Orange */
   --accent-gold-rgb: 194, 176, 131;
   --accent-emerald-rgb: 76, 175, 80;
   --accent-ruby-rgb: 231, 76, 60;
@@ -46,6 +47,7 @@
   --accent-sapphire: #1976d2; /* Sky Blue */
   --accent-amethyst: #6a1b9a; /* Deep Amethyst */
   --accent-shadow: #00897b; /* Dark Teal */
+  --accent-fire: #d84315; /* Fire Orange */
   --accent-gold-rgb: 166, 139, 90;
   --accent-emerald-rgb: 46, 125, 50;
   --accent-ruby-rgb: 198, 40, 40;

@@ -30,6 +30,35 @@
   let allMatches = $derived(matches?.matches || []);
   let scheduledMatches = $derived(allMatches.filter(m => m.status === 'scheduled').slice(0, 10));
   let completedMatches = $derived([...allMatches.filter(m => m.status === 'completed')].reverse().slice(0, 10));
+
+  let activeTab = $state('standings');
+  let scheduleFilterTeam = $state('all');
+
+  let filteredSchedule = $derived((() => {
+    let result = allMatches;
+    if (scheduleFilterTeam !== 'all') {
+      result = result.filter(m => m.team1Id === scheduleFilterTeam || m.team2Id === scheduleFilterTeam);
+    }
+    
+    // Group by day
+    const grouped = new Map<number, ScheduledMatch[]>();
+    for (const m of result) {
+      if (!grouped.has(m.day)) grouped.set(m.day, []);
+      grouped.get(m.day)!.push(m);
+    }
+    
+    return Array.from(grouped.entries()).sort((a, b) => a[0] - b[0]);
+  })());
+
+  let topRunScorers = $derived((() => {
+    const allPlayers = teams.flatMap(t => t.players.map(p => ({...p, teamName: t.name})));
+    return allPlayers.sort((a, b) => (b.tournamentStats?.runs || 0) - (a.tournamentStats?.runs || 0)).slice(0, 10);
+  })());
+
+  let topWicketTakers = $derived((() => {
+    const allPlayers = teams.flatMap(t => t.players.map(p => ({...p, teamName: t.name})));
+    return allPlayers.sort((a, b) => (b.tournamentStats?.wickets || 0) - (a.tournamentStats?.wickets || 0)).slice(0, 10);
+  })());
 </script>
 
 <svelte:head>
@@ -48,75 +77,120 @@
     </div>
   {/if}
   
-  <div class="standings-table">
-    <h2>Standings</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Team</th>
-          <th>P</th>
-          <th>W</th>
-          <th>L</th>
-          <th>Points</th>
-          <th>NRR</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each standings as standing, i}
-          <tr class:user-team={standing.teamId === userTeam?.id}>
-            <td>{i + 1}</td>
-            <td>{standing.teamName}</td>
-            <td>{standing.played}</td>
-            <td>{standing.wins}</td>
-            <td>{standing.losses}</td>
-            <td>{standing.points}</td>
-            <td>{standing.nrr.toFixed(3)}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+  <div class="tabs">
+    <button class:active={activeTab === 'standings'} onclick={() => activeTab = 'standings'}>Standings</button>
+    <button class:active={activeTab === 'schedule'} onclick={() => activeTab = 'schedule'}>Full Schedule</button>
+    <button class:active={activeTab === 'leaders'} onclick={() => activeTab = 'leaders'}>League Leaders</button>
   </div>
-  
-  <div class="matches-section">
-    <div class="matches-header">
-      <h2>Upcoming Matches</h2>
-      <a href="/" class="button-link">Go to Dashboard to Advance Day</a>
+
+  {#if activeTab === 'standings'}
+    <div class="standings-table">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Team</th>
+            <th>P</th>
+            <th>W</th>
+            <th>L</th>
+            <th>Points</th>
+            <th>NRR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each standings as standing, i}
+            <tr class:user-team={standing.teamId === userTeam?.id}>
+              <td>{i + 1}</td>
+              <td>{standing.teamName}</td>
+              <td>{standing.played}</td>
+              <td>{standing.wins}</td>
+              <td>{standing.losses}</td>
+              <td>{standing.points}</td>
+              <td>{standing.nrr.toFixed(3)}</td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
     </div>
-    
-    <div class="matches-grid">
-      {#each scheduledMatches as match}
-        <div class="match-card">
-          <div class="match-teams">
-            <span>{match.team1Name}</span>
-            <span class="vs">vs</span>
-            <span>{match.team2Name}</span>
-          </div>
-          <span class="day-badge">Day {match.day}</span>
-        </div>
-      {/each}
-    </div>
-    
-    {#if completedMatches.length > 0}
-      <h3>Completed</h3>
-      <div class="matches-grid">
-        {#each completedMatches as match}
-          <div class="match-card completed">
-            <div class="match-teams">
-              <span>{match.team1Name}</span>
-              <span class="vs">vs</span>
-              <span>{match.team2Name}</span>
+  {/if}
+
+  {#if activeTab === 'schedule'}
+    <div class="schedule-tab">
+      <div class="schedule-filters">
+        <label>Filter by Team:</label>
+        <select bind:value={scheduleFilterTeam}>
+          <option value="all">All Teams</option>
+          {#each teams as t}
+            <option value={t.id}>{t.name}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div class="full-schedule-list">
+        {#each filteredSchedule as [day, dayMatches]}
+          <div class="schedule-day-group">
+            <h3 class="day-header">Day {day}</h3>
+            <div class="matches-grid">
+              {#each dayMatches as match}
+                <div class="match-card {match.status === 'completed' ? 'completed' : ''}" class:user-match={match.team1Id === userTeam?.id || match.team2Id === userTeam?.id}>
+                  <div class="match-teams">
+                    <span>{match.team1Name} <span class="home-tag">(Home)</span></span>
+                    <span class="vs">vs</span>
+                    <span>{match.team2Name}</span>
+                  </div>
+                  {#if match.status === 'completed' && match.result}
+                    <span class="winner">
+                      Won by {match.result.winner === match.team1Id ? match.team1Name : match.team2Name}
+                    </span>
+                  {:else}
+                    <span class="day-badge">Scheduled</span>
+                  {/if}
+                </div>
+              {/each}
             </div>
-            {#if match.result}
-            <span class="winner">
-              Won by {match.result.winner === match.team1Id ? match.team1Name : match.team2Name}
-            </span>
-            {/if}
           </div>
         {/each}
       </div>
-    {/if}
-  </div>
+    </div>
+  {/if}
+
+  {#if activeTab === 'leaders'}
+    <div class="leaders-tab">
+      <div class="leaderboard-grid">
+        <div class="leaderboard-card">
+          <h2>🏏 Top Run Scorers</h2>
+          <table>
+            <thead><tr><th>Player</th><th>Team</th><th>Runs</th></tr></thead>
+            <tbody>
+              {#each topRunScorers as p, i}
+                <tr>
+                  <td><strong>{i+1}.</strong> {p.name}</td>
+                  <td style="font-size: 0.8em; color: var(--text-secondary);">{p.teamName}</td>
+                  <td><strong>{p.tournamentStats?.runs || 0}</strong></td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="leaderboard-card">
+          <h2>🎯 Top Wicket Takers</h2>
+          <table>
+            <thead><tr><th>Player</th><th>Team</th><th>Wickets</th></tr></thead>
+            <tbody>
+              {#each topWicketTakers as p, i}
+                <tr>
+                  <td><strong>{i+1}.</strong> {p.name}</td>
+                  <td style="font-size: 0.8em; color: var(--text-secondary);">{p.teamName}</td>
+                  <td><strong>{p.tournamentStats?.wickets || 0}</strong></td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -128,7 +202,17 @@
   h1 { margin-bottom: 4px; }
   .subtitle {
     color: var(--text-secondary);
-    margin-bottom: 24px;
+    margin-bottom: 32px;
+  }
+  
+  .home-tag {
+    font-size: 0.7em;
+    color: var(--text-secondary);
+    font-weight: normal;
+    background: var(--bg-tertiary);
+    padding: 2px 4px;
+    border-radius: 4px;
+    margin-left: 4px;
   }
   
   .user-standings {
@@ -261,8 +345,83 @@
     color: var(--text-secondary);
   }
   
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+  }
+  
+  .tabs button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 8px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  .tabs button.active {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .schedule-filters {
+    margin-bottom: 24px;
+  }
+  
+  .schedule-filters select {
+    padding: 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 4px;
+    margin-left: 8px;
+  }
+
+  .schedule-day-group {
+    margin-bottom: 32px;
+  }
+  
+  .day-header {
+    margin-bottom: 12px;
+    color: var(--text-muted);
+    border-bottom: 1px dashed var(--border-color);
+    padding-bottom: 4px;
+  }
+
+  .user-match {
+    border-color: var(--success) !important;
+  }
+
+  .leaderboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  
+  .leaderboard-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  
+  .leaderboard-card h2 {
+    margin-bottom: 16px;
+    font-size: 18px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+  }
+
   @media (max-width: 768px) {
     .matches-grid {
+      grid-template-columns: 1fr;
+    }
+    .leaderboard-grid {
       grid-template-columns: 1fr;
     }
   }

@@ -89,9 +89,9 @@
     <div class="stat-row" title="Fielding: Determines ability to take catches and save runs.">
       <span class="stat-label">Field</span>
       <div class="stat-bar">
-        <div class="stat-bar-fill {getStatClass(player.stats.fielding || 10)}" style="width: {player.stats.fielding || 10}%"></div>
+        <div class="stat-bar-fill {getStatClass(player.stats.fielding || 60)}" style="width: {player.stats.fielding || 60}%"></div>
       </div>
-      <span class="stat-value">{Math.round(player.stats.fielding || 10)}</span>
+      <span class="stat-value">{Math.round(player.stats.fielding || 60)}</span>
     </div>
     
     <div style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">

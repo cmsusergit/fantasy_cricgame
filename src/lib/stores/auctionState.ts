@@ -177,7 +177,7 @@ function createAuctionStore() {
             let safetyCounter = 0;
             // Force AI to bid until max willingness is reached
             while(biddingWar && safetyCounter < 50) {
-                biddingWar = engine.processAIBids();
+                biddingWar = engine.processAIBids() ?? false;
                 safetyCounter++;
             }
             // Resolve immediately without delay
@@ -191,7 +191,7 @@ function createAuctionStore() {
                 let biddingWar = true;
                 let safetyCounter = 0;
                 while(biddingWar && safetyCounter < 50) {
-                    biddingWar = engine.processAIBids();
+                    biddingWar = engine.processAIBids() ?? false;
                     safetyCounter++;
                 }
                 engine.resolveCurrentPlayer(true);

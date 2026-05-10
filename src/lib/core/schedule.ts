@@ -40,19 +40,27 @@ export function generateTournamentSchedule(teams: Team[], startDay: number = 1):
   const matches: ScheduledMatch[] = [];
   
   const teamCount = teams.length;
-  const totalMatches = (teamCount * (teamCount - 1)) / 2;
-  const totalDays = 45;
+  // Double round robin matches
+  const totalMatches = teamCount * (teamCount - 1);
+  const totalDays = 90; // Extended to accommodate more matches
   
-  const venues = ['Stadium A', 'Stadium B', 'Stadium C', 'Stadium D'];
-  
-  const schedule: [string, string][] = [];
+  const round1: [string, string][] = [];
+  const round2: [string, string][] = [];
   for (let i = 0; i < teamCount; i++) {
     for (let j = i + 1; j < teamCount; j++) {
-      schedule.push([teams[i].id, teams[j].id]);
+      if (Math.random() > 0.5) {
+        round1.push([teams[i].id, teams[j].id]);
+        round2.push([teams[j].id, teams[i].id]);
+      } else {
+        round1.push([teams[j].id, teams[i].id]);
+        round2.push([teams[i].id, teams[j].id]);
+      }
     }
   }
   
-  schedule.sort(() => Math.random() - 0.5);
+  round1.sort(() => Math.random() - 0.5);
+  round2.sort(() => Math.random() - 0.5);
+  const schedule: [string, string][] = [...round1, ...round2];
   
   let matchIndex = 0;
   
@@ -128,7 +136,7 @@ export function generateTournamentSchedule(teams: Team[], startDay: number = 1):
           team2Name: team2.name,
           matchNumber: matchIndex + 1,
           status: 'scheduled',
-          venue: venues[matchIndex % venues.length]
+          venue: `${team1.name} Stadium`
         });
         
         matchIndex++;

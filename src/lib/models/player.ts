@@ -54,13 +54,13 @@ export interface Player {
   };
 }
 
-// Lower base stats to target 180-200 average runs
+// Base stats for 180-200 average runs on the 20-100 scale
 export function createBasePlayerStats(role: PlayerRole): PlayerStats {
   const base = {
-    batsman: { batting: 12, bowling: 5, power: 10, technique: 12, fielding: 12 },
-    allrounder: { batting: 10, bowling: 10, power: 8, technique: 8, fielding: 14 },
-    bowler: { batting: 5, bowling: 14, power: 9, technique: 8, fielding: 10 },
-    wicketkeeper: { batting: 10, bowling: 4, power: 8, technique: 14, fielding: 16 }
+    batsman: { batting: 60, bowling: 15, power: 50, technique: 60, fielding: 60 },
+    allrounder: { batting: 50, bowling: 50, power: 40, technique: 40, fielding: 70 },
+    bowler: { batting: 15, bowling: 70, power: 25, technique: 25, fielding: 50 },
+    wicketkeeper: { batting: 50, bowling: 10, power: 40, technique: 70, fielding: 80 }
   };
   return base[role];
 }

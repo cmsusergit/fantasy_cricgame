@@ -70,15 +70,15 @@ export function selectBowlingOrder(players: Player[], tendency: TeamTendency, cu
   const isDeath = currentOver >= 15;
   
   if (tendency.fieldSetting === 'defensive') {
-    return bowlers.find(b => b.stats.bowling > 12) || bowlers[0];
+    return bowlers.find(b => b.stats.bowling > 60) || bowlers[0];
   }
   
   if (isDeath && tendency.deathOverIntent === 'aggressive') {
-    return bowlers.find(b => b.stats.bowling > 14) || bowlers[0];
+    return bowlers.find(b => b.stats.bowling > 70) || bowlers[0];
   }
   
   if (isPowerplay && tendency.powerplayIntent === 'aggressive') {
-    return bowlers.find(b => b.stats.bowling > 10) || bowlers[Math.floor(Math.random() * bowlers.length)];
+    return bowlers.find(b => b.stats.bowling > 50) || bowlers[Math.floor(Math.random() * bowlers.length)];
   }
   
   return bowlers[Math.floor(Math.random() * Math.min(3, bowlers.length))];
@@ -144,8 +144,11 @@ export function generateAITeam(
     id: `ai_team_${index}`,
     name: PERSONALITY_NAMES[personality],
     coach: generateCoachName(faction),
-    budget: 50000,
+    budget: 4000000,
+    operatingBudget: 1000000,
     players: teamPlayers,
+    staff: [],
+    facilities: { stadiumLevel: 1, trainingLevel: 1, medicalLevel: 1 },
     wins: 0,
     losses: 0,
     draws: 0,
@@ -169,8 +172,11 @@ export function generateUserTeam(playerPool: Player[]): Team {
     id: 'user_team',
     name: 'Your Team',
     coach: 'You',
-    budget: 100000,
+    budget: 4000000,
+    operatingBudget: 1000000,
     players: teamPlayers,
+    staff: [],
+    facilities: { stadiumLevel: 1, trainingLevel: 1, medicalLevel: 1 },
     wins: 0,
     losses: 0,
     draws: 0,
@@ -216,4 +222,48 @@ export function getPersonalityIcon(personality: TeamPersonality): string {
     case 'strategic': return '♟️';
     case 'adaptive': return '🦎';
   }
+}
+
+export function calculateTeamStrength(team: Team): { batting: number; bowling: number; fielding: number; overall: number; stars: number } {
+  if (!team.players || team.players.length === 0) {
+    return { batting: 0, bowling: 0, fielding: 0, overall: 0, stars: 1 };
+  }
+
+  // Get best 11 players by overall stat sum roughly
+  const sortedPlayers = [...team.players].sort((a, b) => {
+    const aTotal = a.stats.batting + a.stats.bowling + a.stats.technique + a.stats.power;
+    const bTotal = b.stats.batting + b.stats.bowling + b.stats.technique + b.stats.power;
+    return bTotal - aTotal;
+  });
+  
+  const top11 = sortedPlayers.slice(0, 11);
+  
+  let battingTotal = 0;
+  let bowlingTotal = 0;
+  let fieldingTotal = 0;
+
+  top11.forEach(p => {
+    // Focus on primary skills for the role, but just sum stats for simplicity
+    battingTotal += p.stats.batting * 0.6 + p.stats.power * 0.4;
+    bowlingTotal += p.stats.bowling;
+    fieldingTotal += p.stats.fielding || 60;
+  });
+
+  const avgBatting = battingTotal / 11;
+  const avgBowling = bowlingTotal / 11;
+  const avgFielding = fieldingTotal / 11;
+
+  const overall = (avgBatting * 0.4 + avgBowling * 0.4 + avgFielding * 0.2);
+  
+  let stars = Math.round((overall - 30) / 10);
+  if (stars < 1) stars = 1;
+  if (stars > 5) stars = 5;
+
+  return {
+    batting: Math.round(avgBatting),
+    bowling: Math.round(avgBowling),
+    fielding: Math.round(avgFielding),
+    overall: Math.round(overall),
+    stars
+  };
 }

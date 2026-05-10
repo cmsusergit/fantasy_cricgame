@@ -32,7 +32,10 @@
          retiringPlayers = p.filter(x => x.retiring);
       })();
       
-      saveCurrentGame(userTeam.budget + (awards?.prizeMoney || 0)); // Hacky but ensures budget is saved if changed during processSeasonEnd
+      // Fetch updated budget after processSeasonEnd
+      let updatedUserTeam: Team | undefined;
+      teamStore.subscribe(t => { updatedUserTeam = t.find(x => x.isUserTeam); })();
+      saveCurrentGame(updatedUserTeam?.budget || 0); 
       processing = false;
     } else {
       // If we got here normally without being in season_end phase, go back
@@ -75,6 +78,10 @@
         <div class="stat-card highlight">
           <span class="label">Prize Money Earned</span>
           <span class="value money">+${awards.prizeMoney.toLocaleString()}</span>
+        </div>
+        <div class="stat-card negative">
+          <span class="label">Salaries Paid</span>
+          <span class="value money">-${(awards.salaryPaid || 0).toLocaleString()}</span>
         </div>
       </section>
 
@@ -205,13 +212,18 @@
   }
 
   .stat-card.highlight {
+    border-color: var(--success);
     background: rgba(35, 134, 54, 0.1);
-    border: 1px solid var(--success);
+  }
+
+  .stat-card.negative {
+    border-color: var(--danger);
+    background: rgba(218, 54, 51, 0.1);
   }
 
   .stat-card .label {
-    color: var(--text-secondary);
     font-size: 0.9rem;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: 8px;
@@ -220,9 +232,11 @@
   .stat-card .value {
     font-size: 2rem;
     font-weight: 800;
+    font-family: monospace;
   }
 
   .stat-card .money { color: var(--success); }
+  .stat-card.negative .money { color: var(--danger); }
   .stat-card .standing { color: var(--info); }
 
   .awards-grid {

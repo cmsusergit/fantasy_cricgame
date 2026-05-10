@@ -4,11 +4,11 @@ import type { Team } from './team';
 export type IntentType = 'very_defensive' | 'defensive' | 'balanced' | 'aggressive' | 'very_aggressive';
 
 export const INTENT_MULTIPLIERS: Record<IntentType, number> = {
-  very_defensive: 0.1,
-  defensive: 0.2,
+  very_defensive: 0.3,
+  defensive: 0.6,
   balanced: 1.0,
-  aggressive: 3.5,
-  very_aggressive: 5.5
+  aggressive: 1.8,
+  very_aggressive: 3.0
 };
 
 export type BallResult = 'dot' | 'single' | 'four' | 'six' | 'wicket' | 'noball' | 'wide';

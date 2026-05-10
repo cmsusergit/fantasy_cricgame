@@ -132,6 +132,9 @@
                   <span>{label}</span>
               {/each}
           </div>
+          <div class="intent-info" style="font-size: 0.7rem; color: var(--text-secondary); text-align: center; margin-top: 4px; font-style: italic;">
+             {battingIntent === 'very_defensive' ? 'Minimum Risk, Heavy Wicket Protection. Elves excel here.' : battingIntent === 'defensive' ? 'Low Risk. Goblins excel here (Steal Singles).' : battingIntent === 'balanced' ? 'Standard Play. Humans excel here (Stability).' : battingIntent === 'aggressive' ? 'High Risk. Orcs & Night Elves excel here.' : 'Maximum Risk. Dwarves excel late game (No Fatigue).'}
+          </div>
       </div>
       <div style="margin-left: 16px;">
         <label style="cursor: {isUserBatting ? 'pointer' : 'default'}; display: flex; align-items: center; gap: 4px;" title={!isUserBatting ? "AI controlled" : ""}>
@@ -149,6 +152,9 @@
               {#each intentLabels as label}
                   <span>{label}</span>
               {/each}
+          </div>
+          <div class="intent-info" style="font-size: 0.7rem; color: var(--text-secondary); text-align: center; margin-top: 4px; font-style: italic;">
+             {bowlingIntent === 'very_defensive' ? 'Prevent Boundaries. Night Elves excel late game.' : bowlingIntent === 'defensive' ? 'Restrict Scoring. Humans excel early game.' : bowlingIntent === 'balanced' ? 'Standard Line & Length.' : bowlingIntent === 'aggressive' ? 'Attacking Field. Orcs & Goblins (Spin) excel here.' : 'All-out Attack. Dwarves excel here (Stamina).'}
           </div>
       </div>
       {#if currentBowlerType !== 'none'}

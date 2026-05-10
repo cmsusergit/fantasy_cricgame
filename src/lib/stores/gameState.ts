@@ -65,7 +65,10 @@ function createTeamStore() {
           id: teamId,
           name: generateTeamName(faction),
           coach: generateCoachName(faction),
-          budget: isUserTeam ? (userTeam?.budget ?? 1000000) : 800000,
+          budget: isUserTeam ? (userTeam?.budget ?? 4000000) : 4000000,
+          operatingBudget: isUserTeam ? (userTeam?.operatingBudget ?? 1000000) : 1000000,
+          staff: isUserTeam ? (userTeam?.staff ?? []) : [],
+          facilities: isUserTeam ? (userTeam?.facilities ?? { stadiumLevel: 1, trainingLevel: 1, medicalLevel: 1 }) : { stadiumLevel: 1, trainingLevel: 1, medicalLevel: 1 },
           players: teamPlayers,
           wins: 0,
           losses: 0,
@@ -127,6 +130,44 @@ function createTeamStore() {
           return t;
         })
       );
+    },
+    updateOperatingBudget: (teamId: string, amount: number) => {
+      update(teams =>
+        teams.map(t => {
+          if (t.id === teamId) {
+            return { ...t, operatingBudget: t.operatingBudget + amount };
+          }
+          return t;
+        })
+      );
+    },
+    hireStaff: (teamId: string, staff: any, cost: number) => {
+      update(teams => teams.map(t => {
+        if (t.id === teamId && t.operatingBudget >= cost) {
+          return { ...t, operatingBudget: t.operatingBudget - cost, staff: [...t.staff, staff] };
+        }
+        return t;
+      }));
+    },
+    fireStaff: (teamId: string, staffId: string, severance: number) => {
+      update(teams => teams.map(t => {
+        if (t.id === teamId) {
+          return { ...t, operatingBudget: t.operatingBudget - severance, staff: t.staff.filter((s: any) => s.id !== staffId) };
+        }
+        return t;
+      }));
+    },
+    upgradeFacility: (teamId: string, facility: 'stadium' | 'training' | 'medical', cost: number) => {
+      update(teams => teams.map(t => {
+        if (t.id === teamId && t.operatingBudget >= cost) {
+          const newFacilities = { ...t.facilities };
+          if (facility === 'stadium') newFacilities.stadiumLevel++;
+          if (facility === 'training') newFacilities.trainingLevel++;
+          if (facility === 'medical') newFacilities.medicalLevel++;
+          return { ...t, operatingBudget: t.operatingBudget - cost, facilities: newFacilities };
+        }
+        return t;
+      }));
     },
     addPlayer: (teamId: string, player: Player) => {
       update(teams =>
@@ -251,6 +292,7 @@ export const availablePlayers = derived(playerStore, $players =>
 
 export const currentDay = writable(1);
 export const currentSeason = writable(1);
+export const isFirstLogin = writable(false);
 
 export type GamePhase = 'menu' | 'draft' | 'tournament' | 'match' | 'season_end' | 'retention' | 'scouting' | 'trading' | 'auction';
 export const gamePhase = writable<GamePhase>('menu');
@@ -290,7 +332,10 @@ export function initializeGame(teamName: string = 'Your Team', managerName: stri
         name: isUserTeam ? teamName : PERSONALITY_NAMES[personality],
         coach: isUserTeam ? managerName : generateCoachName(faction),
         logo: isUserTeam ? logoUrl : undefined,
-        budget: isUserTeam ? 1000000 : 800000,
+        budget: isUserTeam ? 4000000 : 4000000,
+        operatingBudget: 1000000,
+        staff: [],
+        facilities: { stadiumLevel: 1, trainingLevel: 1, medicalLevel: 1 },
         players: teamPlayers,
         wins: 0,
         losses: 0,
@@ -313,6 +358,7 @@ export function initializeGame(teamName: string = 'Your Team', managerName: stri
     teamStore.initialize(teams);
     tournamentStore.initialize(teams);
     scheduleStore.initialize(teams);
+    isFirstLogin.set(true);
   }
 }
 

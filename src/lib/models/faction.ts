@@ -89,7 +89,6 @@ export function getFactionArchetype(faction: FactionType): 'balanced' | 'tech' |
 }
 
 export function getAvatarUrl(factionType: FactionType, portraitId: number): string {
-  const faction = FACTIONS[factionType];
-  const seed = `${factionType}_hero_${portraitId}_seed_abc`;
-  return `https://api.dicebear.com/9.x/${faction.avatarStyle}/svg?seed=${seed}&backgroundColor=${faction.avatarBg}&radius=50`;
+  const localId = ((portraitId - 1) % 5) + 1;
+  return `/portraits/${factionType}_${localId}.svg`;
 }

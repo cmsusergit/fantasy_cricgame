@@ -293,6 +293,8 @@
       
       if (totalEarningsTeam1 > 0) teamStore.updateBudget(matchTeam1.id, totalEarningsTeam1);
       if (totalEarningsTeam2 > 0) teamStore.updateBudget(matchTeam2.id, totalEarningsTeam2);
+      if (result.operatingEarnings.team1 > 0) teamStore.updateOperatingBudget(matchTeam1.id, result.operatingEarnings.team1);
+      if (result.operatingEarnings.team2 > 0) teamStore.updateOperatingBudget(matchTeam2.id, result.operatingEarnings.team2);
       
       if (result.playerOfTheMatch && result.potmReward > 0) {
           teamStore.updateBudget(result.playerOfTheMatch.teamId, result.potmReward);
@@ -339,7 +341,7 @@
       bowlingIntent = getAIIntent(currentBowlingTeam.tendency, currentInn.overs, totalOvers, reqRR, totalOvers * 6 - currentInn.balls);
     }
 
-    const bowlingFieldingAvg = currentBowlingTeam.players.filter(p => getPlaying11(currentBowlingTeam).includes(p.id)).reduce((sum, p) => sum + (p.stats.fielding || 12), 0) / 11;
+    const bowlingFieldingAvg = currentBowlingTeam.players.filter(p => getPlaying11(currentBowlingTeam).includes(p.id)).reduce((sum, p) => sum + (p.stats.fielding || 60), 0) / 11;
 
     const ballEvent = resolveBall(striker, bowler, currentInn.balls, totalOvers, battingIntent, weather as any, pitch as any, 0, false, bowlingIntent, avoidSingles, bowlingFieldingAvg, currentBallType);
     
@@ -828,14 +830,18 @@
             <p class="final-score">{innings1.totalRuns}/{innings1.wickets} <span class="vs">vs</span> {innings2.totalRuns}/{innings2.wickets}</p>
             
             {#if matchResultObj}
+            {@const userKey = matchTeam1?.isUserTeam ? 'team1' : 'team2'}
             <div class="match-rewards-panel">
                 <h4>🏆 Match Rewards</h4>
                 <div class="rewards-grid">
                     <div class="reward-col">
-                        <h5>{getTeamName(matchResultObj.winner === 'team1' ? innings1.teamId : matchResultObj.winner === 'team2' ? innings2.teamId : 'draw')} (Winner)</h5>
-                        <p>Match Fee & Bonus: <span class="money">+${matchResultObj.matchEarnings[matchResultObj.winner === 'team1' ? 'team1' : matchResultObj.winner === 'team2' ? 'team2' : 'team1'].toLocaleString()}</span></p>
-                        {#if matchResultObj.sponsorshipEarnings[matchResultObj.winner === 'team1' ? 'team1' : matchResultObj.winner === 'team2' ? 'team2' : 'team1'] > 0}
-                           <p>Sponsorship: <span class="money">+${matchResultObj.sponsorshipEarnings[matchResultObj.winner === 'team1' ? 'team1' : matchResultObj.winner === 'team2' ? 'team2' : 'team1'].toLocaleString()}</span></p>
+                        <h5>Your Club Earnings</h5>
+                        <p>Match Fee & Bonus: <span class="money">+${matchResultObj.matchEarnings[userKey].toLocaleString()}</span></p>
+                        {#if matchResultObj.sponsorshipEarnings[userKey] > 0}
+                           <p>Sponsorship: <span class="money">+${matchResultObj.sponsorshipEarnings[userKey].toLocaleString()}</span></p>
+                        {/if}
+                        {#if matchResultObj.operatingEarnings[userKey] > 0}
+                           <p>Ticket Sales: <span class="money positive">+${matchResultObj.operatingEarnings[userKey].toLocaleString()}</span> (To Operating Budget)</p>
                         {/if}
                     </div>
                     {#if matchResultObj.playerOfTheMatch}

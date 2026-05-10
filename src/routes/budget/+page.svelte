@@ -13,6 +13,8 @@
   });
 
   let totalSquadValue = $derived(userTeam?.players.reduce((sum, p) => sum + p.price, 0) || 0);
+  let totalPlayerSalaries = $derived(userTeam?.players.reduce((sum, p) => sum + p.price * 0.05, 0) || 0); // Assuming 5% of market value as annual salary
+  let totalStaffSalaries = $derived(250000); // Placeholder for staff salaries
   let totalMatchEarningsEst = $derived((userTeam?.matchesPlayed || 0) * 10000 + (userTeam?.wins || 0) * 50000);
 </script>
 
@@ -43,6 +45,34 @@
     </div>
 
     <div class="details-grid">
+      <section class="income-section">
+        <h2>Income Overview</h2>
+        <div class="income-item">
+          <span class="label">Estimated Match Earnings:</span>
+          <span class="value money">${totalMatchEarningsEst.toLocaleString()}</span>
+        </div>
+        {#if userTeam.sponsorships && userTeam.sponsorships.length > 0}
+          <div class="income-item">
+            <span class="label">Sponsorships:</span>
+            <span class="value money">${userTeam.sponsorships.reduce((sum, s) => sum + s.earned, 0).toLocaleString()}</span>
+          </div>
+        {/if}
+        <!-- Add other income sources here -->
+      </section>
+
+      <section class="expenditure-section">
+        <h2>Expenditure Overview</h2>
+        <div class="expenditure-item">
+          <span class="label">Player Salaries (Annual):</span>
+          <span class="value money">-${totalPlayerSalaries.toLocaleString()}</span>
+        </div>
+        <div class="expenditure-item">
+          <span class="label">Staff Salaries (Annual):</span>
+          <span class="value money">-${totalStaffSalaries.toLocaleString()}</span>
+        </div>
+        <!-- Add other expenditure items here -->
+      </section>
+      
       <section class="sponsors-section">
         <h2>Active Sponsorships</h2>
         {#if userTeam.sponsorships && userTeam.sponsorships.length > 0}
@@ -78,7 +108,7 @@
       <section class="players-section">
         <h2>Squad Valuation</h2>
         <div class="player-list">
-          {#each userTeam.players.sort((a, b) => b.price - a.price) as player}
+          {#each [...userTeam.players].sort((a, b) => b.price - a.price) as player}
             <div class="player-row">
               <span class="name">{player.name}</span>
               <span class="role">{player.role}</span>
@@ -142,4 +172,29 @@
 
   .money { font-family: monospace; color: var(--success); }
   .no-data { color: var(--text-muted); font-style: italic; }
+
+  .income-section, .expenditure-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .income-item, .expenditure-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border-color);
+  }
+  .income-item:last-child, .expenditure-item:last-child {
+    border-bottom: none;
+  }
+  .income-item .label, .expenditure-item .label {
+    color: var(--text-secondary);
+  }
+  .income-item .value, .expenditure-item .value {
+    font-weight: bold;
+  }
+  .expenditure-item .value {
+    color: var(--danger);
+  }
 </style>

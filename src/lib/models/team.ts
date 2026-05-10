@@ -4,6 +4,8 @@ import type { SponsorshipContract } from '../core/sponsorship';
 import type { Injury } from '../core/injurySystem';
 import type { FanProfile } from '../core/fanSystem';
 
+import type { StaffMember, TeamFacilities } from './staff';
+
 export type TeamPersonality = 'aggressive' | 'defensive' | 'balanced' | 'strategic' | 'adaptive';
 
 export interface TeamTendency {
@@ -18,8 +20,11 @@ export interface Team {
   name: string;
   coach: string;
   logo?: string;
-  budget: number;
+  budget: number; // Transfer Budget
+  operatingBudget: number;
   players: Player[];
+  staff: StaffMember[];
+  facilities: TeamFacilities;
   wins: number;
   losses: number;
   draws: number;
