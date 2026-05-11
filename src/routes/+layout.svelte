@@ -61,7 +61,6 @@
       <a href="/">Dashboard</a>
       <a href="/teams">League Teams</a>
       <a href="/club">Club Management</a>
-      <a href="/guide" style="color: var(--accent-gold);">📖 Guide</a>
       
       {#if $gamePhase !== 'match'}
         <a href="/squad">Squad</a>
@@ -85,6 +84,7 @@
 
       <a href="/training">Training</a>
       <a href="/tournament">Tournament</a>
+      <a href="/guide" style="color: var(--accent-gold);">📖 Guide</a>
     </nav>
     <div style="display: flex; gap: 12px; align-items: center;">
       <button class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded text-sm font-semibold transition-colors" onclick={handleReset} title="Reset Game Progress">

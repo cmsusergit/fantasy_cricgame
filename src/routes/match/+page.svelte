@@ -741,7 +741,9 @@
                 {#if stats.isBatting}
                 <div class="scorecard-item {stats.isBatting ? 'active' : ''}">
                     <div class="top-row">
-                        <span class="player-name {stats.isBatting ? 'highlight' : ''}">{p.name}</span>
+                        <span class="player-name {stats.isBatting ? 'highlight' : ''}">
+                          {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'} {p.name}
+                        </span>
                         <span class="player-score {stats.isBatting ? 'highlight' : ''}">{stats.runs} <span class="balls">({stats.balls})</span></span>
                     </div>
                     {#if stats.isOut}
@@ -774,7 +776,9 @@
                     {@const stats = getBatsmanStats(p.id)}
                     <div class="scorecard-item {stats.isBatting ? 'active' : ''}">
                         <div class="top-row">
-                            <span class="player-name {stats.isBatting ? 'highlight' : ''}">{p.name}</span>
+                            <span class="player-name {stats.isBatting ? 'highlight' : ''}">
+                          {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'} {p.name}
+                        </span>
                             <span class="player-score {stats.isBatting ? 'highlight' : ''}">{stats.runs} <span class="balls">({stats.balls})</span></span>
                         </div>
                         {#if stats.isOut}
@@ -936,7 +940,9 @@
                 {#if p.id === currentLiveBowlerId}
                 <div class="scorecard-item {p.id === currentLiveBowlerId ? 'active-bowl' : ''}">
                     <div class="top-row">
-                        <span class="player-name {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">{p.name}</span>
+                        <span class="player-name {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">
+                           {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'} {p.name}
+                        </span>
                         <span class="player-score {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">{stats.wickets}-{stats.runs} <span class="overs">({stats.overs})</span></span>
                     </div>
                     {#if p.id === currentLiveBowlerId}
@@ -966,7 +972,9 @@
                     {#if p.role === 'bowler' || p.role === 'allrounder' || stats.oversBowled > 0}
                     <div class="scorecard-item {p.id === currentLiveBowlerId ? 'active-bowl' : ''}">
                         <div class="top-row">
-                            <span class="player-name {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">{p.name}</span>
+                            <span class="player-name {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">
+                           {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'} {p.name}
+                        </span>
                             <span class="player-score {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">{stats.wickets}-{stats.runs} <span class="overs">({stats.overs})</span></span>
                         </div>
                         {#if p.id === currentLiveBowlerId}
