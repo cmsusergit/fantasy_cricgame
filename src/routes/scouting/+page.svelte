@@ -41,7 +41,7 @@
     return () => { unsubT(); unsubP(); unsubS(); };
   });
 
-  function scoutPlayer(playerId: string) {
+  async function scoutPlayer(playerId: string) {
     if (currentBudget < SCOUT_COST) {
         errorMsg = `Not enough budget. Scouting costs $${SCOUT_COST}.`;
         setTimeout(() => errorMsg = '', 3000);
@@ -63,6 +63,8 @@
             return p;
         })
     );
+    
+    await saveCurrentGame(currentBudget - SCOUT_COST);
 
     successMsg = 'Scout report completed!';
     setTimeout(() => successMsg = '', 2000);

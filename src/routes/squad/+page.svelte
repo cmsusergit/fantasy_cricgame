@@ -113,7 +113,7 @@
     wicketKeeper = wkCandidate ? wkCandidate.id : playing11[0];
   }
   
-  function saveSquad() {
+  async function saveSquad() {
     if (!userTeam) return;
     if (playing11.length !== 11) {
       saveMessage = "Please select exactly 11 players.";
@@ -132,7 +132,7 @@
     }
     
     teamStore.setPlaying11(userTeam.id, playing11, captain, wicketKeeper);
-    saveCurrentGame(userTeam.budget);
+    await saveCurrentGame(userTeam.budget);
     saveMessage = "Squad saved successfully! Redirecting to match...";
     setTimeout(() => {
       saveMessage = '';

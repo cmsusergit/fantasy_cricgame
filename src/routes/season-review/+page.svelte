@@ -11,7 +11,7 @@
   let retiringPlayers = $state<Player[]>([]);
   let processing = $state(true);
 
-  onMount(() => {
+  onMount(async () => {
     let teams: Team[] = [];
     let players: Player[] = [];
     
@@ -35,7 +35,7 @@
       // Fetch updated budget after processSeasonEnd
       let updatedUserTeam: Team | undefined;
       teamStore.subscribe(t => { updatedUserTeam = t.find(x => x.isUserTeam); })();
-      saveCurrentGame(updatedUserTeam?.budget || 0); 
+      await saveCurrentGame(updatedUserTeam?.budget || 0); 
       processing = false;
     } else {
       // If we got here normally without being in season_end phase, go back

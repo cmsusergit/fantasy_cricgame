@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
+  import { gamePhase } from '$lib/stores/gameState';
+
   let activeTopic = $state('basics');
 
   const topics = [
@@ -8,6 +11,14 @@
     { id: 'factions', title: 'Faction Synergies' },
     { id: 'club', title: 'Club Facilities & Staff' }
   ];
+
+  function handleCloseGuide() {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      goto('/');
+    }
+  }
 </script>
 
 <svelte:head>
@@ -15,9 +26,14 @@
 </svelte:head>
 
 <div class="guide-page">
-  <div class="header">
-    <h1>📖 Manager's Guidebook</h1>
-    <p class="subtitle">Master the art of fantasy cricket management.</p>
+  <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h1>📖 Manager's Guidebook</h1>
+      <p class="subtitle">Master the art of fantasy cricket management.</p>
+    </div>
+    <button class="close-guide-btn" onclick={handleCloseGuide}>
+      Close Guide
+    </button>
   </div>
 
   <div class="guide-layout">
@@ -277,6 +293,24 @@
   .faction-card p {
     font-size: 14px;
     margin-bottom: 8px;
+  }
+
+  .close-guide-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .close-guide-btn:hover {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
   }
 
   @media (max-width: 768px) {

@@ -721,9 +721,10 @@
                <div class="selection-list">
                  {#each getAvailableBatsmen() as p}
                     <button class="player-select-btn {selectedBatsmen.includes(p.id) ? 'selected' : ''}"
+                            data-faction={p.faction}
                             onclick={() => phase === 'selectOpeningBatsmen' ? toggleBatsman(p.id) : confirmNextBatsman(p.id)}>
                         <div class="player-info">
-                           <span class="name">{p.name}</span>
+                           <span class="name"><span class="faction-icon faction-{p.faction}">{p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}</span> {p.name}</span>
                            <span class="role">{p.role} • {p.battingType || 'RHB'} • {p.battingRole || 'Middle Order'}{p.bowlingType && p.bowlingType !== 'none' ? ` • ${p.bowlingType}` : ''}</span>
                         </div>
                         <span class="stat-badge">Bat: {p.stats.batting}</span>
@@ -739,10 +740,10 @@
               {#each currentBattingTeam?.players.filter(p => getPlaying11(currentBattingTeam!).includes(p.id)) || [] as p}
                 {@const stats = getBatsmanStats(p.id)}
                 {#if stats.isBatting}
-                <div class="scorecard-item {stats.isBatting ? 'active' : ''}">
+                <div class="scorecard-item {stats.isBatting ? 'active' : ''}" data-faction={p.faction}>
                     <div class="top-row">
                         <span class="player-name {stats.isBatting ? 'highlight' : ''}">
-                          {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'} {p.name}
+                          <span class="faction-icon faction-{p.faction}">{p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}</span> {p.name}
                         </span>
                         <span class="player-score {stats.isBatting ? 'highlight' : ''}">{stats.runs} <span class="balls">({stats.balls})</span></span>
                     </div>
@@ -774,10 +775,10 @@
                 <div class="drawer-content scorecard-list">
                   {#each currentBattingTeam?.players.filter(p => getPlaying11(currentBattingTeam!).includes(p.id)) || [] as p}
                     {@const stats = getBatsmanStats(p.id)}
-                    <div class="scorecard-item {stats.isBatting ? 'active' : ''}">
+                    <div class="scorecard-item {stats.isBatting ? 'active' : ''}" data-faction={p.faction}>
                         <div class="top-row">
                             <span class="player-name {stats.isBatting ? 'highlight' : ''}">
-                          {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'} {p.name}
+                          <span class="faction-icon faction-{p.faction}">{p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}</span> {p.name}
                         </span>
                             <span class="player-score {stats.isBatting ? 'highlight' : ''}">{stats.runs} <span class="balls">({stats.balls})</span></span>
                         </div>
@@ -923,9 +924,9 @@
                <div class="selection-prompt">Select Bowler for the Over</div>
                <div class="selection-list">
                  {#each getAvailableBowlers() as p}
-                    <button class="player-select-btn" onclick={() => confirmBowler(p.id)}>
+                    <button class="player-select-btn" data-faction={p.faction} onclick={() => confirmBowler(p.id)}>
                         <div class="player-info">
-                           <span class="name">{p.name}</span>
+                           <span class="name"><span class="faction-icon faction-{p.faction}">{p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}</span> {p.name}</span>
                            <span class="role">{p.role} • {p.battingType || 'RHB'} • {p.battingRole || 'Middle Order'}{p.bowlingType && p.bowlingType !== 'none' ? ` • ${p.bowlingType}` : ''}</span>
                         </div>
                         <span class="stat-badge">Bowl: {p.stats.bowling}</span>
@@ -938,10 +939,10 @@
               {#each currentBowlingTeam?.players.filter(p => getPlaying11(currentBowlingTeam!).includes(p.id)) || [] as p}
                 {@const stats = getBowlerStats(p.id)}
                 {#if p.id === currentLiveBowlerId}
-                <div class="scorecard-item {p.id === currentLiveBowlerId ? 'active-bowl' : ''}">
+                <div class="scorecard-item {p.id === currentLiveBowlerId ? 'active-bowl' : ''}" data-faction={p.faction}>
                     <div class="top-row">
                         <span class="player-name {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">
-                           {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'} {p.name}
+                           <span class="faction-icon faction-{p.faction}">{p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}</span> {p.name}
                         </span>
                         <span class="player-score {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">{stats.wickets}-{stats.runs} <span class="overs">({stats.overs})</span></span>
                     </div>
@@ -970,10 +971,10 @@
                   {#each currentBowlingTeam?.players.filter(p => getPlaying11(currentBowlingTeam!).includes(p.id)) || [] as p}
                     {@const stats = getBowlerStats(p.id)}
                     {#if p.role === 'bowler' || p.role === 'allrounder' || stats.oversBowled > 0}
-                    <div class="scorecard-item {p.id === currentLiveBowlerId ? 'active-bowl' : ''}">
+                    <div class="scorecard-item {p.id === currentLiveBowlerId ? 'active-bowl' : ''}" data-faction={p.faction}>
                         <div class="top-row">
                             <span class="player-name {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">
-                           {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'} {p.name}
+                           <span class="faction-icon faction-{p.faction}">{p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}</span> {p.name}
                         </span>
                             <span class="player-score {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">{stats.wickets}-{stats.runs} <span class="overs">({stats.overs})</span></span>
                         </div>
@@ -1428,4 +1429,30 @@
     background: rgba(255,255,255,0.1);
     color: var(--text-primary);
   }
+
+  .scorecard-item[data-faction="human"], .player-select-btn[data-faction="human"] { border-left: 3px solid var(--accent-human); }
+  .scorecard-item[data-faction="elf"], .player-select-btn[data-faction="elf"] { border-left: 3px solid var(--accent-elf); }
+  .scorecard-item[data-faction="orc"], .player-select-btn[data-faction="orc"] { border-left: 3px solid var(--accent-orc); }
+  .scorecard-item[data-faction="dwarf"], .player-select-btn[data-faction="dwarf"] { border-left: 3px solid var(--accent-dwarf); }
+  .scorecard-item[data-faction="goblin"], .player-select-btn[data-faction="goblin"] { border-left: 3px solid var(--accent-goblin); }
+  .scorecard-item[data-faction="nightelf"], .player-select-btn[data-faction="nightelf"] { border-left: 3px solid var(--accent-nightelf); }
+
+  .faction-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 10px;
+    margin-right: 4px;
+    border: 1px solid;
+    background: var(--bg-tertiary);
+  }
+  .faction-human { border-color: var(--accent-human); box-shadow: 0 0 5px rgba(9, 105, 218, 0.4); }
+  .faction-elf { border-color: var(--accent-elf); box-shadow: 0 0 5px rgba(26, 127, 55, 0.4); }
+  .faction-orc { border-color: var(--accent-orc); box-shadow: 0 0 5px rgba(207, 34, 46, 0.4); }
+  .faction-dwarf { border-color: var(--accent-dwarf); box-shadow: 0 0 5px rgba(154, 103, 0, 0.4); }
+  .faction-goblin { border-color: var(--accent-goblin); box-shadow: 0 0 5px rgba(130, 80, 223, 0.4); }
+  .faction-nightelf { border-color: var(--accent-nightelf); box-shadow: 0 0 5px rgba(5, 152, 188, 0.4); }
 </style>

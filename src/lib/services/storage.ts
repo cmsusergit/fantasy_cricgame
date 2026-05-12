@@ -10,42 +10,72 @@ export interface GameSave {
   currentDay: number;
   currentSeason: number;
   gamePhase: string;
+  isFirstLogin?: boolean;
   userBudget: number;
   savedAt: number;
 }
 
-export function saveGame(data: GameSave): boolean {
-  try {
-    const saveData: GameSave = {
-      ...data,
-      version: '1.4.2',
-      savedAt: Date.now()
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
-    return true;
-  } catch (e) {
-    console.error('Failed to save game:', e);
-    return false;
+// Flexible interface for future database expansion
+export interface StorageProvider {
+  saveGame(data: GameSave): Promise<boolean>;
+  loadGame(): Promise<GameSave | null>;
+  clearSave(): Promise<void>;
+  hasExistingSave(): Promise<boolean>;
+}
+
+class LocalStorageProvider implements StorageProvider {
+  async saveGame(data: GameSave): Promise<boolean> {
+    try {
+      const saveData: GameSave = {
+        ...data,
+        version: '1.4.2',
+        savedAt: Date.now()
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
+      return true;
+    } catch (e) {
+      console.error('Failed to save game to localStorage:', e);
+      return false;
+    }
+  }
+
+  async loadGame(): Promise<GameSave | null> {
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      if (!data) return null;
+      return JSON.parse(data) as GameSave;
+    } catch (e) {
+      console.error('Failed to load game from localStorage:', e);
+      return null;
+    }
+  }
+
+  async clearSave(): Promise<void> {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
+  async hasExistingSave(): Promise<boolean> {
+    return localStorage.getItem(STORAGE_KEY) !== null;
   }
 }
 
-export function loadGame(): GameSave | null {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (!data) return null;
-    return JSON.parse(data) as GameSave;
-  } catch (e) {
-    console.error('Failed to load game:', e);
-    return null;
-  }
+// Current active provider
+const currentProvider: StorageProvider = new LocalStorageProvider();
+
+export async function saveGame(data: GameSave): Promise<boolean> {
+  return currentProvider.saveGame(data);
 }
 
-export function clearSave(): void {
-  localStorage.removeItem(STORAGE_KEY);
+export async function loadGame(): Promise<GameSave | null> {
+  return currentProvider.loadGame();
 }
 
-export function hasExistingSave(): boolean {
-  return localStorage.getItem(STORAGE_KEY) !== null;
+export async function clearSave(): Promise<void> {
+  return currentProvider.clearSave();
+}
+
+export async function hasExistingSave(): Promise<boolean> {
+  return currentProvider.hasExistingSave();
 }
 
 export function exportSave(): string {

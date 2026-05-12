@@ -29,7 +29,7 @@
     setTimeout(() => message = '', duration);
   }
 
-  function handleUpgrade(facility: 'stadium' | 'training' | 'medical') {
+  async function handleUpgrade(facility: 'stadium' | 'training' | 'medical') {
     if (!userTeam) return;
     const currentLevel = facilities[`${facility}Level` as keyof typeof facilities];
     if (currentLevel >= 5) {
@@ -39,31 +39,31 @@
     const cost = FACILITY_UPGRADE_COSTS[facility][currentLevel];
     if (operatingBudget >= cost) {
       teamStore.upgradeFacility(userTeam.id, facility, cost);
-      saveCurrentGame(userTeam.budget);
+      await saveCurrentGame(userTeam.budget);
       showMessage(`${facility.charAt(0).toUpperCase() + facility.slice(1)} upgraded to Level ${currentLevel + 1}!`);
     } else {
       showMessage(`Not enough operating budget to upgrade ${facility}. Cost: $${cost.toLocaleString()}`);
     }
   }
 
-  function handleHire(member: StaffMember) {
+  async function handleHire(member: StaffMember) {
     if (!userTeam) return;
     if (operatingBudget >= member.hiringCost) {
       teamStore.hireStaff(userTeam.id, member, member.hiringCost);
       staffMarket = staffMarket.filter(s => s.id !== member.id);
-      saveCurrentGame(userTeam.budget);
+      await saveCurrentGame(userTeam.budget);
       showMessage(`${member.name} hired!`);
     } else {
       showMessage(`Not enough budget to hire ${member.name}. Need $${member.hiringCost.toLocaleString()}`);
     }
   }
 
-  function handleFire(member: StaffMember) {
+  async function handleFire(member: StaffMember) {
     if (!userTeam) return;
     const severance = member.salary * 0.25; // 25% severance
     if (operatingBudget >= severance) {
       teamStore.fireStaff(userTeam.id, member.id, severance);
-      saveCurrentGame(userTeam.budget);
+      await saveCurrentGame(userTeam.budget);
       showMessage(`${member.name} fired. Paid $${severance.toLocaleString()} severance.`);
     } else {
       showMessage(`Not enough budget to pay severance ($${severance.toLocaleString()}).`);

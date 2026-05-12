@@ -297,8 +297,8 @@ export const isFirstLogin = writable(false);
 export type GamePhase = 'menu' | 'draft' | 'tournament' | 'match' | 'season_end' | 'retention' | 'scouting' | 'trading' | 'auction';
 export const gamePhase = writable<GamePhase>('menu');
 
-export function initializeGame(teamName: string = 'Your Team', managerName: string = 'You', logoUrl: string = '') {
-  const existingSave = loadGame();
+export async function initializeGame(teamName: string = 'Your Team', managerName: string = 'You', logoUrl: string = '') {
+  const existingSave = await loadGame();
   
   if (existingSave) {
     playerStore.initialize(existingSave.players);
@@ -306,6 +306,7 @@ export function initializeGame(teamName: string = 'Your Team', managerName: stri
     tournamentStore.initialize(existingSave.teams);
     currentDay.set(existingSave.currentDay);
     currentSeason.set(existingSave.currentSeason || 1);
+    isFirstLogin.set(existingSave.isFirstLogin ?? false);
     gamePhase.set((existingSave.gamePhase as GamePhase) || 'menu');
     if (existingSave.schedule) {
       scheduleStore.set(existingSave.schedule);
@@ -362,7 +363,7 @@ export function initializeGame(teamName: string = 'Your Team', managerName: stri
   }
 }
 
-export function saveCurrentGame(userBudget: number) {
+export async function saveCurrentGame(userBudget: number) {
   let teams: Team[] = [];
   let players: Player[] = [];
   let matches: Match[] = [];
@@ -370,6 +371,7 @@ export function saveCurrentGame(userBudget: number) {
   let day = 1;
   let season = 1;
   let phase = 'menu';
+  let firstLogin = false;
   
   teamStore.subscribe(t => teams = t)();
   playerStore.subscribe(p => players = p)();
@@ -378,10 +380,11 @@ export function saveCurrentGame(userBudget: number) {
   currentDay.subscribe(d => day = d)();
   currentSeason.subscribe(s => season = s)();
   gamePhase.subscribe(p => phase = p)();
+  isFirstLogin.subscribe(f => firstLogin = f)();
   
   const userTeam = teams.find(t => t.isUserTeam);
   
-  saveGame({
+  await saveGame({
     version: '1.4.2',
     userTeamId: userTeam?.id || 'user_team',
     teams,
@@ -391,18 +394,19 @@ export function saveCurrentGame(userBudget: number) {
     currentDay: day,
     currentSeason: season,
     gamePhase: phase,
+    isFirstLogin: firstLogin,
     userBudget,
     savedAt: Date.now()
   });
 }
 
-export function resetGame() {
-  clearSave();
+export async function resetGame() {
+  await clearSave();
   playerStore.initialize();
   teamStore.initialize();
   tournamentStore.initialize([]);
-  scheduleStore.set(null);
   currentDay.set(1);
   currentSeason.set(1);
   gamePhase.set('menu');
+  isFirstLogin.set(false);
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { initializeGame, resetGame, teamStore, playerStore, tournamentStore, scheduleStore, gamePhase, currentSeason, isFirstLogin } from '$lib/stores/gameState';
+  import { initializeGame, resetGame, teamStore, playerStore, tournamentStore, scheduleStore, gamePhase, currentSeason, isFirstLogin, saveCurrentGame } from '$lib/stores/gameState';
   import { getMatchesForDay, simulateAllMatchesForDay } from '$lib/core/schedule';
   import PlayerCard from '$lib/components/team/PlayerCard.svelte';
   import type { TournamentSchedule, GameDay, ScheduledMatch } from '$lib/core/schedule';
@@ -164,12 +164,12 @@
     showMatchResultModal = true;
   }
 
-  function closeMatchResultModal() {
+  async function closeMatchResultModal() {
     showMatchResultModal = false;
-    advanceTournament();
+    await advanceTournament();
   }
 
-  function advanceTournament() {
+  async function advanceTournament() {
     if (!schedule || !teams.length) return;
     
     const currentDay = schedule.currentDay;
@@ -293,14 +293,18 @@
     if (nextDay > schedule.totalDays) {
       gamePhase.set('season_end');
       goto('/season-review');
+    } else {
+      await saveCurrentGame(budget);
     }
   }
-  function closeWelcomeModal() {
+  async function closeWelcomeModal() {
     isFirstLogin.set(false);
+    await saveCurrentGame(budget);
   }
 
-  function goToGuide() {
+  async function goToGuide() {
     isFirstLogin.set(false);
+    await saveCurrentGame(budget);
     goto('/guide');
   }
 </script>

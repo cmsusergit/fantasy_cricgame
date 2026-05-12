@@ -25,11 +25,11 @@
     newManagerName = `${managerFirstNames[Math.floor(Math.random() * managerFirstNames.length)]} ${managerLastNames[Math.floor(Math.random() * managerLastNames.length)]}`;
   }
   
-  onMount(() => {
+  onMount(async () => {
     const saved = localStorage.getItem('theme') || 'dark';
     theme = saved;
     document.documentElement.setAttribute('data-theme', theme);
-    initializeGame();
+    await initializeGame();
   });
   
   function toggleTheme() {
@@ -42,10 +42,10 @@
     isResetting = true;
   }
 
-  function confirmReset() {
-    resetGame();
-    initializeGame(newTeamName || 'Your Team', newManagerName || 'You', newCoat);
-    saveCurrentGame(100000);
+  async function confirmReset() {
+    await resetGame();
+    await initializeGame(newTeamName || 'Your Team', newManagerName || 'You', newCoat);
+    await saveCurrentGame(100000);
     isResetting = false;
     window.location.href = '/';
   }
