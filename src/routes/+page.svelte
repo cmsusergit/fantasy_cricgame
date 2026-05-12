@@ -9,21 +9,23 @@
   import { resolveMatch } from '$lib/core/matchEngine';
   import MatchSummary from '$lib/components/match/MatchSummary.svelte';
   import { goto } from '$app/navigation';
+  import { calculateTeamStrength } from '$lib/core/teamBuilder';
+  import { FACTIONS } from '$lib/models/faction';
   
-  let teams = $state<any[]>([]);
-  let players = $state<any[]>([]);
-  let schedule = $state<TournamentSchedule | null>(null);
+  let teams: any[] = $state([]);
+  let players: any[] = $state([]);
+  let schedule: TournamentSchedule | null = $state(null);
   let day = $state(1);
   let budget = $state(4000000);
   let operatingBudget = $state(1000000);
   let selectedDay = $state(1);
-  let sponsorshipOffers = $state<SponsorshipContract[]>([]);
+  let sponsorshipOffers: SponsorshipContract[] = $state([]);
 
   // Auto-Simulate Results State
-  let showMatchResultModal = $state(false);
-  let lastSimulatedInnings1 = $state<any>(null);
-  let lastSimulatedInnings2 = $state<any>(null);
-  let lastMatchResult = $state<any>(null);
+  let showMatchResultModal = false;
+  let lastSimulatedInnings1: any = null;
+  let lastSimulatedInnings2: any = null;
+  let lastMatchResult: any = null;
   
   onMount(() => {
     
@@ -76,7 +78,7 @@
   let currentDayGames = $derived(schedule ? getMatchesForDay(schedule, selectedDay) : []);
   let dayInfo = $derived(schedule?.days.find(d => d.day === selectedDay));
   let userNextMatch = $derived(schedule?.matches.find(m => 
-    m.status === 'scheduled' && (m.team1Id === 'user_team' || m.team2Id === 'user_team')
+    m.status === 'scheduled' && (m.team1Id === 'user_team' || m.team2Id === 'user_team') && m.day === schedule?.currentDay
   ));
   
   // Expose gamePhase for conditional UI rendering
@@ -313,7 +315,7 @@
   <title>Fantasy Cricket Grand Manager</title>
 </svelte:head>
 
-<div class="dashboard">
+<div class="dashboard dashboard-grid">
   {#if $isFirstLogin}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -341,7 +343,7 @@
   </header>
 
   {#if userTeam}
-    <section class="team-overview">
+    <section class="team-overview card">
       <div class="team-header">
         <div class="team-info" style="display: flex; gap: 16px; align-items: center;">
           {#if userTeam.logo}
@@ -406,7 +408,7 @@
   {/if}
 
   {#if userTeam && userTeam.sponsorships && userTeam.sponsorships.length < (userTeam.tournamentWins > 0 ? 2 : 1) && ($gamePhase === 'tournament' || $gamePhase === 'menu') && sponsorshipOffers.length > 0}
-    <section class="sponsorship-section">
+    <section class="sponsorship-section card">
       <div class="section-header">
         <h3>🤝 Select a Team Sponsor</h3>
       </div>
@@ -428,8 +430,51 @@
     </section>
   {/if}
 
-  {#if schedule}
-    <section class="schedule-section">
+    {#if schedule}
+      <section class="next-match-widget card">
+          {#if userNextMatch && userTeam}
+              {@const opponentTeamId = userNextMatch.team1Id === userTeam.id ? userNextMatch.team2Id : userNextMatch.team1Id}
+              {@const opponentTeam = teams.find(t => t.id === opponentTeamId)}
+              {@const opponentStrength = opponentTeam ? calculateTeamStrength(opponentTeam) : null}
+              {@const userTeamStrength = userTeam ? calculateTeamStrength(userTeam) : null}
+              {@const opponentFaction = opponentTeam && opponentTeam.faction ? FACTIONS[opponentTeam.faction as keyof typeof FACTIONS] : null}
+
+              <div class="next-match-header">
+                  <h3>Next Match</h3>
+                  <span class="next-match-day">Day {userNextMatch.day}</span>
+              </div>
+
+              <div class="matchup-summary">
+                  <div class="team-display">
+                      <span class="team-name">{userTeam.name}</span>
+                      <span class="team-strength">{'⭐'.repeat(userTeamStrength?.stars || 1)}</span>
+                  </div>
+                  <span class="vs-text">VS</span>
+                  <div class="team-display opponent">
+                      {#if opponentFaction?.avatarStyle}
+                          <img src="/portraits/{opponentFaction.type}_1.svg" alt={opponentFaction.name} class="opponent-avatar" />
+                      {/if}
+                      <span class="team-name">{opponentTeam?.name}</span>
+                      <span class="team-strength">{'⭐'.repeat(opponentStrength?.stars || 1)}</span>
+                  </div>
+              </div>
+
+              <p class="match-venue">at {userNextMatch.venue}</p>
+
+              <div class="next-match-actions">
+                  <a href="/match" class="btn-start-match">START MATCH</a>
+                  <button class="btn-auto-sim" onclick={quickSimulateUserMatch} title="Instantly simulate the match and advance">AUTO SIMULATE ⚡</button>
+              </div>
+          {:else}
+              <div class="no-next-match">
+                  <p>No upcoming matches for your team today.</p>
+                  {#if phase === 'tournament' || phase === 'menu'}
+                     <button class="advance-btn" onclick={advanceTournament}>Advance to Day {schedule?.currentDay ? schedule.currentDay + 1 : ''}</button>
+                  {/if}
+              </div>
+          {/if}
+      </section>
+    <section class="schedule-section card">
       <div class="section-header">
         <h3>📅 Tournament Calendar</h3>
       </div>
@@ -462,22 +507,7 @@
         </div>
       </div>
       
-      {#if phase === 'tournament' || phase === 'match' || phase === 'menu'}
-        {#if schedule?.matches.some(m => m.day === schedule?.currentDay && m.status === 'scheduled' && (m.team1Id === 'user_team' || m.team2Id === 'user_team'))}
-          <div style="display: flex; gap: 12px; margin-top: 12px;">
-            <a href="/match" class="advance-btn" style="flex: 1; display: block; text-align: center; text-decoration: none; box-sizing: border-box; background: var(--success); margin-top: 0;">
-              Start Match
-            </a>
-            <button class="advance-btn" onclick={quickSimulateUserMatch} style="flex: 1; background: var(--info); margin-top: 0;" title="Instantly simulate the match and advance">
-              Auto Simulate ⚡
-            </button>
-          </div>
-        {:else}
-          <button class="advance-btn" onclick={advanceTournament}>
-            Advance to Day {schedule?.currentDay ? schedule.currentDay + 1 : ''}
-          </button>
-        {/if}
-      {:else}
+      {#if phase !== 'tournament' && phase !== 'match' && phase !== 'menu'}
          <div class="off-season-alert" style="margin-top: 16px; padding: 16px; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--warning); border-radius: 8px; text-align: center; color: var(--warning); font-weight: 600;">
            Tournament is currently in the off-season phase. Please complete the off-season activities to begin the next season.
            <br>
@@ -495,28 +525,8 @@
     </section>
   {/if}
 
-  <section class="squad-preview">
-    <div class="section-header">
-      <h3>👥 Current Squad</h3>
-      {#if phase !== 'match'}
-        <a href="/squad" class="view-all">Manage Squad →</a>
-      {/if}
-    </div>
-    <div class="players-scroll-container">
-      <div class="players-flex">
-        {#each (userTeam?.players || []) as player}
-          <div class="compact-player-card">
-            <PlayerCard {player} />
-          </div>
-        {:else}
-          <p class="no-players">No players in squad. Go to draft!</p>
-        {/each}
-      </div>
-    </div>
-  </section>
-
   <!-- Player Performance Stats replacing Transfer Market -->
-  <section class="player-stats-section">
+      <section class="player-stats-section card">
     <div class="section-header">
       <h3>⭐ Top Performers</h3>
     </div>
@@ -553,6 +563,26 @@
             <span class="stat-value" style="color: var(--text-muted); font-size: 1rem;">N/A</span>
           {/if}
         </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="squad-preview card">
+    <div class="section-header">
+      <h3>👥 Current Squad</h3>
+      {#if phase !== 'match'}
+        <button onclick={() => goto('/squad')} class="view-all" style="background: none; border: none; padding: 0; cursor: pointer;">Manage Squad →</button>
+      {/if}
+    </div>
+    <div class="players-scroll-container">
+      <div class="players-flex">
+        {#each (userTeam?.players || []) as player}
+          <div class="compact-player-card">
+            <PlayerCard {player} />
+          </div>
+        {:else}
+          <p class="no-players">No players in squad. Go to draft!</p>
+        {/each}
       </div>
     </div>
   </section>
@@ -598,7 +628,47 @@
 {/if}
 
 <style>
-  .dashboard { max-width: 1400px; margin: 0 auto; padding: 0 16px; }
+  .dashboard { width: 100%; margin: 0 auto; padding: 0 16px; }
+  
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Single column for vertical stacking */
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  
+  /* Remove grid-area assignments as they are not needed for a single column */
+  .team-overview { margin-bottom: 24px; }
+  .next-match-widget { margin-bottom: 24px; }
+  .sponsorship-section { margin-bottom: 24px; }
+  .schedule-section { margin-bottom: 24px; }
+  .squad-preview { margin-bottom: 24px; }
+  .player-stats-section { margin-bottom: 0; } /* Last item doesn't need margin-bottom */
+
+  .next-match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
+  .next-match-header h3 { font-size: 1.2rem; margin: 0; color: var(--accent-gold); }
+  .next-match-day { background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; }
+  .matchup-summary { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px; }
+  .team-display { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 40%; text-align: center; }
+  .team-display.opponent { color: var(--danger); }
+  .team-name { font-weight: 700; font-size: 1.1rem; }
+  .team-strength { font-size: 0.8rem; letter-spacing: 2px; }
+  .vs-text { font-family: 'Cinzel', serif; font-weight: 700; color: var(--text-muted); font-size: 1.2rem; }
+  .match-venue { text-align: center; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px; font-style: italic; }
+  .next-match-actions { display: flex; flex-direction: column; gap: 12px; }
+  .btn-start-match { background: var(--success); color: white; text-align: center; padding: 16px; border-radius: 8px; font-weight: 800; text-decoration: none; font-size: 1.1rem; box-shadow: 0 0 15px rgba(46, 125, 50, 0.4); animation: pulse 2s infinite; display: block; }
+  .btn-start-match:hover { background: #2ea043; color: white; transform: translateY(-2px); box-shadow: 0 0 20px rgba(46, 125, 50, 0.6); }
+  .btn-auto-sim { background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-auto-sim:hover { background: var(--info); color: white; border-color: var(--info); }
+  .no-next-match { text-align: center; padding: 32px 16px; color: var(--text-secondary); background: rgba(0,0,0,0.1); border-radius: 8px; border: 1px dashed var(--border-color); }
+  .opponent-avatar { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--border-color); background: var(--bg-primary); margin-bottom: 4px; }
+  
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+  }
+
   .hero { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px 32px; margin-bottom: 24px; }
   .hero h1 { font-size: 32px; margin-bottom: 4px; }
   .tagline { color: var(--text-secondary); font-size: 14px; }
@@ -613,6 +683,12 @@
   .matches { background: var(--bg-tertiary); color: var(--text-secondary); }
   .sponsor { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
   .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  @media (max-width: 1024px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .stats-grid { grid-template-columns: 1fr; }
+  }
   .stat-card { display: flex; align-items: center; gap: 12px; background: var(--bg-tertiary); padding: 16px; border-radius: 8px; }
   .stat-icon { font-size: 24px; }
   .stat-content { display: flex; flex-direction: column; }
@@ -629,6 +705,9 @@
   .sponsorship-section { background: var(--bg-secondary); border: 2px solid var(--info); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
   .sponsor-desc { color: var(--text-secondary); margin-bottom: 20px; font-size: 14px; }
   .sponsor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  @media (max-width: 768px) {
+    .sponsor-grid { grid-template-columns: 1fr; }
+  }
   .sponsor-card { background: var(--bg-tertiary); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; }
   .sponsor-card h4 { margin: 0 0 8px 0; font-size: 18px; color: var(--text-primary); }
   .sponsor-type { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-bottom: 12px; width: max-content; }
@@ -701,10 +780,11 @@
   .players-flex {
     display: flex;
     gap: 16px;
-    width: max-content;
+    flex-wrap: wrap; /* Allow items to wrap */
   }
   .compact-player-card {
-    width: 280px;
+    width: 100%; /* Make it take full width on small screens */
+    max-width: 280px; /* But keep its maximum width */
     flex-shrink: 0;
   }
   .no-players { color: var(--text-secondary); font-style: italic; }

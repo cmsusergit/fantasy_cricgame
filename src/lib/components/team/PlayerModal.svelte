@@ -162,6 +162,12 @@
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
+    transform: scale(1);
+    transition: transform 0.2s ease;
+  }
+  
+  .modal-overlay:active .modal {
+    transform: scale(0.99);
   }
   
   .close-btn {

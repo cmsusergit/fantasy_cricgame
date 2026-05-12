@@ -2,6 +2,8 @@
   import '../app.css';
   import { onMount } from 'svelte';
   import { resetGame, initializeGame, saveCurrentGame, gamePhase } from '$lib/stores/gameState';
+  import { fade } from 'svelte/transition';
+  import { page } from '$app/stores';
   
   let { children } = $props();
   let theme = $state('dark');
@@ -97,7 +99,11 @@
   </header>
   
   <main>
-    {@render children()}
+    {#key $page.url.pathname}
+      <div in:fade={{duration: 150, delay: 150}} out:fade={{duration: 150}}>
+        {@render children()}
+      </div>
+    {/key}
   </main>
 </div>
 

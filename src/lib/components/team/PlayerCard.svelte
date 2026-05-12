@@ -129,10 +129,35 @@
     padding: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
+    transform: translateY(0);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .player-card::after {
+    content: attr(data-faction);
+    position: absolute;
+    bottom: -10px;
+    right: -10px;
+    font-size: 60px;
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  .player-header, .stats, .price, .select-btn {
+    position: relative;
+    z-index: 1;
   }
   
   .player-card:hover {
     border-color: var(--text-secondary);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
   }
   
   .player-card.selected {
@@ -145,12 +170,18 @@
     cursor: not-allowed;
   }
   
-  .player-card[data-faction="human"] { border-left: 3px solid var(--accent-human); }
-  .player-card[data-faction="elf"] { border-left: 3px solid var(--accent-elf); }
-  .player-card[data-faction="orc"] { border-left: 3px solid var(--accent-orc); }
-  .player-card[data-faction="dwarf"] { border-left: 3px solid var(--accent-dwarf); }
-  .player-card[data-faction="goblin"] { border-left: 3px solid var(--accent-goblin); }
-  .player-card[data-faction="nightelf"] { border-left: 3px solid var(--accent-nightelf); }
+  .player-card[data-faction="human"] { border-left: 3px solid var(--accent-human); background-image: var(--bg-human); }
+  .player-card[data-faction="human"]::after { color: var(--accent-human); }
+  .player-card[data-faction="elf"] { border-left: 3px solid var(--accent-elf); background-image: var(--bg-elf); }
+  .player-card[data-faction="elf"]::after { color: var(--accent-elf); }
+  .player-card[data-faction="orc"] { border-left: 3px solid var(--accent-orc); background-image: var(--bg-orc); }
+  .player-card[data-faction="orc"]::after { color: var(--accent-orc); }
+  .player-card[data-faction="dwarf"] { border-left: 3px solid var(--accent-dwarf); background-image: var(--bg-dwarf); }
+  .player-card[data-faction="dwarf"]::after { color: var(--accent-dwarf); }
+  .player-card[data-faction="goblin"] { border-left: 3px solid var(--accent-goblin); background-image: var(--bg-goblin); }
+  .player-card[data-faction="goblin"]::after { color: var(--accent-goblin); }
+  .player-card[data-faction="nightelf"] { border-left: 3px solid var(--accent-nightelf); background-image: var(--bg-nightelf); }
+  .player-card[data-faction="nightelf"]::after { color: var(--accent-nightelf); }
   
   .player-header {
     display: flex;

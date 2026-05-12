@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;600;700&display=swap");
 @import "tailwindcss";
 
 :root {
@@ -30,6 +31,15 @@
   --warning: var(--accent-fire);
   --info: var(--accent-sapphire);
   --bg-overlay: rgba(0, 0, 0, 0.8);
+  --bg-primary-gradient-start: #2a2a2a; /* Slightly lighter for gradient effect */
+
+  /* Faction Background Gradients */
+  --bg-human: linear-gradient(135deg, rgba(var(--accent-sapphire-rgb), 0.15) 0%, transparent 100%);
+  --bg-elf: linear-gradient(135deg, rgba(var(--accent-emerald-rgb), 0.15) 0%, transparent 100%);
+  --bg-orc: linear-gradient(135deg, rgba(var(--accent-ruby-rgb), 0.15) 0%, transparent 100%);
+  --bg-dwarf: linear-gradient(135deg, rgba(var(--accent-gold-rgb), 0.15) 0%, transparent 100%);
+  --bg-goblin: linear-gradient(135deg, rgba(var(--accent-amethyst-rgb), 0.15) 0%, transparent 100%);
+  --bg-nightelf: linear-gradient(135deg, rgba(var(--accent-shadow-rgb), 0.15) 0%, transparent 100%);
 }
 
 [data-theme="light"] {
@@ -62,6 +72,7 @@
   --warning: var(--accent-fire);
   --info: var(--accent-sapphire);
   --bg-overlay: rgba(255, 255, 255, 0.9);
+  --bg-primary-gradient-start: #f1efe8; /* Slightly darker for gradient effect */
 }
 
 * {
@@ -71,8 +82,8 @@
 }
 
 body {
-  font-family: 'Lora', serif; /* Body text with Lora */
-  background: var(--bg-primary);
+  font-family: 'Inter', sans-serif; /* Use Inter for body text */
+  background: radial-gradient(circle at top left, var(--bg-primary-gradient-start) 0%, var(--bg-primary) 100%);
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.6;
@@ -107,6 +118,17 @@ button {
   font-size: 14px;
   font-weight: 600;
   transition: all 0.2s ease;
+  transform: translateY(0);
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.9);
 }
 
 button.primary {

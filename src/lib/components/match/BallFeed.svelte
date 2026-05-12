@@ -51,14 +51,27 @@
   .ball-event.wicket {
     background: rgba(218, 54, 51, 0.15);
     border-left: 3px solid var(--danger);
+    color: var(--danger); /* Red text for wickets */
+    font-weight: bold;
   }
 
   .ball-event.four {
     border-left: 3px solid var(--accent-dwarf);
+    background: rgba(210, 153, 34, 0.1);
+    color: var(--accent-dwarf); /* Gold text for fours */
+    font-weight: bold;
   }
 
   .ball-event.six {
     border-left: 3px solid var(--success);
+    background: rgba(35, 134, 54, 0.1);
+    color: var(--success); /* Green text for sixes */
+    font-weight: bold;
+  }
+
+  .runs.dot {
+    opacity: 0.6; /* Muted for dot balls */
+    color: var(--text-muted);
   }
 
   .ball-number {
@@ -71,10 +84,7 @@
     text-align: center;
     background: var(--bg-tertiary);
     border-radius: 4px;
-  }
-
-  .runs.dot {
-    opacity: 0.5;
+    padding: 2px 4px;
   }
 
   .commentary {

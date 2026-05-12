@@ -51,6 +51,15 @@
   }
 
   let winnerName = $derived(state.currentBidderId ? $teamStore.find((t: Team) => t.id === state.currentBidderId)?.name : 'Nobody');
+
+  let logListContainer: HTMLDivElement;
+
+  $effect(() => {
+    // Scroll to bottom of log when new entries are added
+    if (logListContainer) {
+      logListContainer.scrollTop = logListContainer.scrollHeight;
+    }
+  });
 </script>
 
 <svelte:head>
@@ -81,6 +90,12 @@
       <!-- Right: Bidding War -->
       <div class="bidding-sidebar">
          <div class="bid-status">
+             {#if state.showAiBidFlash && state.lastAiBidderId}
+                {@const aiBidderTeam = $teamStore.find(t => t.id === state.lastAiBidderId)}
+                <div class="ai-bid-flash">
+                   {aiBidderTeam?.name} Bids!
+                </div>
+             {/if}
              <h2>Current Bid</h2>
              <div class="bid-amount">${state.currentBid.toLocaleString()}</div>
              <div class="bidder">{winnerName}</div>
@@ -109,11 +124,20 @@
 
          <div class="auction-log">
              <h3>Activity Log</h3>
-             <ul class="log-list">
-                 {#each state.auctionLog as log}
-                    <li class="log-entry" class:highlight={log.includes('SOLD!') || log.includes('UNSOLD')}>{log}</li>
-                 {/each}
-             </ul>
+             <div class="log-list-wrapper" bind:this={logListContainer}>
+               <ul class="log-list">
+                   {#each state.auctionLog as log}
+                      <li class="log-entry" 
+                          class:user-bid={log.type === 'bid' && log.teamId === userTeam?.id}
+                          class:ai-bid={log.type === 'bid' && log.teamId !== userTeam?.id}
+                          class:sold={log.type === 'sold'}
+                          class:unsold={log.type === 'unsold'}
+                          class:system={log.type === 'system'}>
+                         {log.message}
+                      </li>
+                   {/each}
+               </ul>
+             </div>
          </div>
       </div>
     </div>
@@ -137,19 +161,30 @@
   
   .auction-layout { display: flex; gap: 24px; height: 75vh; min-height: 600px; }
   
-  .main-stage { flex: 2; background: radial-gradient(circle at center, var(--bg-tertiary), var(--bg-secondary)); border: 2px solid var(--warning); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(245, 158, 11, 0.15); }
-  .stage-header { position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.5); padding: 12px; text-align: center; font-weight: 800; letter-spacing: 2px; color: var(--text-muted); border-bottom: 1px solid rgba(245, 158, 11, 0.3); }
-  .player-showcase { transform: scale(1.3); transform-origin: center; z-index: 10; }
+  .main-stage { flex: 2; background: radial-gradient(circle at center, var(--bg-tertiary), var(--bg-secondary)); border: 2px solid var(--warning); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(245, 158, 11, 0.15); perspective: 1000px; }
+  .stage-header { position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.5); padding: 12px; text-align: center; font-weight: 800; letter-spacing: 2px; color: var(--text-muted); border-bottom: 1px solid rgba(245, 158, 11, 0.3); z-index: 10; }
+  .player-showcase { 
+    transform: scale(1.3); transform-origin: center; z-index: 10; 
+    animation: card-appear 0.8s ease-out forwards;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+  }
+  
+  @keyframes card-appear {
+    0% { transform: scale(0.8) translateY(50px) rotateX(15deg); opacity: 0; }
+    100% { transform: scale(1.3) translateY(0) rotateX(0deg); opacity: 1; }
+  }
   
   .bidding-sidebar { flex: 1; display: flex; flex-direction: column; gap: 16px; }
-  .bid-status { background: var(--bg-secondary); padding: 32px 24px; border-radius: 12px; text-align: center; border: 1px solid var(--border-color); }
+  .bid-status { background: var(--bg-secondary); padding: 32px 24px; border-radius: 12px; text-align: center; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
   .bid-status h2 { font-size: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
   .bid-amount { font-size: 3rem; font-weight: 900; color: var(--success); font-family: monospace; margin-bottom: 8px; }
   .bidder { font-size: 1.25rem; font-weight: 700; color: var(--info); }
   
   .timer-container { background: var(--bg-tertiary); height: 40px; border-radius: 20px; position: relative; overflow: hidden; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; }
   .timer-bar { position: absolute; top: 0; left: 0; bottom: 0; background: var(--success); transition: width 1s linear, background-color 0.3s; z-index: 1; }
-  .timer-bar.warning { background: var(--danger); }
+  .timer-bar.warning { background: var(--danger); animation: pulse-red 1s infinite alternate; }
+  
   .timer-text { position: relative; z-index: 2; font-weight: 800; font-family: monospace; font-size: 1.2rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); color: white; }
   
   .bid-actions { background: var(--bg-secondary); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); text-align: center; }
@@ -163,10 +198,22 @@
   
   .auction-log { flex: 1; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
   .auction-log h3 { padding: 12px 16px; margin: 0; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); }
-  .log-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex: 1; }
+  .log-list-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 200px; /* Adjust as needed */
+  }
+  .log-list { list-style: none; padding: 0; margin: 0; }
   .log-entry { padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; color: var(--text-secondary); }
-  .log-entry.highlight { font-weight: 700; color: var(--warning); background: rgba(245, 158, 11, 0.1); }
+  .log-entry.user-bid { color: var(--info); font-weight: 600; }
+  .log-entry.ai-bid { color: var(--warning); }
+  .log-entry.sold { color: var(--success); font-weight: 700; background: rgba(var(--accent-emerald-rgb), 0.1); }
+  .log-entry.unsold { color: var(--danger); font-weight: 700; background: rgba(var(--accent-ruby-rgb), 0.1); }
+  .log-entry.system { color: var(--text-muted); font-style: italic; }
   
   .auction-complete { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; background: var(--bg-secondary); border-radius: 16px; border: 2px solid var(--success); }
-  .auction-complete h2 { font-size: 3rem; color: var(--success); margin-bottom: 24px; }
+  @keyframes pulse-red {
+    from { background-color: var(--danger); }
+    to { background-color: var(--accent-ruby-rgb); }
+  }
 </style>

@@ -63,6 +63,10 @@
   let tossWinner = $state<string | null>(null);
   let tossChoice = $state<'bat' | 'bowl' | null>(null);
   let isTossing = $state(false);
+
+  let showImpactAnimation = $state(false);
+  let impactAnimationType = $state<'wicket' | 'four' | 'six' | null>(null);
+  let animationTimeout: any = null;
   
   function createEmptyInnings(): innings {
     return {
@@ -302,11 +306,20 @@
     }
   }
 
+  function clearAnimation() {
+    showImpactAnimation = false;
+    impactAnimationType = null;
+    if (animationTimeout) clearTimeout(animationTimeout);
+    animationTimeout = null;
+  }
+  
   function executeSingleBall() {
     if (isComplete || !currentBattingTeam || !currentBowlingTeam) {
       phase = 'paused';
       return true;
     }
+    
+    clearAnimation(); // Clear any previous animation
   
     const currentInn = currentInnings === 1 ? innings1 : innings2;
     const strikerId = currentInn.currentBatsmen[0];
@@ -328,7 +341,19 @@
     
     if (!striker || !bowler) {
       console.error('Match error: Missing striker or bowler.', { strikerId, bowlerId });
-      phase = 'paused';
+      if (!striker) {
+          if (currentInnings === 1) {
+              currentInnings = 2;
+              target = currentInn.totalRuns + 1;
+              currentBowlerIndex = 0;
+              phase = 'inningBreak';
+              if (ballInterval) clearInterval(ballInterval);
+          } else {
+              finishMatch();
+          }
+      } else {
+          phase = 'paused';
+      }
       return true;
     }
     
@@ -344,6 +369,21 @@
     const bowlingFieldingAvg = currentBowlingTeam.players.filter(p => getPlaying11(currentBowlingTeam).includes(p.id)).reduce((sum, p) => sum + (p.stats.fielding || 60), 0) / 11;
 
     const ballEvent = resolveBall(striker, bowler, currentInn.balls, totalOvers, battingIntent, weather as any, pitch as any, 0, false, bowlingIntent, avoidSingles, bowlingFieldingAvg, currentBallType);
+    
+    // Trigger impact animations
+    if (ballEvent.isWicket) {
+      showImpactAnimation = true;
+      impactAnimationType = 'wicket';
+      animationTimeout = setTimeout(clearAnimation, 1500); // Show for 1.5 seconds
+    } else if (ballEvent.runs === 4) {
+      showImpactAnimation = true;
+      impactAnimationType = 'four';
+      animationTimeout = setTimeout(clearAnimation, 1000); // Show for 1 second
+    } else if (ballEvent.runs === 6) {
+      showImpactAnimation = true;
+      impactAnimationType = 'six';
+      animationTimeout = setTimeout(clearAnimation, 1000); // Show for 1 second
+    }
     
     striker.fatigue += 0.3;
     
@@ -389,14 +429,14 @@
     if (currentInnings === 1) innings1 = updatedInn;
     else innings2 = updatedInn;
 
-    if (currentInnings === 1 && (nextOvers >= totalOvers || nextWickets >= 10)) {
+    if (currentInnings === 1 && (nextOvers >= totalOvers || nextWickets >= 10 || nextWickets >= currentInn.battingOrder.length - 1)) {
         currentInnings = 2;
         target = updatedInn.totalRuns + 1;
         currentBowlerIndex = 0;
         phase = 'inningBreak';
         if (ballInterval) clearInterval(ballInterval);
         return true;
-    } else if (currentInnings === 2 && (updatedInn.totalRuns >= target || nextOvers >= totalOvers || nextWickets >= 10)) {
+    } else if (currentInnings === 2 && (updatedInn.totalRuns >= target || nextOvers >= totalOvers || nextWickets >= 10 || nextWickets >= currentInn.battingOrder.length - 1)) {
         finishMatch();
         return true;
     }
@@ -635,6 +675,21 @@
 <svelte:head><title>Match - Fantasy Cricket</title></svelte:head>
 
 <div class="match-page-wrapper">
+  {#if showImpactAnimation}
+    <div class="impact-animation-overlay {impactAnimationType}">
+      {#if impactAnimationType === 'wicket'}
+        <div class="impact-graphic">OUT!</div>
+        <div class="impact-subtext">WICKET!</div>
+      {:else if impactAnimationType === 'four'}
+        <div class="impact-graphic">4</div>
+        <div class="impact-subtext">FOUR!</div>
+      {:else if impactAnimationType === 'six'}
+        <div class="impact-graphic">6</div>
+        <div class="impact-subtext">SIX!</div>
+      {/if}
+    </div>
+  {/if}
+
   {#if noMatchAvailable}
     <div class="full-screen-message">
       <div class="message-card">
@@ -1022,13 +1077,33 @@
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 
-  .match-page-wrapper {
-    font-family: inherit;
-    color: var(--text-primary);
-    background-color: var(--color-bg-dark);
-    min-height: 100vh;
-    padding: 20px;
-    box-sizing: border-box;
+.match-page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 80px); /* Adjust based on header/footer */
+    background-color: var(--color-green-pitch); /* Base green color */
+    background-image:
+      radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.1) 100%), /* Subtle vignetting */
+      repeating-linear-gradient(0deg, #6c9a59, #6c9a59 1px, #649151 1px, #649151 2px); /* Subtle horizontal lines */
+    background-size: 100% 100%, 100% 40px; /* Adjust size of repeating lines */
+    background-position: center center, 0 0;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .match-page-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 80%;
+    height: 20%;
+    min-height: 120px;
+    max-height: 200px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(ellipse at center, rgba(144, 107, 73, 0.4) 0%, rgba(144, 107, 73, 0) 70%); /* Pitch effect */
+    border-radius: 50%;
+    z-index: 0;
   }
 
   /* Full Screen Messages & Toss */
@@ -1301,6 +1376,20 @@
     box-shadow: var(--shadow-md);
   }
 
+  @media (max-width: 768px) {
+    .controls-panel {
+      position: sticky;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      z-index: 100;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      padding-bottom: env(safe-area-inset-bottom); /* Account for iPhone X notch */
+    }
+  }
+
   .commentary-panel {
     background: var(--color-bg-panel);
     border: 1px solid var(--color-border);
@@ -1430,12 +1519,47 @@
     color: var(--text-primary);
   }
 
-  .scorecard-item[data-faction="human"], .player-select-btn[data-faction="human"] { border-left: 3px solid var(--accent-human); }
-  .scorecard-item[data-faction="elf"], .player-select-btn[data-faction="elf"] { border-left: 3px solid var(--accent-elf); }
-  .scorecard-item[data-faction="orc"], .player-select-btn[data-faction="orc"] { border-left: 3px solid var(--accent-orc); }
-  .scorecard-item[data-faction="dwarf"], .player-select-btn[data-faction="dwarf"] { border-left: 3px solid var(--accent-dwarf); }
-  .scorecard-item[data-faction="goblin"], .player-select-btn[data-faction="goblin"] { border-left: 3px solid var(--accent-goblin); }
-  .scorecard-item[data-faction="nightelf"], .player-select-btn[data-faction="nightelf"] { border-left: 3px solid var(--accent-nightelf); }
+  .scorecard-item, .player-select-btn {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .scorecard-item::after, .player-select-btn::after {
+    content: attr(data-faction);
+    position: absolute;
+    bottom: -8px;
+    right: -5px;
+    font-size: 40px;
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .scorecard-item > *, .player-select-btn > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .scorecard-item[data-faction="human"], .player-select-btn[data-faction="human"] { border-left: 3px solid var(--accent-human); background-image: var(--bg-human); }
+  .scorecard-item[data-faction="human"]::after, .player-select-btn[data-faction="human"]::after { color: var(--accent-human); }
+
+  .scorecard-item[data-faction="elf"], .player-select-btn[data-faction="elf"] { border-left: 3px solid var(--accent-elf); background-image: var(--bg-elf); }
+  .scorecard-item[data-faction="elf"]::after, .player-select-btn[data-faction="elf"]::after { color: var(--accent-elf); }
+
+  .scorecard-item[data-faction="orc"], .player-select-btn[data-faction="orc"] { border-left: 3px solid var(--accent-orc); background-image: var(--bg-orc); }
+  .scorecard-item[data-faction="orc"]::after, .player-select-btn[data-faction="orc"]::after { color: var(--accent-orc); }
+
+  .scorecard-item[data-faction="dwarf"], .player-select-btn[data-faction="dwarf"] { border-left: 3px solid var(--accent-dwarf); background-image: var(--bg-dwarf); }
+  .scorecard-item[data-faction="dwarf"]::after, .player-select-btn[data-faction="dwarf"]::after { color: var(--accent-dwarf); }
+
+  .scorecard-item[data-faction="goblin"], .player-select-btn[data-faction="goblin"] { border-left: 3px solid var(--accent-goblin); background-image: var(--bg-goblin); }
+  .scorecard-item[data-faction="goblin"]::after, .player-select-btn[data-faction="goblin"]::after { color: var(--accent-goblin); }
+
+  .scorecard-item[data-faction="nightelf"], .player-select-btn[data-faction="nightelf"] { border-left: 3px solid var(--accent-nightelf); background-image: var(--bg-nightelf); }
+  .scorecard-item[data-faction="nightelf"]::after, .player-select-btn[data-faction="nightelf"]::after { color: var(--accent-nightelf); }
 
   .faction-icon {
     display: inline-flex;
@@ -1455,4 +1579,77 @@
   .faction-dwarf { border-color: var(--accent-dwarf); box-shadow: 0 0 5px rgba(154, 103, 0, 0.4); }
   .faction-goblin { border-color: var(--accent-goblin); box-shadow: 0 0 5px rgba(130, 80, 223, 0.4); }
   .faction-nightelf { border-color: var(--accent-nightelf); box-shadow: 0 0 5px rgba(5, 152, 188, 0.4); }
+  .faction-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 10px;
+    margin-right: 4px;
+    border: 1px solid;
+    background: var(--bg-tertiary);
+  }
+  .faction-human { border-color: var(--accent-human); box-shadow: 0 0 5px rgba(9, 105, 218, 0.4); }
+  .faction-elf { border-color: var(--accent-elf); box-shadow: 0 0 5px rgba(26, 127, 55, 0.4); }
+  .faction-orc { border-color: var(--accent-orc); box-shadow: 0 0 5px rgba(207, 34, 46, 0.4); }
+  .faction-dwarf { border-color: var(--accent-dwarf); box-shadow: 0 0 5px rgba(154, 103, 0, 0.4); }
+  .faction-goblin { border-color: var(--accent-goblin); box-shadow: 0 0 5px rgba(137, 87, 229, 0.4); }
+  .faction-nightelf { border-color: var(--accent-nightelf); box-shadow: 0 0 5px rgba(5, 152, 188, 0.4); }
+
+  .impact-animation-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    pointer-events: none; /* Allow clicks to pass through */
+    animation: fadeInOut 1.5s ease-out forwards;
+  }
+  .impact-animation-overlay.wicket { animation-duration: 1.5s; }
+  .impact-animation-overlay.four, .impact-animation-overlay.six { animation-duration: 1s; }
+
+  .impact-graphic {
+    font-family: 'Cinzel', serif;
+    font-size: 8rem;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 0 20px rgba(255,255,255,0.8);
+    transform: scale(0.5);
+    opacity: 0;
+    animation: graphicScaleIn 0.5s ease-out 0.1s forwards;
+  }
+  .impact-animation-overlay.wicket .impact-graphic { color: var(--danger); text-shadow: 0 0 20px rgba(var(--accent-ruby-rgb), 0.8); }
+  .impact-animation-overlay.four .impact-graphic { color: var(--accent-dwarf); text-shadow: 0 0 20px rgba(var(--accent-gold-rgb), 0.8); }
+  .impact-animation-overlay.six .impact-graphic { color: var(--success); text-shadow: 0 0 20px rgba(var(--accent-emerald-rgb), 0.8); }
+
+  .impact-subtext {
+    font-family: 'Inter', sans-serif;
+    font-size: 2.5rem;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: subtextSlideIn 0.5s ease-out 0.3s forwards;
+  }
+
+  @keyframes fadeInOut {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  @keyframes graphicScaleIn {
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes subtextSlideIn {
+    to { transform: translateY(0); opacity: 1; }
+  }
 </style>

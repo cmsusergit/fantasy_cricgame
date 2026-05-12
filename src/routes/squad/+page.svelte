@@ -5,44 +5,63 @@
   import type { Player } from '$lib/models/player';
   import PlayerCard from '$lib/components/team/PlayerCard.svelte';
   import { MAX_SQUAD_SIZE } from '$lib/core/retentionSystem';
-  
-  let teams = $state<any[]>([]);
+  import { dndzone } from 'svelte-dnd-action';
+
+  let teams: any[] = $state([]);
   let userTeam = $derived(teams.find((t: any) => t.isUserTeam));
   
-  let playing11 = $state<string[]>([]);
-  let captain = $state<string>('');
-  let wicketKeeper = $state<string>('');
-  let saveMessage = $state<string>('');
+  let playing11: string[] = $state([]);
+  let captain: string = $state('');
+  let wicketKeeper: string = $state('');
+  let saveMessage: string = $state('');
   
-  let filterRole = $state<string>('all');
-  let searchQuery = $state('');
-  
+  let filterRole: string = $state('all');
+  let searchQuery: string = $state('');
+
+  let dndPlayers: Player[] = $state([]);
+
   onMount(() => {
-    if ($gamePhase === 'match') {
+    let currentPhase;
+    const unsubPhase = gamePhase.subscribe(v => currentPhase = v);
+    unsubPhase(); // Immediately unsubscribe after getting the value
+    
+    if (currentPhase === 'match') {
        goto('/');
        return;
     }
     const unsub = teamStore.subscribe(t => {
       teams = t;
       const userT = t.find((team: any) => team.isUserTeam);
-      if (userT && playing11.length === 0) {
-        playing11 = userT.playing11 || [];
-        captain = userT.captain || '';
-        wicketKeeper = userT.wicketKeeper || '';
+      if (userT) {
+        if (playing11.length === 0) { // Only initialize playing11 once
+          playing11 = userT.playing11 || [];
+          captain = userT.captain || '';
+          wicketKeeper = userT.wicketKeeper || '';
+        }
+        dndPlayers = [...userT.players]; // Initialize dndPlayers
       }
     });
     return unsub;
   });
 
+  // Filter and search logic applied to dndPlayers
   let displayedPlayers = $derived((() => {
     if (!userTeam) return [];
-    let players = userTeam.players as Player[];
     
-    return players.filter(p => 
+    return dndPlayers.filter(p => 
       (filterRole === 'all' || p.role === filterRole) &&
       (searchQuery === '' || p.name.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   })());
+
+  function handleDndConsider(e: CustomEvent<DndEvent<Player[]>>) {
+    dndPlayers = e.detail.items;
+  }
+
+  function handleDndFinalize(e: CustomEvent<DndEvent<Player[]>>) {
+    dndPlayers = e.detail.items;
+    playing11 = dndPlayers.filter(p => playing11.includes(p.id)).map(p => p.id);
+  }
   
   function togglePlayerSelection(player: Player) {
     const playerId = player.id;
@@ -185,8 +204,8 @@
   </div>
 
   {#if userTeam && userTeam.players.length > 0}
-    <div class="players-grid">
-      {#each displayedPlayers as player}
+    <div class="players-grid" use:dndzone={{ items: displayedPlayers }} onconsider={handleDndConsider} onfinalize={handleDndFinalize}>
+      {#each displayedPlayers as player (player.id)}
         {@const isSelected = playing11.includes(player.id)}
         {@const isCaptain = captain === player.id}
         {@const isWk = wicketKeeper === player.id}

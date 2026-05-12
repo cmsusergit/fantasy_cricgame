@@ -3,6 +3,13 @@ import type { Player } from '../models/player';
 import { teamStore, playerStore, gamePhase } from './gameState';
 import { MAX_SQUAD_SIZE } from '../core/retentionSystem';
 
+export interface LogEntry {
+    message: string;
+    timestamp: number;
+    teamId?: string;
+    type?: 'bid' | 'sold' | 'unsold' | 'system';
+}
+
 export interface AuctionState {
     isActive: boolean;
     availablePlayers: Player[];
@@ -11,9 +18,11 @@ export interface AuctionState {
     currentBid: number;
     currentBidderId: string | null; // teamId
     timer: number;
-    auctionLog: string[];
+    auctionLog: LogEntry[];
     isRTMActive: boolean;
     rtmEligibleTeamId: string | null;
+    lastAiBidderId: string | null;
+    showAiBidFlash: boolean;
 }
 
 function createAuctionStore() {
@@ -27,12 +36,15 @@ function createAuctionStore() {
         timer: 0,
         auctionLog: [],
         isRTMActive: false,
-        rtmEligibleTeamId: null
+        rtmEligibleTeamId: null,
+        lastAiBidderId: null,
+        showAiBidFlash: false
     };
 
     const { subscribe, set, update } = writable<AuctionState>(initialState);
 
     let tickInterval: any = null;
+    let aiFlashTimeout: any = null;
 
     const engine = {
         subscribe,
@@ -53,7 +65,7 @@ function createAuctionStore() {
                 currentBid: sortedPlayers[0] ? sortedPlayers[0].marketValue : 0,
                 currentBidderId: null,
                 timer: 5,
-                auctionLog: ['Auction has started!']
+                auctionLog: [{ message: 'Auction has started!', timestamp: Date.now(), type: 'system' }]
             });
         },
 
@@ -88,7 +100,7 @@ function createAuctionStore() {
             if (tickInterval) clearInterval(tickInterval);
         },
 
-        placeBid: (teamId: string, amount?: number) => {
+        placeBid: (teamId: string, amount?: number, isAiBid = false) => {
             update(state => {
                 if (!state.currentPlayer) return state;
                 
@@ -113,14 +125,29 @@ function createAuctionStore() {
                     return state; // Can't afford or squad is full
                 }
 
-                engine.log(`${team.name} bids $${nextBid.toLocaleString()}`);
+                engine.log(`${team.name} bids $${nextBid.toLocaleString()}`, teamId, 'bid');
                 
-                return {
+                // Clear any existing AI flash timeout
+                if (aiFlashTimeout) clearTimeout(aiFlashTimeout);
+
+                let newState: AuctionState = {
                     ...state,
                     currentBid: nextBid,
                     currentBidderId: teamId,
-                    timer: 5 // Reset timer on new bid
+                    timer: 5, // Reset timer on new bid
+                    showAiBidFlash: false, // Reset flash on any new bid by default
+                    lastAiBidderId: null, // Reset last AI bidder by default
                 };
+
+                if (isAiBid) {
+                    newState.showAiBidFlash = true;
+                    newState.lastAiBidderId = teamId;
+                    aiFlashTimeout = setTimeout(() => {
+                        update(s => ({ ...s, showAiBidFlash: false }));
+                    }, 500); // Flash for 0.5 seconds
+                }
+                
+                return newState;
             });
             engine.startTimer();
         },
@@ -166,9 +193,11 @@ function createAuctionStore() {
 
             // Random chance to actually place the bid now or wait
             if (bestBidder && Math.random() > 0.4) {
-                engine.placeBid((bestBidder as any).id);
+                const calculatedNextBidAmount = (state.currentBid === player.marketValue && state.currentBidderId === null) ? player.marketValue : state.currentBid + (state.currentBid >= 50000 ? 2000 : (state.currentBid >= 10000 ? 1000 : 500));
+                engine.placeBid((bestBidder as any).id, calculatedNextBidAmount, true); // Pass true to indicate AI bid
+                return true; // Return true if someone wanted to bid
             }
-            return bestBidder !== null; // Return true if someone wanted to bid
+            return false;
         },
 
         fastForwardPlayer: () => {
@@ -207,7 +236,7 @@ function createAuctionStore() {
             if (state.currentBidderId) {
                 const teams = get(teamStore);
                 const winningTeam = teams.find(t => t.id === state.currentBidderId);
-                engine.log(`SOLD! ${state.currentPlayer.name} goes to ${winningTeam?.name} for $${state.currentBid.toLocaleString()}`);
+                engine.log(`SOLD! ${state.currentPlayer.name} goes to ${winningTeam?.name} for $${state.currentBid.toLocaleString()}`, state.currentBidderId!, 'sold');
                 
                 // Assign player
                 teamStore.update(ts => ts.map(t => {
@@ -219,7 +248,7 @@ function createAuctionStore() {
 
                 playerStore.update(ps => ps.map(p => p.id === state.currentPlayer?.id ? { ...p, isAvailable: false } : p));
             } else {
-                engine.log(`UNSOLD. ${state.currentPlayer.name} returns to the pool.`);
+                engine.log(`UNSOLD. ${state.currentPlayer.name} returns to the pool.`, undefined, 'unsold');
             }
 
             if (instant) {
@@ -235,7 +264,7 @@ function createAuctionStore() {
                 const nextP = state.availablePlayers[nextIndex];
                 
                 if (nextP) {
-                    if(!instant) engine.log(`Now on the block: ${nextP.name} (Base Price: $${nextP.marketValue.toLocaleString()})`);
+                    if(!instant) engine.log(`Now on the block: ${nextP.name} (Base Price: $${nextP.marketValue.toLocaleString()})`, undefined, 'system');
                     return {
                         ...state,
                         currentPlayerIndex: nextIndex,
@@ -247,7 +276,7 @@ function createAuctionStore() {
                         rtmEligibleTeamId: null
                     };
                 } else {
-                    engine.log('Auction Complete!');
+                    engine.log('Auction Complete!', undefined, 'system');
                     return { ...state, isActive: false, currentPlayer: null };
                 }
             });
@@ -261,10 +290,10 @@ function createAuctionStore() {
             }
         },
 
-        log: (msg: string) => {
+        log: (message: string, teamId?: string, type?: 'bid' | 'sold' | 'unsold' | 'system') => {
             update(state => ({
                 ...state,
-                auctionLog: [msg, ...state.auctionLog].slice(0, 10)
+                auctionLog: [{ message, teamId, type, timestamp: Date.now() }, ...state.auctionLog].slice(0, 10)
             }));
         }
     };
