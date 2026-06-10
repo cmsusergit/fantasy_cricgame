@@ -6,13 +6,38 @@
   interface Props {
     player: Player;
     onClose: () => void;
+    allowRename?: boolean;
+    onRename?: (newName: string) => void;
   }
   
-  let { player, onClose }: Props = $props();
+  let { player, onClose, allowRename = false, onRename }: Props = $props();
+
+  let isEditingName = $state(false);
+  let editNameValue = $state(player.name);
+
+  function startEdit(e: Event) {
+    e.stopPropagation();
+    isEditingName = true;
+    editNameValue = player.name;
+  }
+
+  function saveEdit(e: Event) {
+    e.stopPropagation();
+    isEditingName = false;
+    if (editNameValue.trim() && editNameValue !== player.name) {
+      onRename?.(editNameValue.trim());
+    }
+  }
+
+  function cancelEdit(e: Event) {
+    e.stopPropagation();
+    isEditingName = false;
+  }
   
   let faction = $derived(FACTIONS[player.faction]);
   let avatarUrl = $derived(getAvatarUrl(player.faction, player.portraitId || 1));
   let effectiveStats = $derived(getEffectiveStats(player));
+  let activeInjury = $derived((player as any).activeInjury);
   
   function getStatClass(value: number): string {
     if (value >= 70) return 'high';
@@ -33,7 +58,20 @@
         </div>
       </div>
       <div class="player-info">
-        <h2>{player.name}</h2>
+        {#if isEditingName}
+          <div class="edit-name-container" onclick={(e) => e.stopPropagation()}>
+            <input type="text" class="edit-name-input" bind:value={editNameValue} maxlength="30" onkeydown={(e) => e.key === 'Enter' && saveEdit(e)} />
+            <button class="icon-btn save-btn" onclick={saveEdit} title="Save">✓</button>
+            <button class="icon-btn cancel-btn" onclick={cancelEdit} title="Cancel">✕</button>
+          </div>
+        {:else}
+          <h2>
+            {player.name}
+            {#if allowRename}
+              <button class="icon-btn edit-btn" onclick={startEdit} title="Edit Name">✎</button>
+            {/if}
+          </h2>
+        {/if}
         <span class="role">{player.role} • {player.battingType || 'RHB'} • {player.battingRole || 'Middle Order'}{player.bowlingType && player.bowlingType !== 'none' ? ` • ${player.bowlingType}` : ''}</span>
         <span class="faction">{faction.name}</span>
       </div>
@@ -44,6 +82,12 @@
     {/if}
     {#if player.special.isWicketKeeper}
       <div class="badge wk">Wicket Keeper</div>
+    {/if}
+    {#if player.retiring}
+      <div class="badge retire">Retiring</div>
+    {/if}
+    {#if activeInjury}
+      <div class="badge injury">Injury: {activeInjury.type} • {activeInjury.bodyPart.replace('_', ' ')}</div>
     {/if}
     
     <div class="stats-section">
@@ -141,241 +185,399 @@
 <style>
   .modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(2, 6, 23, 0.72);
+    backdrop-filter: blur(14px);
     z-index: 1000;
   }
-  
+
   .modal {
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 24px;
-    max-width: 450px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
     position: relative;
-    transform: scale(1);
-    transition: transform 0.2s ease;
+    width: min(100%, 760px);
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+    padding: 1.4rem;
+    border-radius: 14px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)),
+      var(--bg-elevated);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    box-shadow: none;
   }
-  
-  .modal-overlay:active .modal {
-    transform: scale(0.99);
-  }
-  
+
   .close-btn {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
+    position: sticky;
+    top: 0;
+    margin-left: auto;
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(148, 163, 184, 0.16);
     color: var(--text-secondary);
+    font-size: 1.3rem;
+    line-height: 1;
   }
-  
+
+  .close-btn:hover {
+    color: var(--text-primary);
+    border-color: rgba(var(--accent-sapphire-rgb), 0.34);
+    background: rgba(var(--accent-sapphire-rgb), 0.1);
+  }
+
   .player-header {
     display: flex;
-    gap: 20px;
     align-items: center;
-    margin-bottom: 24px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 16px;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
   }
-  
+
   .avatar-container {
     position: relative;
-    width: 90px;
-    height: 90px;
-    flex-shrink: 0;
+    width: 104px;
+    height: 104px;
+    flex: 0 0 auto;
   }
-  
+
   .avatar-img {
     width: 100%;
     height: 100%;
-    border-radius: 50%;
+    border-radius: 999px;
     object-fit: cover;
     background: var(--bg-secondary);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    border: 2px solid rgba(255, 255, 255, 0.08);
   }
-  
+
+  .modal[data-faction="human"] .avatar-img {
+    box-shadow: none;
+  }
+
+  .modal[data-faction="elf"] .avatar-img {
+    box-shadow: none;
+  }
+
+  .modal[data-faction="orc"] .avatar-img {
+    box-shadow: none;
+  }
+
+  .modal[data-faction="dwarf"] .avatar-img {
+    box-shadow: none;
+  }
+
+  .modal[data-faction="goblin"] .avatar-img {
+    box-shadow: none;
+  }
+
+  .modal[data-faction="nightelf"] .avatar-img {
+    box-shadow: none;
+  }
+
   .faction-badge {
     position: absolute;
-    bottom: 0;
-    right: 0;
-    background: var(--bg-primary);
-    border: 2px solid var(--border-color);
-    border-radius: 50%;
+    right: 0.15rem;
+    bottom: 0.15rem;
+    display: grid;
+    place-items: center;
     width: 28px;
     height: 28px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--bg-secondary);
+    box-shadow: none;
+  }
+
+  .player-info {
+    min-width: 0;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    flex-direction: column;
+    gap: 0.3rem;
   }
-  
-  .modal[data-faction="human"] .avatar-img { border: 3px solid var(--accent-human); box-shadow: 0 0 20px rgba(9, 105, 218, 0.3); }
-  .modal[data-faction="elf"] .avatar-img { border: 3px solid var(--accent-elf); box-shadow: 0 0 20px rgba(26, 127, 55, 0.3); }
-  .modal[data-faction="orc"] .avatar-img { border: 3px solid var(--accent-orc); box-shadow: 0 0 20px rgba(207, 34, 46, 0.3); }
-  .modal[data-faction="dwarf"] .avatar-img { border: 3px solid var(--accent-dwarf); box-shadow: 0 0 20px rgba(154, 103, 0, 0.3); }
-  .modal[data-faction="goblin"] .avatar-img { border: 3px solid var(--accent-goblin); box-shadow: 0 0 20px rgba(130, 80, 223, 0.3); }
-  .modal[data-faction="nightelf"] .avatar-img { border: 3px solid var(--accent-nightelf); box-shadow: 0 0 20px rgba(5, 152, 188, 0.3); }
-  
+
   .player-info h2 {
-    margin: 0;
-    font-size: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: clamp(1.4rem, 3vw, 2rem);
   }
-  
+
   .role {
     color: var(--text-secondary);
     text-transform: capitalize;
   }
-  
+
   .faction {
-    color: var(--accent-elf);
-    font-size: 14px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
   }
-  
-  .badge {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    margin-right: 8px;
-    margin-bottom: 16px;
+
+  .edit-name-container {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
   }
-  
-  .badge.captain {
-    background: var(--warning);
-    color: white;
+
+  .edit-name-input {
+    width: min(100%, 16rem);
+    padding: 0.7rem 0.9rem;
+    border-radius: 8px;
   }
-  
-  .badge.wk {
-    background: var(--info);
-    color: #fff;
-  }
-  
-  .stats-section {
-    margin-bottom: 16px;
-  }
-  
-  .stats-section h3 {
-    font-size: 14px;
-    margin-bottom: 8px;
+
+  .icon-btn {
+    width: 2.1rem;
+    height: 2.1rem;
+    padding: 0;
+    border-radius: 999px;
+    display: inline-grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(148, 163, 184, 0.16);
     color: var(--text-secondary);
   }
-  
+
+  .icon-btn.edit-btn {
+    opacity: 0;
+    font-size: 0.95rem;
+  }
+
+  h2:hover .icon-btn.edit-btn {
+    opacity: 1;
+  }
+
+  .icon-btn.edit-btn:hover {
+    color: var(--info);
+    background: rgba(var(--accent-sapphire-rgb), 0.12);
+  }
+
+  .icon-btn.save-btn {
+    color: var(--success);
+  }
+
+  .icon-btn.save-btn:hover {
+    background: rgba(var(--accent-emerald-rgb), 0.12);
+  }
+
+  .icon-btn.cancel-btn {
+    color: var(--danger);
+  }
+
+  .icon-btn.cancel-btn:hover {
+    background: rgba(var(--accent-ruby-rgb), 0.12);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-right: 0.5rem;
+    margin-bottom: 0.6rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-secondary);
+  }
+
+  .badge.captain {
+    background: rgba(var(--accent-gold-rgb), 0.14);
+    color: var(--warning);
+    border-color: rgba(var(--accent-gold-rgb), 0.24);
+  }
+
+  .badge.wk {
+    background: rgba(var(--accent-sapphire-rgb), 0.14);
+    color: var(--info);
+    border-color: rgba(var(--accent-sapphire-rgb), 0.24);
+  }
+
+  .badge.retire {
+    background: rgba(var(--accent-fire-rgb), 0.14);
+    color: var(--accent-fire);
+    border-color: rgba(var(--accent-fire-rgb), 0.24);
+  }
+
+  .badge.injury {
+    background: rgba(var(--accent-ruby-rgb), 0.14);
+    color: var(--danger);
+    border-color: rgba(var(--accent-ruby-rgb), 0.24);
+  }
+
+  .stats-section {
+    margin-bottom: 1rem;
+  }
+
+  .stats-section h3 {
+    margin-bottom: 0.7rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
   }
-  
+
   .stat-item {
-    background: var(--bg-secondary);
-    padding: 8px;
-    border-radius: 4px;
-    text-align: center;
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.8rem 0.9rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(148, 163, 184, 0.12);
   }
-  
+
   .stat-label {
     display: block;
-    font-size: 10px;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
   }
-  
+
   .stat-value {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 1.05rem;
+    font-weight: 700;
   }
-  
-  .stat-value.high { color: var(--success); }
-  .stat-value.medium { color: var(--warning); }
-  .stat-value.low { color: var(--danger); }
-  
+
+  .stat-value.high {
+    color: var(--success);
+  }
+
+  .stat-value.medium {
+    color: var(--warning);
+  }
+
+  .stat-value.low {
+    color: var(--danger);
+  }
+
   .meta-section {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 16px;
-    padding: 12px;
-    background: var(--bg-secondary);
-    border-radius: 8px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
   }
-  
+
   .meta-item {
-    flex: 1;
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.85rem 0.9rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(148, 163, 184, 0.12);
     text-align: center;
   }
-  
+
   .meta-label {
     display: block;
-    font-size: 10px;
-    color: var(--text-secondary);
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
   }
-  
+
   .meta-value {
-    font-weight: 600;
+    font-weight: 700;
   }
-  
-  .meta-value.positive { color: var(--success); }
-  .meta-value.negative { color: var(--danger); }
-  .meta-value.danger { color: var(--danger); }
-  
+
+  .meta-value.positive {
+    color: var(--success);
+  }
+
+  .meta-value.negative,
+  .meta-value.danger {
+    color: var(--danger);
+  }
+
   .career-section h3 {
-    font-size: 14px;
-    margin-bottom: 8px;
+    margin-bottom: 0.7rem;
     color: var(--text-secondary);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
   }
-  
+
   .career-stats {
-    display: flex;
-    gap: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
   }
-  
+
   .career-item {
-    flex: 1;
-    background: var(--bg-secondary);
-    padding: 8px;
-    border-radius: 4px;
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.85rem 0.9rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(148, 163, 184, 0.12);
     text-align: center;
   }
-  
+
   .career-label {
     display: block;
-    font-size: 10px;
-    color: var(--text-secondary);
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
   }
-  
+
   .career-value {
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 700;
   }
-  
+
   .faction-bonus {
-    margin-top: 16px;
-    padding: 12px;
-    background: var(--bg-secondary);
-    border-radius: 8px;
-    text-align: center;
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 10px;
+    background: rgba(var(--accent-sapphire-rgb), 0.08);
+    border: 1px solid rgba(var(--accent-sapphire-rgb), 0.18);
   }
-  
+
   .faction-bonus h3 {
-    font-size: 14px;
-    margin-bottom: 4px;
-  }
-  
-  .faction-bonus p {
-    font-size: 12px;
+    margin-bottom: 0.35rem;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
     color: var(--text-secondary);
-    margin: 0;
+  }
+
+  .faction-bonus p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 680px) {
+    .modal {
+      padding: 1rem;
+    }
+
+    .player-header {
+      align-items: flex-start;
+    }
+
+    .avatar-container {
+      width: 84px;
+      height: 84px;
+    }
+
+    .stats-grid,
+    .meta-section,
+    .career-stats {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

@@ -1,4 +1,24 @@
 const STORAGE_KEY = 'fantasy_cricket_save';
+const STORAGE_KEY_MATCH = 'fantasy_cricket_active_match';
+
+export interface ActiveMatchState {
+  matchId: string;
+  phase: string;
+  innings1: any;
+  innings2: any;
+  currentInnings: number;
+  target: number;
+  weather: string;
+  pitch: string;
+  tossWinner: string | null;
+  tossChoice: 'bat' | 'bowl' | null;
+  currentBowlerIndex: number;
+  selectedBatsmen: string[];
+  selectedBowlerId: string | null;
+  placeholderBatsman: string | null;
+  pendingBowlerSelection: boolean;
+  savedAt: number;
+}
 
 export interface GameSave {
   version: string;
@@ -21,6 +41,9 @@ export interface StorageProvider {
   loadGame(): Promise<GameSave | null>;
   clearSave(): Promise<void>;
   hasExistingSave(): Promise<boolean>;
+  saveActiveMatch(data: ActiveMatchState): Promise<boolean>;
+  loadActiveMatch(): Promise<ActiveMatchState | null>;
+  clearActiveMatch(): Promise<void>;
 }
 
 class LocalStorageProvider implements StorageProvider {
@@ -57,6 +80,31 @@ class LocalStorageProvider implements StorageProvider {
   async hasExistingSave(): Promise<boolean> {
     return localStorage.getItem(STORAGE_KEY) !== null;
   }
+
+  async saveActiveMatch(data: ActiveMatchState): Promise<boolean> {
+    try {
+      localStorage.setItem(STORAGE_KEY_MATCH, JSON.stringify(data));
+      return true;
+    } catch (e) {
+      console.error('Failed to save active match to localStorage:', e);
+      return false;
+    }
+  }
+
+  async loadActiveMatch(): Promise<ActiveMatchState | null> {
+    try {
+      const data = localStorage.getItem(STORAGE_KEY_MATCH);
+      if (!data) return null;
+      return JSON.parse(data) as ActiveMatchState;
+    } catch (e) {
+      console.error('Failed to load active match from localStorage:', e);
+      return null;
+    }
+  }
+
+  async clearActiveMatch(): Promise<void> {
+    localStorage.removeItem(STORAGE_KEY_MATCH);
+  }
 }
 
 // Current active provider
@@ -76,6 +124,18 @@ export async function clearSave(): Promise<void> {
 
 export async function hasExistingSave(): Promise<boolean> {
   return currentProvider.hasExistingSave();
+}
+
+export async function saveActiveMatch(data: ActiveMatchState): Promise<boolean> {
+  return currentProvider.saveActiveMatch(data);
+}
+
+export async function loadActiveMatch(): Promise<ActiveMatchState | null> {
+  return currentProvider.loadActiveMatch();
+}
+
+export async function clearActiveMatch(): Promise<void> {
+  return currentProvider.clearActiveMatch();
 }
 
 export function exportSave(): string {

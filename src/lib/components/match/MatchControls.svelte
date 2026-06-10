@@ -1,267 +1,263 @@
 <script lang="ts">
-  import type { IntentType, BallType } from '$lib/models/match';
-  import type { BowlingType } from '$lib/models/player';
-  
-  export type SimSpeed = 'ball' | 'over' | 'instant';
+  import type { IntentType, BallType, innings, BallEvent } from '$lib/models/match';
+  import { getBallClass, getBallLabel } from '$lib/core/matchEngine';
   
   interface Props {
-    speed: SimSpeed;
     isPaused: boolean;
+    onPause: () => void;
+    onPlaySingleBall: () => void;
+    onSimulateTarget: (target: { type: 'over' | 'innings' | 'wicket' | 'specific_over', value?: number }) => void;
+    speed: 'instant' | 'ball' | 'over';
+    autoPlayDelay: number;
+    onSpeedChange: (speed: 'instant' | 'ball' | 'over') => void;
+    onAutoPlayDelayChange: (delay: number) => void;
+    currentInningsData: innings;
+    runRate: string | number;
+    currentOverBalls: BallEvent[];
     battingIntent: IntentType;
     bowlingIntent: IntentType;
-    ballType?: BallType;
-    currentBowlerType?: BowlingType;
+    ballType: BallType;
+    currentBowlerType: string;
     avoidSingles: boolean;
     isUserBatting: boolean;
     isUserBowling: boolean;
-    autoPlayDelay: number;
-    onSpeedChange: (speed: SimSpeed) => void;
-    onPauseToggle: () => void;
     onBattingIntentChange: (intent: IntentType) => void;
     onBowlingIntentChange: (intent: IntentType) => void;
     onBallTypeChange?: (ballType: BallType) => void;
     onAvoidSinglesChange: (avoidSingles: boolean) => void;
-    onPlaySingleBall: () => void;
-    onPlaySingleOver: () => void;
-    onAutoPlayDelayChange: (delay: number) => void;
+    currentSuggestion?: string;
   }
+  
+  export type SimSpeed = 'instant' | 'ball' | 'over';
   
   let { 
-    speed = $bindable('ball'), 
-    isPaused = false,
-    battingIntent = 'balanced',
-    bowlingIntent = 'balanced',
-    ballType = 'normal',
-    currentBowlerType = 'none',
-    avoidSingles = false,
-    isUserBatting = true,
-    isUserBowling = true,
-    autoPlayDelay = 1000,
-    onSpeedChange, 
-    onPauseToggle,
-    onBattingIntentChange,
-    onBowlingIntentChange,
-    onBallTypeChange,
-    onAvoidSinglesChange,
+    isPaused, 
+    onPause,
     onPlaySingleBall,
-    onPlaySingleOver,
-    onAutoPlayDelayChange
+    onSimulateTarget,
+    speed = $bindable(),
+    autoPlayDelay,
+    onSpeedChange,
+    onAutoPlayDelayChange,
+    currentInningsData,
+    runRate,
+    currentOverBalls,
+    battingIntent, 
+    bowlingIntent, 
+    ballType, 
+    currentBowlerType, 
+    avoidSingles, 
+    isUserBatting, 
+    isUserBowling, 
+    onBattingIntentChange, 
+    onBowlingIntentChange, 
+    onBallTypeChange, 
+    onAvoidSinglesChange,
+    currentSuggestion = ""
   }: Props = $props();
 
-  const intentValues: IntentType[] = ['very_defensive', 'defensive', 'balanced', 'aggressive', 'very_aggressive'];
-  const intentLabels = ['Very Def', 'Def', 'Bal', 'Agg', 'Very Agg'];
-
-  function handleBattingSlider(e: Event) {
-      const val = parseInt((e.currentTarget as HTMLInputElement).value);
-      onBattingIntentChange(intentValues[val]);
-  }
-
-  function handleBowlingSlider(e: Event) {
-      const val = parseInt((e.currentTarget as HTMLInputElement).value);
-      onBowlingIntentChange(intentValues[val]);
-  }
+  let targetOver = $state(15);
 </script>
 
-<div class="match-controls">
-  {#if isPaused}
-    <div class="flex gap-2">
-      <button class="primary bg-emerald-600 hover:bg-emerald-500 text-white" onclick={onPlaySingleBall}>
-        🏏 Play 1 Ball
-      </button>
-      <button class="primary bg-indigo-600 hover:bg-indigo-500 text-white" onclick={onPlaySingleOver}>
-        ⚪ Play 1 Over
-      </button>
-      <button class="secondary bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600" onclick={onPauseToggle}>
-        ▶ Auto Play
-      </button>
-    </div>
-  {:else}
-    <button class="danger bg-rose-600 hover:bg-rose-500 text-white shadow-md transition-colors" onclick={onPauseToggle}>
-      ⏸ Stop Auto Play
-    </button>
+<div class="match-controls-slim">
+  {#if currentSuggestion}
+  <div class="ai-suggestion-box">
+    <p class="suggestion-text">{currentSuggestion}</p>
+  </div>
   {/if}
   
-  <div class="speed-buttons ml-4">
-    <button 
-      class:active={speed === 'ball'} 
-      class="secondary"
-      onclick={() => onSpeedChange('ball')}
-      title="Ball by Ball"
-    >
-      🔵 Ball
-    </button>
-    <button 
-      class:active={speed === 'over'} 
-      class="secondary"
-      onclick={() => onSpeedChange('over')}
-      title="Over by Over"
-    >
-      ⚪ Over
-    </button>
-    <button 
-      class:active={speed === 'instant'} 
-      class="secondary"
-      onclick={() => onSpeedChange('instant')}
-      title="Instant"
-    >
-      ⚡ Fast
-    </button>
-  </div>
+    <div class="middle-this-over">
+        <div class="run-rate-mini">
+          RR: <span>{runRate}</span>
+        </div>
+        {#if currentOverBalls.length > 0}
+        <div class="separator"></div>
+        <div class="bubbles">
+          {#each currentOverBalls as ball}
+            <div class="bubble {getBallClass(ball)}">
+              {getBallLabel(ball)}
+            </div>
+          {/each}
+        </div>
+        {/if}
+      </div>
 
-  <div class="speed-slider-container">
-    <label for="speed-slider" title="Auto Play Delay">⏱️</label>
-    <input 
-      id="speed-slider"
-      type="range" 
-      min="100" 
-      max="3000" 
-      step="100" 
-      value={autoPlayDelay} 
-      oninput={(e) => onAutoPlayDelayChange(parseInt(e.currentTarget.value))}
-      title="Speed Delay ({autoPlayDelay}ms)"
-    />
-  </div>
-  
-  <div class="intent-controls" style="flex-direction: column; align-items: stretch; gap: 16px; width: 100%;">
-    <div class="intent-group slider-group">
-      <label style="width: 80px;">🏏 Bat:</label>
-      <div class="slider-wrapper" style="flex: 1;">
-          <input type="range" min="0" max="4" value={intentValues.indexOf(battingIntent)} disabled={!isUserBatting} oninput={handleBattingSlider} title={!isUserBatting ? "AI controlled" : ""} style="width: 100%;" />
-          <div class="slider-labels" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
-              {#each intentLabels as label}
-                  <span>{label}</span>
-              {/each}
-          </div>
-          <div class="intent-info" style="font-size: 0.7rem; color: var(--text-secondary); text-align: center; margin-top: 4px; font-style: italic;">
-             {battingIntent === 'very_defensive' ? 'Minimum Risk, Heavy Wicket Protection. Elves excel here.' : battingIntent === 'defensive' ? 'Low Risk. Goblins excel here (Steal Singles).' : battingIntent === 'balanced' ? 'Standard Play. Humans excel here (Stability).' : battingIntent === 'aggressive' ? 'High Risk. Orcs & Night Elves excel here.' : 'Maximum Risk. Dwarves excel late game (No Fatigue).'}
-          </div>
-      </div>
-      <div style="margin-left: 16px;">
-        <label style="cursor: {isUserBatting ? 'pointer' : 'default'}; display: flex; align-items: center; gap: 4px;" title={!isUserBatting ? "AI controlled" : ""}>
-          <input type="checkbox" checked={avoidSingles} disabled={!isUserBatting} onchange={(e) => onAvoidSinglesChange(e.currentTarget.checked)} />
-          Avoid Singles
-        </label>
-      </div>
+    <div class="speed-group">
+      <span class="speed-label">Speed:</span>
+      <button class="speed-btn {speed === 'ball' ? 'active' : ''}" onclick={() => onSpeedChange('ball')} title="Ball by Ball">Ball</button>
+      <button class="speed-btn {speed === 'over' ? 'active' : ''}" onclick={() => onSpeedChange('over')} title="Over by Over">Over</button>
+      <button class="speed-btn {speed === 'instant' ? 'active' : ''}" onclick={() => onSpeedChange('instant')} title="Instant">Fast</button>
+    </div>
+    <div class="speed-group">
+      <span class="speed-label">Anim:</span>
+      <button class="speed-btn {autoPlayDelay === 2000 ? 'active' : ''}" onclick={() => onAutoPlayDelayChange(2000)}>0.5x</button>
+      <button class="speed-btn {autoPlayDelay === 1000 ? 'active' : ''}" onclick={() => onAutoPlayDelayChange(1000)}>1x</button>
+      <button class="speed-btn {autoPlayDelay === 500 ? 'active' : ''}" onclick={() => onAutoPlayDelayChange(500)}>2x</button>
+      <button class="speed-btn {autoPlayDelay === 250 ? 'active' : ''}" onclick={() => onAutoPlayDelayChange(250)}>4x</button>
     </div>
     
-    <div class="intent-group slider-group">
-      <label style="width: 80px;">🎯 Bowl:</label>
-      <div class="slider-wrapper" style="flex: 1;">
-          <input type="range" min="0" max="4" value={intentValues.indexOf(bowlingIntent)} disabled={!isUserBowling} oninput={handleBowlingSlider} title={!isUserBowling ? "AI controlled" : ""} style="width: 100%;" />
-          <div class="slider-labels" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
-              {#each intentLabels as label}
-                  <span>{label}</span>
-              {/each}
-          </div>
-          <div class="intent-info" style="font-size: 0.7rem; color: var(--text-secondary); text-align: center; margin-top: 4px; font-style: italic;">
-             {bowlingIntent === 'very_defensive' ? 'Prevent Boundaries. Night Elves excel late game.' : bowlingIntent === 'defensive' ? 'Restrict Scoring. Humans excel early game.' : bowlingIntent === 'balanced' ? 'Standard Line & Length.' : bowlingIntent === 'aggressive' ? 'Attacking Field. Orcs & Goblins (Spin) excel here.' : 'All-out Attack. Dwarves excel here (Stamina).'}
-          </div>
-      </div>
-      {#if currentBowlerType !== 'none'}
-      <div style="margin-left: 16px;">
-          <select value={ballType} disabled={!isUserBowling} onchange={(e) => onBallTypeChange?.(e.currentTarget.value as BallType)} title={!isUserBowling ? "AI controlled" : ""}>
-              <option value="normal">Normal</option>
-              {#if currentBowlerType === 'fast' || currentBowlerType === 'pacer'}
-                  <option value="bouncer">Bouncer</option>
-                  <option value="yorker">Yorker</option>
-                  <option value="slower">Slower</option>
-              {/if}
-              {#if currentBowlerType === 'swinger'}
-                  <option value="inswinger">Inswinger</option>
-                  <option value="outswinger">Outswinger</option>
-                  <option value="yorker">Yorker</option>
-              {/if}
-              {#if currentBowlerType === 'spinner'}
-                  <option value="off_spin">Off Spin</option>
-                  <option value="leg_spin">Leg Spin</option>
-                  <option value="googly">Googly</option>
-                  <option value="doosra">Doosra</option>
-                  <option value="arm_ball">Arm Ball</option>
-              {/if}
-          </select>
-      </div>
-      {/if}
+    {#if isPaused}
+    <div class="speed-group simulation-group">
+        <button class="speed-btn action-btn bg-emerald-600 hover:bg-emerald-500 text-white" onclick={onPlaySingleBall}>Play 1 Ball</button>
+        <button class="speed-btn action-btn bg-indigo-600 hover:bg-indigo-500 text-white" onclick={() => onSimulateTarget({ type: 'over' })}>Sim Over</button>
+        <button class="speed-btn action-btn bg-orange-600 hover:bg-orange-500 text-white" onclick={() => onSimulateTarget({ type: 'wicket' })}>Sim to Wicket</button>
+        <button class="speed-btn action-btn bg-slate-700 hover:bg-slate-600 text-slate-200" onclick={() => onSimulateTarget({ type: 'innings' })}>Sim Innings</button>
     </div>
-  </div>
+    <div class="speed-group simulation-group">
+        <span class="speed-label" style="width: auto;">Sim to Over:</span>
+        <input type="number" bind:value={targetOver} min="1" max="20" class="slim-over-input" />
+        <button class="speed-btn action-btn bg-sky-600 hover:bg-sky-500 text-white" style="border-top-left-radius: 0; border-bottom-left-radius: 0;" onclick={() => onSimulateTarget({ type: 'specific_over', value: targetOver })}>Go</button>
+    </div>
+    {:else}
+    <div class="speed-group simulation-group">
+        <button class="speed-btn action-btn bg-rose-600 hover:bg-rose-500 text-white w-full" onclick={onPause}>Pause Simulation</button>
+    </div>
+    {/if}
 </div>
 
 <style>
-  .match-controls {
+  .match-controls-slim {
     display: flex;
-    gap: 12px;
-    align-items: center;
-    flex-wrap: wrap;
-    padding: 12px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-  }
-  
-  .speed-buttons {
-    display: flex;
-    gap: 4px;
-  }
-  
-  .speed-buttons button {
-    padding: 6px 10px;
-    font-size: 12px;
-    min-width: 55px;
-  }
-  
-  .speed-buttons button.active {
-    background: var(--success);
-    color: white;
-  }
-
-  .speed-slider-container {
-    display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 8px;
-    margin-left: 8px;
-  }
-
-  .speed-slider-container input[type=range] {
-    width: 80px;
-    accent-color: var(--success);
-  }
-  
-  .intent-controls {
-    display: flex;
-    gap: 12px;
-    margin-left: auto;
-  }
-  
-  .intent-group {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  
-  .intent-group label {
-    font-size: 11px;
-    color: var(--text-secondary);
-  }
-  
-  .intent-group select, .intent-group input[type="checkbox"] {
-    cursor: pointer;
-  }
-  
-  .intent-group select {
-    padding: 4px 6px;
-    border-radius: 4px;
+    background: var(--bg-secondary);
+    padding: 8px 16px;
+    border-radius: 8px;
     border: 1px solid var(--border-color);
+    margin-top: 16px; /* Space from scoreboard */
+    margin-bottom: 16px; /* Space from commentary */
+  }
+  .speed-group {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+  }
+  .simulation-group {
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .speed-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    width: 40px;
+    text-align: right;
+    margin-right: 4px;
+  }
+  .speed-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 2px 6px;
+    font-size: 0.65rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .speed-btn:hover { background: var(--bg-surface); color: var(--text-primary); }
+  .speed-btn.active {
+    background: rgba(var(--accent-sapphire-rgb), 0.2);
+    border-color: rgba(var(--accent-sapphire-rgb), 0.4);
+    color: var(--info);
+    font-weight: 600;
+  }
+  .speed-btn.action-btn { padding: 3px 8px; font-size: 0.7rem; min-width: unset; }
+  .slim-over-input {
+    width: 45px;
     background: var(--bg-tertiary);
     color: var(--text-primary);
-    font-size: 12px;
-  }
-  
-  .intent-group select:focus {
+    text-align: center;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
     outline: none;
-    border-color: var(--success);
+    font-weight: bold;
+    font-size: 0.7rem;
+    padding: 3px;
+    margin: 0 4px;
+  }
+  /* middle-this-over styles */
+  .middle-this-over {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 8px 0;
+    background: var(--bg-tertiary);
+    padding: 4px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    min-height: 28px;
+  }
+  .middle-this-over .run-rate-mini {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--text-secondary);
+  }
+  .middle-this-over .run-rate-mini span {
+    color: var(--text-primary);
+  }
+  .middle-this-over .separator {
+    width: 1px;
+    height: 16px;
+    background: var(--border-color);
+  }
+  .middle-this-over .bubbles {
+    display: flex;
+    gap: 4px;
+  }
+  .middle-this-over .bubble {
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+  }
+  .middle-this-over .bubble.dot {
+    opacity: 0.72;
+    color: var(--text-muted);
+  }
+  .middle-this-over .bubble.runs {
+    background: rgba(var(--accent-sapphire-rgb), 0.14);
+    color: var(--info);
+  }
+  .middle-this-over .bubble.four {
+    background: rgba(var(--accent-gold-rgb), 0.14);
+    color: var(--warning);
+  }
+  .middle-this-over .bubble.six {
+    background: rgba(var(--accent-emerald-rgb), 0.14);
+    color: var(--success);
+  }
+  .middle-this-over .bubble.wicket {
+    background: rgba(var(--accent-ruby-rgb), 0.14);
+    color: var(--danger);
+  }
+  .middle-this-over .bubble.extra {
+    background: rgba(var(--accent-amethyst-rgb), 0.14);
+    color: var(--accent-goblin);
   }
 
-  .intent-group select:disabled, .intent-group input[type="checkbox"]:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  .ai-suggestion-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    text-align: center;
+  }
+
+  .suggestion-text {
+    margin: 0;
+    color: var(--text-primary);
   }
 </style>

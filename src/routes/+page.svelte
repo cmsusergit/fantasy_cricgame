@@ -11,10 +11,11 @@
   import { goto } from '$app/navigation';
   import { calculateTeamStrength } from '$lib/core/teamBuilder';
   import { FACTIONS } from '$lib/models/faction';
+  import { loadActiveMatch } from '$lib/services/storage';
   
   let teams: any[] = $state([]);
   let players: any[] = $state([]);
-  let schedule: TournamentSchedule | null = $state(null);
+  let schedule = $state<TournamentSchedule | null>(null);
   let day = $state(1);
   let budget = $state(4000000);
   let operatingBudget = $state(1000000);
@@ -22,12 +23,14 @@
   let sponsorshipOffers: SponsorshipContract[] = $state([]);
 
   // Auto-Simulate Results State
-  let showMatchResultModal = false;
-  let lastSimulatedInnings1: any = null;
-  let lastSimulatedInnings2: any = null;
-  let lastMatchResult: any = null;
+  let showMatchResultModal = $state(false);
+  let lastSimulatedInnings1: any = $state(null);
+  let lastSimulatedInnings2: any = $state(null);
+  let lastMatchResult: any = $state(null);
+  let hasActiveMatch = $state(false);
   
   onMount(() => {
+    loadActiveMatch().then(m => hasActiveMatch = !!m);
     
     const unsubTeam = teamStore.subscribe(t => {
       teams = t;
@@ -53,6 +56,12 @@
   let userTeam = $derived(teams.find(t => t.isUserTeam));
   let availablePlayers = $derived(players.filter(p => p.isAvailable));
   let winRate = $derived(userTeam ? ((userTeam.wins / (userTeam.matchesPlayed || 1)) * 100).toFixed(0) : '0');
+  let fanPopularity = $derived(userTeam?.fanProfile?.popularity ?? 50);
+  let homeAdvantage = $derived(userTeam?.fanProfile?.homeAdvantage ?? 0);
+  let fanRevenue = $derived(userTeam?.fanProfile?.revenue ?? 0);
+  let activeInjuryCount = $derived(userTeam ? userTeam.players.filter((p: any) => (p as any).activeInjury).length : 0);
+  let playing11Count = $derived(userTeam?.playing11?.length ?? 0);
+  let lineupReady = $derived(Boolean(userTeam?.playing11?.length === 11 && userTeam?.captain && userTeam?.wicketKeeper));
   
   $effect(() => {
     const maxSponsors = userTeam?.tournamentWins > 0 ? 2 : 1;
@@ -319,12 +328,12 @@
   {#if $isFirstLogin}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="modal-overlay" style="z-index: 2000; padding: 20px;" onclick={closeWelcomeModal}>
-      <div class="modal-content" style="background: var(--bg-secondary); border: 2px solid var(--accent-gold); border-radius: 12px; padding: 32px; max-width: 600px; text-align: center;" onclick={(e) => e.stopPropagation()}>
-        <h2 style="font-family: 'Cinzel', serif; color: var(--accent-gold); font-size: 2rem; margin-bottom: 16px;">Welcome, Manager!</h2>
-        <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 24px; color: var(--text-primary);">You have just taken the reins of a brand new franchise. Before you head into the high-stakes Auction Room to draft your squad, would you like a quick tour of the rules and mechanics?</p>
-        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 32px; font-style: italic;">Fantasy CricManager features unique tactical mechanics and fantasy faction synergies that are crucial to understand.</p>
-        <div style="display: flex; gap: 16px; justify-content: center;">
+    <div class="modal-overlay" style="z-index: 2000; padding: 14px;" onclick={closeWelcomeModal}>
+      <div class="modal-content" style="background: var(--bg-secondary); border: 2px solid var(--accent-gold); border-radius: 12px; padding: 14px; max-width: 600px; text-align: center;" onclick={(e) => e.stopPropagation()}>
+        <h2 style="font-family: 'Cinzel', serif; color: var(--accent-gold); font-size: 1rem; margin-bottom: 12px;">Welcome, Manager!</h2>
+        <p style="font-size: 1rem; line-height: 1.6; margin-bottom: 12px; color: var(--text-primary);">You have just taken the reins of a brand new franchise. Before you head into the high-stakes Auction Room to draft your squad, would you like a quick tour of the rules and mechanics?</p>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px; font-style: italic;">Fantasy CricManager features unique tactical mechanics and fantasy faction synergies that are crucial to understand.</p>
+        <div style="display: flex; gap: 10px; justify-content: center;">
           <button class="btn-cancel" onclick={closeWelcomeModal} style="background: var(--bg-tertiary); color: var(--text-primary);">I know what I'm doing</button>
           <button class="btn-confirm" onclick={goToGuide} style="background: var(--success); font-weight: bold; color: white;">Read Quick Start Guide</button>
         </div>
@@ -345,9 +354,9 @@
   {#if userTeam}
     <section class="team-overview card">
       <div class="team-header">
-        <div class="team-info" style="display: flex; gap: 16px; align-items: center;">
+        <div class="team-info" style="display: flex; gap: 10px; align-items: center;">
           {#if userTeam.logo}
-            <div style="font-size: 3rem; line-height: 1; display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: var(--bg-tertiary); border-radius: 12px; border: 2px solid var(--border-color);" title="Coat of Arms">
+            <div style="font-size: 1.75rem; line-height: 1; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: var(--bg-tertiary); border-radius: 12px; border: 2px solid var(--border-color);" title="Coat of Arms">
               {userTeam.logo}
             </div>
           {/if}
@@ -404,6 +413,29 @@
           </div>
         </div>
       </div>
+    </section>
+
+    <section class="ops-strip">
+      <article class="ops-card">
+        <span class="ops-label">Fan Pulse</span>
+        <div class="ops-value">{fanPopularity}%</div>
+        <p>Home advantage {homeAdvantage.toFixed(1)} · Revenue ${fanRevenue.toLocaleString()}</p>
+      </article>
+      <article class="ops-card">
+        <span class="ops-label">Squad Health</span>
+        <div class="ops-value">{activeInjuryCount}</div>
+        <p>Active injuries across the roster</p>
+      </article>
+      <article class="ops-card">
+        <span class="ops-label">Match Readiness</span>
+        <div class="ops-value">{playing11Count}/11</div>
+        <p>{lineupReady ? 'Playing XI locked' : 'Set captain and keeper'}</p>
+      </article>
+      <article class="ops-card">
+        <span class="ops-label">Revenue Mix</span>
+        <div class="ops-value">${operatingBudget.toLocaleString()}</div>
+        <p>{userTeam.sponsorships?.length || 0} sponsor{(userTeam.sponsorships?.length || 0) === 1 ? '' : 's'} · Transfer ${budget.toLocaleString()}</p>
+      </article>
     </section>
   {/if}
 
@@ -462,7 +494,7 @@
               <p class="match-venue">at {userNextMatch.venue}</p>
 
               <div class="next-match-actions">
-                  <a href="/match" class="btn-start-match">START MATCH</a>
+                  <a href="/match" class="btn-start-match">{hasActiveMatch ? 'CONTINUE MATCH' : 'START MATCH'}</a>
                   <button class="btn-auto-sim" onclick={quickSimulateUserMatch} title="Instantly simulate the match and advance">AUTO SIMULATE ⚡</button>
               </div>
           {:else}
@@ -508,7 +540,7 @@
       </div>
       
       {#if phase !== 'tournament' && phase !== 'match' && phase !== 'menu'}
-         <div class="off-season-alert" style="margin-top: 16px; padding: 16px; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--warning); border-radius: 8px; text-align: center; color: var(--warning); font-weight: 600;">
+         <div class="off-season-alert" style="margin-top: 12px; padding: 14px; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--warning); border-radius: 8px; text-align: center; color: var(--warning); font-weight: 600;">
            Tournament is currently in the off-season phase. Please complete the off-season activities to begin the next season.
            <br>
            {#if phase === 'season_end'}
@@ -578,7 +610,7 @@
       <div class="players-flex">
         {#each (userTeam?.players || []) as player}
           <div class="compact-player-card">
-            <PlayerCard {player} />
+            <PlayerCard {player} teamColorPrimary={userTeam?.colorPrimary} teamColorSecondary={userTeam?.colorSecondary} />
           </div>
         {:else}
           <p class="no-players">No players in squad. Go to draft!</p>
@@ -592,36 +624,37 @@
 {#if showMatchResultModal}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="modal-overlay" style="z-index: 1000; padding: 20px;" onclick={closeMatchResultModal}>
+  <div class="modal-overlay" style="z-index: 1000; padding: 14px;" onclick={closeMatchResultModal}>
     <div class="modal-content" style="max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto; background: var(--bg-primary);" onclick={(e) => e.stopPropagation()}>
-       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
          <h2 style="margin: 0; font-family: 'Cinzel', serif; color: var(--warning);">Match Result</h2>
          <button class="btn-cancel" onclick={closeMatchResultModal}>Close & Continue</button>
        </div>
        
        {#if lastMatchResult}
-          <div style="text-align: center; margin-bottom: 24px;">
-            <h3 style="font-size: 1.5rem; color: var(--success); margin-bottom: 8px;">
+          <div style="text-align: center; margin-bottom: 12px;">
+            <h3 style="font-size: 1rem; color: var(--success); margin-bottom: 8px;">
                {lastMatchResult.winner === 'team1' ? teams.find(t=>t.id === lastMatchResult.team1Id)?.name : (lastMatchResult.winner === 'team2' ? teams.find(t=>t.id === lastMatchResult.team2Id)?.name : 'Draw')} Wins!
             </h3>
-            <p style="font-size: 1.2rem; color: var(--text-secondary);">
+            <p style="font-size: 1.1rem; color: var(--text-secondary);">
                {lastSimulatedInnings1?.totalRuns}/{lastSimulatedInnings1?.wickets} vs {lastSimulatedInnings2?.totalRuns}/{lastSimulatedInnings2?.wickets}
             </p>
           </div>
        {/if}
 
-       <div style="background: var(--bg-secondary); border-radius: 12px; padding: 16px;">
+       <div style="background: var(--bg-secondary); border-radius: 12px; padding: 14px;">
          {#if lastSimulatedInnings1 && lastSimulatedInnings2 && teams.length > 0}
             <MatchSummary 
               inningsList={[lastSimulatedInnings1, lastSimulatedInnings2]} 
               teams={teams} 
               matchComplete={true} 
+              matchResult={lastMatchResult}
             />
          {/if}
        </div>
        
-       <div style="margin-top: 24px; text-align: center;">
-          <button class="btn-confirm" onclick={closeMatchResultModal} style="font-size: 1.1rem; padding: 12px 32px;">Continue Tournament</button>
+       <div style="margin-top: 12px; text-align: center;">
+          <button class="btn-confirm" onclick={closeMatchResultModal} style="font-size: 1rem; padding: 14px 28px;">Continue Tournament</button>
        </div>
     </div>
   </div>
@@ -633,83 +666,126 @@
   .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr; /* Single column for vertical stacking */
-    gap: 24px;
-    margin-bottom: 24px;
+    gap: 10px;
+    margin-bottom: 12px;
   }
   
   /* Remove grid-area assignments as they are not needed for a single column */
-  .team-overview { margin-bottom: 24px; }
-  .next-match-widget { margin-bottom: 24px; }
-  .sponsorship-section { margin-bottom: 24px; }
-  .schedule-section { margin-bottom: 24px; }
-  .squad-preview { margin-bottom: 24px; }
+  .team-overview { margin-bottom: 12px; }
+  .next-match-widget { margin-bottom: 12px; }
+  .sponsorship-section { margin-bottom: 12px; }
+  .schedule-section { margin-bottom: 12px; }
+  .squad-preview { margin-bottom: 12px; }
   .player-stats-section { margin-bottom: 0; } /* Last item doesn't need margin-bottom */
 
-  .next-match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
-  .next-match-header h3 { font-size: 1.2rem; margin: 0; color: var(--accent-gold); }
+  .ops-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .ops-card {
+    position: relative;
+    overflow: hidden;
+    padding: 14px;
+    border-radius: 20px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)),
+      var(--bg-surface);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    box-shadow: none;
+  }
+
+  .ops-label {
+    display: block;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.7rem;
+  }
+
+  .ops-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 0.45rem;
+  }
+
+  .ops-card p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .next-match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
+  .next-match-header h3 { font-size: 1.1rem; margin: 0; color: var(--accent-gold); }
   .next-match-day { background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; }
-  .matchup-summary { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px; }
+  .matchup-summary { display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px; }
   .team-display { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 40%; text-align: center; }
   .team-display.opponent { color: var(--danger); }
-  .team-name { font-weight: 700; font-size: 1.1rem; }
+  .team-name { font-weight: 700; font-size: 1rem; }
   .team-strength { font-size: 0.8rem; letter-spacing: 2px; }
-  .vs-text { font-family: 'Cinzel', serif; font-weight: 700; color: var(--text-muted); font-size: 1.2rem; }
-  .match-venue { text-align: center; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px; font-style: italic; }
-  .next-match-actions { display: flex; flex-direction: column; gap: 12px; }
-  .btn-start-match { background: var(--success); color: white; text-align: center; padding: 16px; border-radius: 8px; font-weight: 800; text-decoration: none; font-size: 1.1rem; box-shadow: 0 0 15px rgba(46, 125, 50, 0.4); animation: pulse 2s infinite; display: block; }
-  .btn-start-match:hover { background: #2ea043; color: white; transform: translateY(-2px); box-shadow: 0 0 20px rgba(46, 125, 50, 0.6); }
-  .btn-auto-sim { background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .vs-text { font-family: 'Cinzel', serif; font-weight: 700; color: var(--text-muted); font-size: 1.1rem; }
+  .match-venue { text-align: center; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px; font-style: italic; }
+  .next-match-actions { display: flex; flex-direction: column; gap: 10px; }
+  .btn-start-match { background: var(--success); color: white; text-align: center; padding: 14px; border-radius: 8px; font-weight: 800; text-decoration: none; font-size: 1rem; box-shadow: none; animation: pulse 2s infinite; display: block; }
+  .btn-start-match:hover { background: #2ea043; color: white; transform: translateY(-2px); box-shadow: none; }
+  .btn-auto-sim { background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 14px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
   .btn-auto-sim:hover { background: var(--info); color: white; border-color: var(--info); }
-  .no-next-match { text-align: center; padding: 32px 16px; color: var(--text-secondary); background: rgba(0,0,0,0.1); border-radius: 8px; border: 1px dashed var(--border-color); }
+  .no-next-match { text-align: center; padding: 28px 16px; color: var(--text-secondary); background: var(--bg-surface); border-radius: 8px; border: 1px dashed var(--border-color); }
   .opponent-avatar { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--border-color); background: var(--bg-primary); margin-bottom: 4px; }
   
   @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+    0% { box-shadow: none; }
+    70% { box-shadow: none; }
+    100% { box-shadow: none; }
   }
 
-  .hero { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px 32px; margin-bottom: 24px; }
-  .hero h1 { font-size: 32px; margin-bottom: 4px; }
+  .hero { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; }
+  .hero h1 { font-size: 15px; margin-bottom: 4px; }
   .tagline { color: var(--text-secondary); font-size: 14px; }
   .season-badge { background: var(--success); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600; }
-  .team-overview { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
-  .team-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-  .team-info h2 { font-size: 24px; margin-bottom: 4px; }
+  .team-overview { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .team-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .team-info h2 { font-size: 15px; margin-bottom: 4px; }
   .coach { color: var(--text-secondary); }
   .team-badges { display: flex; gap: 8px; }
   .badge { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
   .win-rate { background: rgba(35, 134, 54, 0.2); color: var(--success); }
   .matches { background: var(--bg-tertiary); color: var(--text-secondary); }
   .sponsor { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   @media (max-width: 1024px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 600px) {
     .stats-grid { grid-template-columns: 1fr; }
   }
-  .stat-card { display: flex; align-items: center; gap: 12px; background: var(--bg-tertiary); padding: 16px; border-radius: 8px; }
-  .stat-icon { font-size: 24px; }
+  .stat-card { display: flex; align-items: center; gap: 10px; background: var(--bg-tertiary); padding: 14px; border-radius: 8px; }
+  .stat-icon { font-size: 15px; }
   .stat-content { display: flex; flex-direction: column; }
-  .stat-value { font-size: 20px; font-weight: 700; }
+  .stat-value { font-size: 16px; font-weight: 700; }
   .stat-label { font-size: 12px; color: var(--text-secondary); }
   .stat-card.budget .stat-value { color: var(--accent-dwarf); }
-  .marketplace { margin-bottom: 24px; }
-  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .marketplace { margin-bottom: 12px; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .view-all { font-size: 14px; color: var(--success); }
-  .players-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-  .dashboard-footer { text-align: center; padding: 20px; }
-  @media (max-width: 768px) { .stats-grid, .players-grid { grid-template-columns: repeat(2, 1fr); } .hero { flex-direction: column; gap: 16px; text-align: center; } .team-header { flex-direction: column; gap: 12px; } }
+  .players-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .dashboard-footer { text-align: center; padding: 14px; }
+  @media (max-width: 768px) { .stats-grid, .players-grid { grid-template-columns: repeat(2, 1fr); } .hero { flex-direction: column; gap: 10px; text-align: center; } .team-header { flex-direction: column; gap: 10px; } }
   
-  .sponsorship-section { background: var(--bg-secondary); border: 2px solid var(--info); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
-  .sponsor-desc { color: var(--text-secondary); margin-bottom: 20px; font-size: 14px; }
-  .sponsor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .sponsorship-section { background: var(--bg-secondary); border: 2px solid var(--info); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .sponsor-desc { color: var(--text-secondary); margin-bottom: 16px; font-size: 14px; }
+  .sponsor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; }
   @media (max-width: 768px) {
     .sponsor-grid { grid-template-columns: 1fr; }
   }
-  .sponsor-card { background: var(--bg-tertiary); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; }
-  .sponsor-card h4 { margin: 0 0 8px 0; font-size: 18px; color: var(--text-primary); }
+  .sponsor-card { background: var(--bg-tertiary); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; }
+  .sponsor-card h4 { margin: 0 0 8px 0; font-size: 15px; color: var(--text-primary); }
   .sponsor-type { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-bottom: 12px; width: max-content; }
   .sponsor-type.bonus { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
   .sponsor-type.performance { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
@@ -724,51 +800,51 @@
     background: var(--bg-secondary);
     border: 2px solid var(--accent-elf); /* Highlight border */
     border-radius: 12px;
-    padding: 24px; /* Increased padding */
-    margin-bottom: 24px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Add shadow */
+    padding: 14px; /* Increased padding */
+    margin-bottom: 12px;
+    box-shadow: none; /* Add shadow */
   }
   .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px; /* Increased margin */
+    margin-bottom: 16px; /* Increased margin */
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 15px;
   }
   .section-header h3 {
-    font-size: 1.5rem; /* Larger font */
+    font-size: 1rem; /* Larger font */
     color: var(--text-primary);
   }
-  .day-info { padding: 12px; background: var(--bg-tertiary); border-radius: 6px; margin-bottom: 16px; }
+  .day-info { padding: 14px; background: var(--bg-tertiary); border-radius: 6px; margin-bottom: 12px; }
   .day-info.rest { border-left: 3px solid var(--warning); }
   .day-info.training { border-left: 33px solid var(--success); }
   .day-info.auction { border-left: 3px solid var(--info); }
   .day-type { font-weight: 600; display: block; }
   .day-desc { font-size: 13px; color: var(--text-secondary); }
   .matches-list { display: flex; flex-direction: column; gap: 8px; }
-  .match-card { padding: 12px; background: var(--bg-tertiary); border-radius: 6px; border-left: 3px solid var(--border-color); }
+  .match-card { padding: 14px; background: var(--bg-tertiary); border-radius: 6px; border-left: 3px solid var(--border-color); }
   .match-card.user-match { border-left-color: var(--success); background: rgba(35, 134, 54, 0.1); }
   .match-card.completed { opacity: 0.7; }
   .match-teams { display: flex; gap: 8px; align-items: center; }
   .match-teams .team { font-weight: 500; }
   .match-teams .vs { color: var(--text-secondary); font-size: 12px; }
-  .match-meta { display: flex; gap: 12px; font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .match-meta { display: flex; gap: 10px; font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
   .status-badge { padding: 2px 6px; border-radius: 3px; background: var(--bg-secondary); }
-  .advance-btn { width: 100%; margin-top: 12px; padding: 12px; background: var(--info); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+  .advance-btn { width: 100%; margin-top: 12px; padding: 14px; background: var(--info); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
   .advance-btn:hover { opacity: 0.9; }
-  .no-matches { text-align: center; color: var(--text-secondary); padding: 20px; }
+  .no-matches { text-align: center; color: var(--text-secondary); padding: 14px; }
   
   /* Calendar UI Styles */
   
-  .day-details { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border-color); }
+  .day-details { margin-top: 12px; padding-top: 16px; border-top: 1px dashed var(--border-color); }
   .day-details h4 { margin-bottom: 12px; font-size: 16px; }
 
   /* Squad Preview UI Styles */
   .players-scroll-container {
     overflow-x: auto;
     padding-bottom: 16px;
-    margin-bottom: 24px;
+    margin-bottom: 12px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     scrollbar-color: var(--border-color) var(--bg-secondary);
@@ -779,7 +855,7 @@
   
   .players-flex {
     display: flex;
-    gap: 16px;
+    gap: 10px;
     flex-wrap: wrap; /* Allow items to wrap */
   }
   .compact-player-card {
@@ -804,9 +880,21 @@
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 32px;
+    padding: 14px;
     width: 100%;
     max-width: 900px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    box-shadow: none;
+  }
+
+  @media (max-width: 1024px) {
+    .ops-strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    .ops-strip {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

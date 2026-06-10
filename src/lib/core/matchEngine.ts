@@ -43,6 +43,44 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+export function getBallLabel(ball: BallEvent): string {
+  if (ball.isWicket) return 'W';
+  if (ball.result === 'wide') return `${ball.runs}wd`;
+  if (ball.result === 'noball') return `${ball.runs}nb`;
+  return ball.runs.toString();
+}
+
+export function getBallClass(ball: BallEvent): string {
+  if (ball.isWicket) return 'wicket';
+  if (ball.result === 'wide' || ball.result === 'noball') return 'extra';
+  if (ball.runs === 4) return 'four';
+  if (ball.runs === 6) return 'six';
+  if (ball.runs === 0) return 'dot';
+  return 'runs';
+}
+
+export function calculateCurrentRunRate(inningsData: innings): string {
+  if (inningsData.balls === 0) return '0.00';
+  const totalBalls = inningsData.overs * 6 + inningsData.balls;
+  return ((inningsData.totalRuns / totalBalls) * 6).toFixed(2);
+}
+
+export function getOverBalls(inningsData: innings): BallEvent[] {
+  const balls = inningsData.ballsFaced;
+  if (balls.length === 0) return [];
+  
+  let currentOverIndex = inningsData.overs;
+  
+  // If we just completed an over, currentOver will already be incremented.
+  // We need the balls from the *previous* over if ballsInOver is 0 and balls.length > 0
+  const ballsInOver = inningsData.balls % 6;
+  if (ballsInOver === 0 && balls.length > 0) {
+    currentOverIndex = inningsData.overs - 1;
+  }
+  
+  return balls.filter(b => b.over === currentOverIndex);
+}
+
 export function calculateWicketChance(
   batter: Player,
   bowler: Player,
@@ -51,10 +89,15 @@ export function calculateWicketChance(
   totalOvers: number,
   weather: WeatherType = 'sunny',
   pitch: PitchType = 'balanced',
-  bowlingIntent: IntentType = 'balanced'
+  bowlingIntent: IntentType = 'balanced',
+  concentrationMult: number = 1.0,
+  rhythmMult: number = 1.0
 ): number {
   const batterStats = getEffectiveStats(batter);
   const bowlerStats = getEffectiveStats(bowler);
+  
+  batterStats.technique *= concentrationMult;
+  bowlerStats.bowling *= rhythmMult;
   
   // Apply Stat Synergies
   if (batter.faction === 'human' && intent === 'balanced') batterStats.technique += 10;
@@ -74,6 +117,8 @@ export function calculateWicketChance(
   let batterFatigue = batter.fatigue;
   if (batter.faction === 'dwarf' && currentOver >= 16 && (intent === 'aggressive' || intent === 'very_aggressive')) batterFatigue = 0;
 
+  const fatigueFactor = 1 - (batterFatigue / 350);
+
   const fatigueMult = 1 + (batterFatigue / 100 * 0.2 * currentOver / totalOvers);
   
   // Morale modifiers
@@ -86,7 +131,7 @@ export function calculateWicketChance(
   const bowlerBoost = (bowlerStats.bowling * bowlerMoraleMod * synergyMult) * 0.00007;
   const weatherMod = WEATHER_EFFECTS[weather].wicketChance;
   
-  const wicketChance = (baseChance * intentMult) + (faction.modifiers.fatigue * (batterFatigue / 100) * 0.2 * fatigueMult) 
+  const wicketChance = (baseChance * intentMult) + (faction.modifiers.fatigue * (batterFatigue / 100) * 0.2 * fatigueFactor) 
                    - techReduction + bowlerBoost;
   
   return clamp(wicketChance * weatherMod, 0.02, 0.16);
@@ -121,10 +166,17 @@ export function calculateShotQuality(
   homeAdvantage: number = 0,
   bowlingEffort: number = 1.0,
   currentOver: number = 0,
-  bowlingIntent: IntentType = 'balanced'
+  bowlingIntent: IntentType = 'balanced',
+  concentrationMult: number = 1.0,
+  rhythmMult: number = 1.0
 ): number {
   const batterStats = getEffectiveStats(batter);
   const bowlerStats = getEffectiveStats(bowler);
+  
+  batterStats.batting *= concentrationMult;
+  batterStats.power *= concentrationMult;
+  batterStats.technique *= concentrationMult;
+  bowlerStats.bowling *= rhythmMult;
   
   // Apply Stat Synergies
   if (batter.faction === 'human' && intent === 'balanced') batterStats.technique += 10;
@@ -187,8 +239,8 @@ export function calculateShotQuality(
   
   const baseShot = (battingPower * weatherMod.batting * pitchMod.batting - bowlingDefense - injuryPenalty) * (1 + homeBonus + battingIntentBonus);
   
-  // Reduced random roll (was 32, now 4)
-  return clamp(baseShot * (1 + lastOverBonus) + randomRoll(4), -5, 35);
+  // Reduced random roll (was 32, now 10 for better variance)
+  return clamp(baseShot * (1 + lastOverBonus) + randomRoll(10), -5, 35);
 }
 
 export const T20_RULES = {
@@ -217,11 +269,15 @@ export function determineBallResult(
     baseShotQuality += 2.5;
   }
   
-  if (baseShotQuality > 20) {
+  if (baseShotQuality > 14) {
     return { result: 'six', runs: 6 };
-  } else if (baseShotQuality > 5) {
+  } else if (baseShotQuality > 9.5) {
     return { result: 'four', runs: 4 };
-  } else if (baseShotQuality > -3) {
+  } else if (baseShotQuality > 7.5) {
+    return { result: 'three', runs: 3 };
+  } else if (baseShotQuality > 4) {
+    return { result: 'two', runs: 2 };
+  } else if (baseShotQuality > -1) {
     return { result: 'single', runs: 1 };
   } else {
     return { result: 'dot', runs: 0 };
@@ -276,7 +332,9 @@ export function resolveBall(
   bowlingIntent: IntentType = 'balanced',
   avoidSingles: boolean = false,
   fieldingAverage: number = 60,
-  ballType: BallType = 'normal'
+  ballType: BallType = 'normal',
+  concentrationMult: number = 1.0,
+  rhythmMult: number = 1.0
 ): BallEvent {
   const ballNumber = currentBalls + 1;
   const currentOver = Math.floor(currentBalls / 6);
@@ -318,7 +376,7 @@ export function resolveBall(
   }
   const finalBowlingEffort = bowlingEffort * ballTypeEffect;
 
-  const { isNoBall, runs: noBallRuns, freeHit, commentary: noBallCommentary } = calculateNoBall(calculateShotQuality(batter, bowler, battingIntent, isLastOver, weather, pitch, homeAdvantage, finalBowlingEffort, currentOver, bowlingIntent));
+  const { isNoBall, runs: noBallRuns, freeHit, commentary: noBallCommentary } = calculateNoBall(calculateShotQuality(batter, bowler, battingIntent, isLastOver, weather, pitch, homeAdvantage, finalBowlingEffort, currentOver, bowlingIntent, concentrationMult, rhythmMult));
   
   if (isNoBall) {
     return {
@@ -355,7 +413,7 @@ export function resolveBall(
     };
   }
 
-  const wicketChance = calculateWicketChance(batter, bowler, battingIntent, currentOver, totalOvers, weather, pitch) * bowlingEffort;
+  const wicketChance = calculateWicketChance(batter, bowler, battingIntent, currentOver, totalOvers, weather, pitch, bowlingIntent, concentrationMult, rhythmMult) * bowlingEffort;
 
   if (Math.random() < wicketChance && !isFreeHit) {
     const wicketTypes = ['caught', 'bowled', 'lbw', 'run out', 'stumped'];
@@ -396,7 +454,7 @@ export function resolveBall(
     };
   }
 
-  const shotQuality = calculateShotQuality(batter, bowler, battingIntent, isLastOver, weather, pitch, homeAdvantage, bowlingEffort, currentOver, bowlingIntent);
+  const shotQuality = calculateShotQuality(batter, bowler, battingIntent, isLastOver, weather, pitch, homeAdvantage, bowlingEffort, currentOver, bowlingIntent, concentrationMult, rhythmMult);
   let { result, runs } = determineBallResult(shotQuality, isFreeHit, isPowerplay);
 
   // Goblin Synergy: Cheeky Thieves
@@ -417,6 +475,12 @@ export function resolveBall(
       break;
     case 'four':
       commentary = `${batter.name} finds the gap! 4 runs!`;
+      break;
+    case 'three':
+      commentary = `${batter.name} pushes hard and they come back for three!`;
+      break;
+    case 'two':
+      commentary = `${batter.name} places it well for a couple of runs.`;
       break;
     case 'single':
       commentary = `${batter.name} takes a quick single`;
@@ -455,6 +519,10 @@ export function updateFatigueAndMorale(
   
   if (ballResult === 'six' || ballResult === 'four') {
     batterFatigue = 0.35;
+  } else if (ballResult === 'three') {
+    batterFatigue = 0.4;
+  } else if (ballResult === 'two') {
+    batterFatigue = 0.3;
   } else if (ballResult === 'single') {
     batterFatigue = 0.2;
   }
@@ -519,7 +587,7 @@ export interface MatchResult {
   matchEarnings: { team1: number; team2: number };
   operatingEarnings: { team1: number; team2: number };
   potmReward: number;
-  injuries: Array<{ playerId: string; playerName: string; type: string }>;
+  injuries: Injury[];
   fanUpdates: { team1: { popularity: number; homeAdvantage: number }; team2: { popularity: number; homeAdvantage: number } };
   playerOfTheMatch: { id: string; name: string; teamId: string; stats: string } | null;
 }
@@ -567,20 +635,28 @@ export function resolveMatch(
   
   // Injury rolls - check random injuries after match
   const injuryRolls = rollForInjury();
-  const team1Injuries: Array<{ playerId: string; playerName: string; type: string }> = [];
-  const team2Injuries: Array<{ playerId: string; playerName: string; type: string }> = [];
+  const team1Injuries: Injury[] = [];
+  const team2Injuries: Injury[] = [];
   
   if (injuryRolls && team1.players.length > 0) {
     const randomPlayer = team1.players[Math.floor(Math.random() * Math.min(5, team1.players.length))];
     const injury = { ...injuryRolls, playerId: randomPlayer.id, playerName: randomPlayer.name };
-    team1Injuries.push({ playerId: injury.playerId, playerName: injury.playerName, type: injury.type });
+    team1Injuries.push(injury);
+    team1.players = team1.players.map(player =>
+      player.id === randomPlayer.id ? applyInjuryToPlayer(player, injury) : player
+    );
+    team1.injuries = [...(team1.injuries || []), injury];
   }
   
   const injuryRolls2 = rollForInjury();
   if (injuryRolls2 && team2.players.length > 0) {
     const randomPlayer = team2.players[Math.floor(Math.random() * Math.min(5, team2.players.length))];
     const injury = { ...injuryRolls2, playerId: randomPlayer.id, playerName: randomPlayer.name };
-    team2Injuries.push({ playerId: injury.playerId, playerName: injury.playerName, type: injury.type });
+    team2Injuries.push(injury);
+    team2.players = team2.players.map(player =>
+      player.id === randomPlayer.id ? applyInjuryToPlayer(player, injury) : player
+    );
+    team2.injuries = [...(team2.injuries || []), injury];
   }
   
   // Fan/popularity updates
@@ -608,6 +684,20 @@ export function resolveMatch(
     const stadiumLvl = team2.facilities?.stadiumLevel || 1;
     operatingEarningsTeam2 = 50000 * stadiumLvl;
   }
+
+  team1.fanProfile = {
+    ...(team1.fanProfile || { homeAdvantage: 0, popularity: 50, revenue: 0, matchBonus: 0 }),
+    popularity: team1NewPopularity,
+    homeAdvantage: team1HomeAdvantage,
+    revenue: (team1.fanProfile?.revenue || 0) + operatingEarningsTeam1
+  };
+
+  team2.fanProfile = {
+    ...(team2.fanProfile || { homeAdvantage: 0, popularity: 50, revenue: 0, matchBonus: 0 }),
+    popularity: team2NewPopularity,
+    homeAdvantage: team2HomeAdvantage,
+    revenue: (team2.fanProfile?.revenue || 0) + operatingEarningsTeam2
+  };
   
   // Calculate POTM (Simple approximation: 1 run = 1 pt, 1 wicket = 25 pts)
   const playerPoints: Record<string, number> = {};

@@ -11,21 +11,57 @@
     selectedActionText?: string;
     children?: import('svelte').Snippet;
     hideAvailability?: boolean;
+    allowRename?: boolean;
+    onRename?: (newName: string) => void;
+    teamColorPrimary?: string;
+    teamColorSecondary?: string;
   }
   
-  let { 
-    player, 
-    showPrice = false, 
-    onSelect, 
-    selected = false,
-    actionText = 'Select',
-    selectedActionText = '✓ Selected',
-    children,
-    hideAvailability = false
-  }: Props = $props();
+    let {
+      player,
+      showPrice = false,
+      onSelect,
+      selected = false,
+      actionText = 'Select',
+      selectedActionText = 'Deselect',
+      children,
+      hideAvailability = false,
+      allowRename = false,
+      onRename,
+      teamColorPrimary,
+      teamColorSecondary
+    }: Props = $props();
+    
+    let isEditingName = $state(false);
+    let editNameValue = $state(player.name);
+  
+    function startEdit(e: Event) {
+      e.stopPropagation();
+      isEditingName = true;
+      editNameValue = player.name;
+    }
+  
+    function saveEdit(e: Event) {
+      e.stopPropagation();
+      isEditingName = false;
+      if (editNameValue.trim() && editNameValue !== player.name) {
+        onRename?.(editNameValue.trim());
+      }
+    }
+  
+    function cancelEdit(e: Event) {
+      e.stopPropagation();
+      isEditingName = false;
+    }
   
   let faction = $derived(FACTIONS[player.faction]);
   let avatarUrl = $derived(getAvatarUrl(player.faction, player.portraitId || 1));
+  let roleSummary = $derived(
+    `${player.role} • ${player.battingType || 'RHB'} • ${player.battingRole || 'Middle Order'}${
+      player.bowlingType && player.bowlingType !== 'none' ? ` • ${player.bowlingType}` : ''
+    }`
+  );
+  let activeInjury = $derived((player as any).activeInjury);
   
   function getStatClass(value: number): string {
     if (value >= 70) return 'high';
@@ -39,6 +75,7 @@
   class:selected 
   class:unavailable={!hideAvailability && !player.isAvailable} 
   data-faction={player.faction}
+  style={teamColorPrimary ? `--team-primary: ${teamColorPrimary}; --team-secondary: ${teamColorSecondary}; --card-bg: linear-gradient(180deg, ${teamColorSecondary}10, transparent 40%), var(--bg-surface);` : ''}
   onclick={() => onSelect && (hideAvailability || player.isAvailable) && onSelect(player)}
   role={onSelect && (hideAvailability || player.isAvailable) ? "button" : undefined}
   tabindex={onSelect && (hideAvailability || player.isAvailable) ? 0 : undefined}
@@ -52,8 +89,32 @@
       </div>
     </div>
     <div class="player-info">
-      <span class="name">{player.name}</span>
-      <span class="role">{player.role} • {player.battingType || 'RHB'} • {player.battingRole || 'Middle Order'}{player.bowlingType && player.bowlingType !== 'none' ? ` • ${player.bowlingType}` : ''}</span>
+      {#if isEditingName}
+        <div class="edit-name-container" onclick={(e) => e.stopPropagation()}>
+          <input type="text" class="edit-name-input" bind:value={editNameValue} maxlength="30" onkeydown={(e) => e.key === 'Enter' && saveEdit(e)} />
+          <button class="icon-btn save-btn" onclick={saveEdit} title="Save">✓</button>
+          <button class="icon-btn cancel-btn" onclick={cancelEdit} title="Cancel">✕</button>
+        </div>
+      {:else}
+        <span class="name" title={player.name}>
+          <span class="name-text">{player.name}</span>
+          {#if allowRename}
+            <button class="icon-btn edit-btn" onclick={startEdit} title="Edit Name">✎</button>
+          {/if}
+        </span>
+      {/if}
+      <span class="role" title={roleSummary}>{roleSummary}</span>
+      <div class="status-row">
+        {#if !hideAvailability}
+          <span class="status-pill {player.isAvailable ? 'available' : 'locked'}">{player.isAvailable ? 'Available' : 'Locked'}</span>
+        {/if}
+        {#if player.retiring}
+          <span class="status-pill retiring">Retiring</span>
+        {/if}
+        {#if activeInjury}
+          <span class="status-pill injury">Injury: {activeInjury.type}</span>
+        {/if}
+      </div>
     </div>
   </div>
   
@@ -94,14 +155,14 @@
       <span class="stat-value">{Math.round(player.stats.fielding || 60)}</span>
     </div>
     
-    <div style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-       <div class="stat-row" title="Morale/Form: Higher morale improves performance.">
-          <span class="stat-label" style="width: 35px;">Form</span>
-          <span class="stat-value" style="width: auto; color: {player.morale > 70 ? 'var(--success)' : player.morale < 40 ? 'var(--danger)' : 'var(--text-secondary)'}">{Math.round(player.morale)}%</span>
+    <div class="mini-grid">
+       <div class="mini-stat" title="Morale/Form: Higher morale improves performance.">
+          <span class="stat-label">Form</span>
+          <span class="stat-value" style="color: {player.morale > 70 ? 'var(--success)' : player.morale < 40 ? 'var(--danger)' : 'var(--text-secondary)'}">{Math.round(player.morale)}%</span>
        </div>
-       <div class="stat-row" title="Fatigue: High fatigue reduces performance and increases injury risk.">
-          <span class="stat-label" style="width: 45px;">Fatigue</span>
-          <span class="stat-value" style="width: auto; color: {player.fatigue > 70 ? 'var(--danger)' : player.fatigue > 40 ? 'var(--warning)' : 'var(--success)'}">{Math.round(player.fatigue)}%</span>
+       <div class="mini-stat" title="Fatigue: High fatigue reduces performance and increases injury risk.">
+          <span class="stat-label">Fatigue</span>
+          <span class="stat-value" style="color: {player.fatigue > 70 ? 'var(--danger)' : player.fatigue > 40 ? 'var(--warning)' : 'var(--success)'}">{Math.round(player.fatigue)}%</span>
        </div>
     </div>
   </div>
@@ -123,183 +184,383 @@
 
 <style>
   .player-card {
-    background: var(--bg-secondary);
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    padding: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    transform: translateY(0);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    height: 100%;
+    align-self: stretch;
+    padding: 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    background: var(--card-bg,
+      linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)),
+      var(--bg-surface)
+    );
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    box-shadow: none;
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease,
+      border-color 160ms ease,
+      background-color 160ms ease;
   }
-  
+
+  .player-card::before {
+    content: "";
+    position: absolute;
+    inset: auto -15% -25% auto;
+    width: 150px;
+    height: 150px;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.08), transparent 68%);
+    pointer-events: none;
+    opacity: 0.8;
+  }
+
   .player-card::after {
     content: attr(data-faction);
     position: absolute;
-    bottom: -10px;
-    right: -10px;
-    font-size: 60px;
-    font-family: 'Cinzel', serif;
+    right: -0.2rem;
+    bottom: -0.65rem;
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 4.8rem;
     font-weight: 700;
+    letter-spacing: -0.1em;
     text-transform: uppercase;
-    opacity: 0.05;
+    opacity: 0.045;
     pointer-events: none;
-    z-index: 0;
   }
-  
-  .player-header, .stats, .price, .select-btn {
+
+  .player-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(var(--accent-sapphire-rgb), 0.34);
+    box-shadow: none;
+  }
+
+  .player-card.selected {
+    border-color: rgba(var(--accent-emerald-rgb), 0.42);
+    box-shadow: none;
+    background:
+      linear-gradient(180deg, rgba(var(--accent-emerald-rgb), 0.08), rgba(255, 255, 255, 0)),
+      var(--bg-surface);
+  }
+
+  .player-card.unavailable {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .player-card[data-faction="human"] {
+    border-left: 3px solid var(--team-primary, var(--accent-human));
+  }
+
+  .player-card[data-faction="elf"] {
+    border-left: 3px solid var(--team-primary, var(--accent-elf));
+  }
+
+  .player-card[data-faction="orc"] {
+    border-left: 3px solid var(--team-primary, var(--accent-orc));
+  }
+
+  .player-card[data-faction="dwarf"] {
+    border-left: 3px solid var(--team-primary, var(--accent-dwarf));
+  }
+
+  .player-card[data-faction="goblin"] {
+    border-left: 3px solid var(--team-primary, var(--accent-goblin));
+  }
+
+  .player-card[data-faction="nightelf"] {
+    border-left: 3px solid var(--team-primary, var(--accent-nightelf));
+  }
+
+  .player-header,
+  .stats,
+  .price,
+  .select-btn {
     position: relative;
     z-index: 1;
   }
-  
-  .player-card:hover {
-    border-color: var(--text-secondary);
-    transform: translateY(-3px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
-  }
-  
-  .player-card.selected {
-    border-color: var(--success);
-    background: rgba(35, 134, 54, 0.1);
-  }
-  
-  .player-card.unavailable {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  .player-card[data-faction="human"] { border-left: 3px solid var(--accent-human); background-image: var(--bg-human); }
-  .player-card[data-faction="human"]::after { color: var(--accent-human); }
-  .player-card[data-faction="elf"] { border-left: 3px solid var(--accent-elf); background-image: var(--bg-elf); }
-  .player-card[data-faction="elf"]::after { color: var(--accent-elf); }
-  .player-card[data-faction="orc"] { border-left: 3px solid var(--accent-orc); background-image: var(--bg-orc); }
-  .player-card[data-faction="orc"]::after { color: var(--accent-orc); }
-  .player-card[data-faction="dwarf"] { border-left: 3px solid var(--accent-dwarf); background-image: var(--bg-dwarf); }
-  .player-card[data-faction="dwarf"]::after { color: var(--accent-dwarf); }
-  .player-card[data-faction="goblin"] { border-left: 3px solid var(--accent-goblin); background-image: var(--bg-goblin); }
-  .player-card[data-faction="goblin"]::after { color: var(--accent-goblin); }
-  .player-card[data-faction="nightelf"] { border-left: 3px solid var(--accent-nightelf); background-image: var(--bg-nightelf); }
-  .player-card[data-faction="nightelf"]::after { color: var(--accent-nightelf); }
-  
+
   .player-header {
     display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 12px;
+    gap: 0.9rem;
+    align-items: flex-start;
   }
-  
+
   .avatar-container {
     position: relative;
     width: 48px;
     height: 48px;
-    flex-shrink: 0;
+    flex: 0 0 auto;
   }
-  
+
   .avatar-img {
     width: 100%;
     height: 100%;
-    border-radius: 50%;
+    border-radius: 999px;
     object-fit: cover;
-    background: var(--bg-primary);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    background: var(--bg-secondary);
   }
-  
+
+  .player-card[data-faction="human"] .avatar-img {
+    box-shadow: none;
+  }
+
+  .player-card[data-faction="elf"] .avatar-img {
+    box-shadow: none;
+  }
+
+  .player-card[data-faction="orc"] .avatar-img {
+    box-shadow: none;
+  }
+
+  .player-card[data-faction="dwarf"] .avatar-img {
+    box-shadow: none;
+  }
+
+  .player-card[data-faction="goblin"] .avatar-img {
+    box-shadow: none;
+  }
+
+  .player-card[data-faction="nightelf"] .avatar-img {
+    box-shadow: none;
+  }
+
   .faction-badge {
     position: absolute;
-    bottom: -4px;
-    right: -4px;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    right: -0.15rem;
+    bottom: -0.15rem;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--surface-outline);
+    font-size: 0.72rem;
+    box-shadow: none;
   }
-  
-  .player-card[data-faction="human"] .avatar-img { border: 2px solid var(--accent-human); box-shadow: 0 0 10px rgba(9, 105, 218, 0.4); }
-  .player-card[data-faction="elf"] .avatar-img { border: 2px solid var(--accent-elf); box-shadow: 0 0 10px rgba(26, 127, 55, 0.4); }
-  .player-card[data-faction="orc"] .avatar-img { border: 2px solid var(--accent-orc); box-shadow: 0 0 10px rgba(207, 34, 46, 0.4); }
-  .player-card[data-faction="dwarf"] .avatar-img { border: 2px solid var(--accent-dwarf); box-shadow: 0 0 10px rgba(154, 103, 0, 0.4); }
-  .player-card[data-faction="goblin"] .avatar-img { border: 2px solid var(--accent-goblin); box-shadow: 0 0 10px rgba(130, 80, 223, 0.4); }
-  .player-card[data-faction="nightelf"] .avatar-img { border: 2px solid var(--accent-nightelf); box-shadow: 0 0 10px rgba(5, 152, 188, 0.4); }
-  
+
   .player-info {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    gap: 0.2rem;
   }
-  
+
   .name {
-    font-weight: 600;
-    font-size: 14px;
-  }
-  
-  .role {
-    font-size: 12px;
-    color: var(--text-secondary);
-    text-transform: capitalize;
-  }
-  
-  .stats {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    font-size: 1rem;
+    font-weight: 700;
   }
-  
+
+  .name-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .player-info .role {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .status-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+    margin-top: 0.25rem;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .status-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    border: 1px solid transparent;
+  }
+
+  .status-pill.available {
+    background: rgba(var(--accent-emerald-rgb), 0.12);
+    color: var(--accent-emerald);
+    border-color: rgba(var(--accent-emerald-rgb), 0.24);
+  }
+
+  .status-pill.locked {
+    background: rgba(148, 163, 184, 0.08);
+    color: var(--text-muted);
+    border-color: rgba(148, 163, 184, 0.16);
+  }
+
+  .status-pill.retiring {
+    background: rgba(var(--accent-gold-rgb), 0.12);
+    color: var(--warning);
+    border-color: rgba(var(--accent-gold-rgb), 0.24);
+  }
+
+  .status-pill.injury {
+    background: rgba(var(--accent-ruby-rgb), 0.12);
+    color: var(--danger);
+    border-color: rgba(var(--accent-ruby-rgb), 0.24);
+  }
+
+  .edit-name-container {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  .edit-name-input {
+    width: min(100%, 13rem);
+    padding: 0.55rem 0.75rem;
+    border-radius: 8px;
+  }
+
+  .icon-btn {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border-radius: 999px;
+    display: inline-grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--surface-outline);
+    color: var(--text-secondary);
+  }
+
+  .icon-btn.edit-btn {
+    opacity: 0;
+  }
+
+  .player-card:hover .icon-btn.edit-btn {
+    opacity: 1;
+  }
+
+  .icon-btn.edit-btn:hover {
+    color: var(--info);
+    background: rgba(var(--accent-sapphire-rgb), 0.12);
+  }
+
+  .icon-btn.save-btn {
+    color: var(--success);
+  }
+
+  .icon-btn.save-btn:hover {
+    background: rgba(var(--accent-emerald-rgb), 0.12);
+  }
+
+  .icon-btn.cancel-btn {
+    color: var(--danger);
+  }
+
+  .icon-btn.cancel-btn:hover {
+    background: rgba(var(--accent-ruby-rgb), 0.12);
+  }
+
+  .stats {
+    display: grid;
+    gap: 0.55rem;
+  }
+
   .stat-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.6rem;
   }
-  
+
   .stat-label {
-    font-size: 11px;
-    color: var(--text-secondary);
-    width: 50px;
+    width: 3.25rem;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
   }
-  
+
   .stat-bar {
     flex: 1;
-    background: var(--bg-tertiary);
-    border-radius: 2px;
-    height: 6px;
+    height: 0.45rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
     overflow: hidden;
   }
-  
+
   .stat-bar-fill {
     height: 100%;
-    border-radius: 2px;
+    border-radius: inherit;
   }
-  
-  .stat-bar-fill.high { background: var(--success); }
-  .stat-bar-fill.medium { background: var(--warning); }
-  .stat-bar-fill.low { background: var(--danger); }
-  
+
   .stat-value {
-    font-size: 11px;
-    width: 25px;
+    width: 2rem;
     text-align: right;
-  }
-  
-  .price {
-    margin-top: 12px;
-    font-size: 16px;
+    font-size: 0.78rem;
     font-weight: 700;
-    color: var(--accent-dwarf);
   }
-  
+
+  .mini-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.14);
+  }
+
+  .mini-stat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0.65rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+  }
+
+  .price {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--warning);
+  }
+
   .select-btn {
     width: 100%;
-    margin-top: 12px;
+    margin-top: 0.25rem;
   }
-  
+
   .select-btn.selected {
-    background: var(--danger);
-    color: white;
+    background: linear-gradient(180deg, rgba(var(--accent-ruby-rgb), 0.98), rgba(var(--accent-ruby-rgb), 0.78));
+    color: #fff;
+  }
+
+  @media (max-width: 720px) {
+    .player-header {
+      align-items: flex-start;
+    }
+
+    .mini-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

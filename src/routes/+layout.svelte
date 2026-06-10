@@ -1,23 +1,78 @@
 <script lang="ts">
   import '../app.css';
   import { onMount } from 'svelte';
-  import { resetGame, initializeGame, saveCurrentGame, gamePhase } from '$lib/stores/gameState';
   import { fade } from 'svelte/transition';
   import { page } from '$app/stores';
-  
+  import {
+    currentDay,
+    currentSeason,
+    gamePhase,
+    initializeGame,
+    resetGame,
+    saveCurrentGame,
+    teamStore,
+    type GamePhase
+  } from '$lib/stores/gameState';
+  import type { Team } from '$lib/models/team';
+
   let { children } = $props();
-  let theme = $state('dark');
+
+  let theme = $state<'dark' | 'light'>('dark');
   let isResetting = $state(false);
   let newTeamName = $state('Your Team');
   let newManagerName = $state('You');
   let newCoat = $state('🛡️');
-  
-  const teamAdjectives = ['Mighty', 'Super', 'Royal', 'Flying', 'Golden', 'Fierce', 'Cosmic', 'Thunder', 'Shadow'];
-  const teamNouns = ['Lions', 'Eagles', 'Titans', 'Warriors', 'Knights', 'Dragons', 'Strikers', 'Phoenix', 'Panthers'];
-  const managerFirstNames = ['John', 'Mike', 'David', 'Chris', 'James', 'Sarah', 'Emma', 'Alex', 'Liam', 'Sophia'];
-  const managerLastNames = ['Smith', 'Johnson', 'Brown', 'Taylor', 'Wilson', 'Davis', 'Miller', 'Moore'];
+  let teams = $state<Team[]>([]);
 
+  const teamAdjectives = ['Mighty', 'Royal', 'Cosmic', 'Thunder', 'Steel', 'Golden', 'Shadow', 'Silver'];
+  const teamNouns = ['Lions', 'Eagles', 'Titans', 'Warriors', 'Knights', 'Dragons', 'Strikers', 'Panthers'];
+  const managerFirstNames = ['John', 'Mike', 'David', 'Chris', 'James', 'Sarah', 'Emma', 'Alex'];
+  const managerLastNames = ['Smith', 'Johnson', 'Brown', 'Taylor', 'Wilson', 'Davis', 'Miller', 'Moore'];
   const predefinedCoats = ['🛡️', '🦅', '🦁', '🐺', '⚔️', '👑', '🐉', '⚓', '⚡', '🏹'];
+
+  type NavItem = {
+    href: string;
+    label: string;
+    accent: string;
+    showWhen?: (phase: GamePhase) => boolean;
+  };
+
+  const navItems: NavItem[] = [
+    { href: '/', label: 'Dashboard', accent: 'info' },
+    { href: '/match', label: 'Match', accent: 'danger' },
+    { href: '/squad', label: 'Squad', accent: 'brand', showWhen: (phase: GamePhase) => phase !== 'match' },
+    { href: '/auction', label: 'Auction', accent: 'warning', showWhen: (phase: GamePhase) => phase === 'auction' },
+    { href: '/retention', label: 'Retention', accent: 'danger', showWhen: (phase: GamePhase) => phase === 'retention' },
+    { href: '/scouting', label: 'Scouting', accent: 'info', showWhen: (phase: GamePhase) => phase === 'scouting' },
+    { href: '/club', label: 'Club', accent: 'brand' },
+    { href: '/training', label: 'Training', accent: 'success' },
+    { href: '/budget', label: 'Budget', accent: 'warning' },
+    { href: '/tournament', label: 'Tournament', accent: 'brand' },
+    { href: '/teams', label: 'Teams', accent: 'brand' },
+    { href: '/season-review', label: 'Review', accent: 'success', showWhen: (phase: GamePhase) => phase === 'season_end' },
+    { href: '/guide', label: 'Guide', accent: 'warning' }
+  ];
+
+  onMount(() => {
+    const saved = localStorage.getItem('theme') === 'light' ? 'light' : 'dark';
+    theme = saved;
+    document.documentElement.setAttribute('data-theme', theme);
+
+    const unsubTeams = teamStore.subscribe((value) => {
+      teams = value;
+    });
+
+    void initializeGame();
+
+    return () => {
+      unsubTeams();
+    };
+  });
+
+  const userTeam = $derived(teams.find((team) => team.isUserTeam));
+  const visibleNavItems = $derived(
+    navItems.filter((item) => !item.showWhen || item.showWhen($gamePhase))
+  );
 
   function randomizeTeam() {
     newTeamName = `${teamAdjectives[Math.floor(Math.random() * teamAdjectives.length)]} ${teamNouns[Math.floor(Math.random() * teamNouns.length)]}`;
@@ -26,14 +81,7 @@
   function randomizeManager() {
     newManagerName = `${managerFirstNames[Math.floor(Math.random() * managerFirstNames.length)]} ${managerLastNames[Math.floor(Math.random() * managerLastNames.length)]}`;
   }
-  
-  onMount(async () => {
-    const saved = localStorage.getItem('theme') || 'dark';
-    theme = saved;
-    document.documentElement.setAttribute('data-theme', theme);
-    await initializeGame();
-  });
-  
+
   function toggleTheme() {
     theme = theme === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', theme);
@@ -55,268 +103,153 @@
   function cancelReset() {
     isResetting = false;
   }
+
+  function getPhaseLabel(phase: GamePhase): string {
+    switch (phase) {
+      case 'menu':
+        return 'Front Office';
+      case 'tournament':
+        return 'Tournament Day';
+      case 'match':
+        return 'Live Match';
+      case 'season_end':
+        return 'Season Review';
+      case 'retention':
+        return 'Retention Board';
+      case 'scouting':
+        return 'Scouting Network';
+      case 'trading':
+        return 'Trading Desk';
+      case 'auction':
+        return 'Auction House';
+      default:
+        return phase;
+    }
+  }
+
+  function isActiveRoute(pathname: string, href: string) {
+    return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
+  }
 </script>
 
-<div class="app">
-  <header>
-    <nav>
-      <a href="/">Dashboard</a>
-      <a href="/teams">League Teams</a>
-      <a href="/club">Club Management</a>
-      
-      {#if $gamePhase !== 'match'}
-        <a href="/squad">Squad</a>
-      {/if}
-      
-      {#if $gamePhase === 'auction'}
-        <a href="/auction" style="color: var(--warning);">Live Auction</a>
-      {/if}
-      
-      {#if $gamePhase === 'scouting'}
-        <a href="/scouting" style="color: var(--info);">Scouting</a>
-      {/if}
-      
-      {#if $gamePhase === 'retention'}
-        <a href="/retention" style="color: var(--danger);">Retention</a>
-      {/if}
-      
-      {#if $gamePhase === 'season_end'}
-        <a href="/season-review" style="color: var(--success);">Season Review</a>
-      {/if}
+<div class="page-shell">
+  <header class="topbar">
+    <div class="shell-brand">
+      <div class="shell-brand-mark">FC</div>
+      <div class="shell-brand-copy">
+        <p class="eyebrow">Fantasy CricManager</p>
+        <h1>War Room</h1>
+        <p>{getPhaseLabel($gamePhase)}</p>
+      </div>
+    </div>
 
-      <a href="/training">Training</a>
-      <a href="/tournament">Tournament</a>
-      <a href="/guide" style="color: var(--accent-gold);">📖 Guide</a>
-    </nav>
-    <div style="display: flex; gap: 12px; align-items: center;">
-      <button class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded text-sm font-semibold transition-colors" onclick={handleReset} title="Reset Game Progress">
-        Reset Game
+    <div class="shell-meta">
+      <span class="badge info">Season {$currentSeason}</span>
+      <span class="badge success">Day {$currentDay}</span>
+      <span class="badge warning">{getPhaseLabel($gamePhase)}</span>
+      {#if userTeam}
+        <span class="badge">Budget ${userTeam.budget.toLocaleString()}</span>
+        <span class="badge">Ops ${userTeam.operatingBudget.toLocaleString()}</span>
+        <span class="badge info">{userTeam.fanProfile?.popularity ?? 50}% Crowd</span>
+      {/if}
+    </div>
+
+    <div class="shell-actions">
+      <button class="shell-button" onclick={toggleTheme} title="Toggle theme">
+        {theme === 'dark' ? '☀' : '☾'}
       </button>
-      <button class="theme-toggle" onclick={toggleTheme} title="Toggle theme">
-        {theme === 'dark' ? '☀️' : '🌙'}
+      <button class="reset-button" onclick={handleReset} title="Reset game progress">
+        Reset Game
       </button>
     </div>
   </header>
-  
-  <main>
+
+  <nav class="shell-nav glass-card" aria-label="Primary navigation">
+    {#each visibleNavItems as item}
+      <a
+        href={item.href}
+        class="nav-item"
+        data-active={isActiveRoute($page.url.pathname, item.href)}
+      >
+        {item.label}
+      </a>
+    {/each}
+  </nav>
+
+  <main class="page-container shell-content">
     {#key $page.url.pathname}
-      <div in:fade={{duration: 150, delay: 150}} out:fade={{duration: 150}}>
+      <div in:fade={{ duration: 160, delay: 80 }} out:fade={{ duration: 120 }}>
         {@render children()}
       </div>
     {/key}
   </main>
+
+  <nav class="mobile-nav glass-card" aria-label="Mobile navigation">
+    {#each visibleNavItems as item}
+      <a
+        href={item.href}
+        class="mobile-nav-item"
+        data-active={isActiveRoute($page.url.pathname, item.href)}
+      >
+        {item.label}
+      </a>
+    {/each}
+  </nav>
 </div>
 
 {#if isResetting}
-  <div class="modal-overlay">
-    <div class="modal-content">
-      <h2>Reset Game</h2>
-      <p class="text-slate-400 mb-4">Starting a new game will erase all current progress.</p>
-      
-      <div class="form-group">
-        <label for="teamName">Team Name</label>
-        <div style="display: flex; gap: 8px;">
-          <input id="teamName" type="text" bind:value={newTeamName} placeholder="E.g., Mumbai Indians" style="flex: 1;" />
-          <button class="dice-btn" onclick={randomizeTeam} title="Randomize Team Name">🎲</button>
+  <div class="modal-backdrop">
+    <div class="modal-card surface-strong">
+      <div class="section-title" style="margin-bottom: 1rem;">
+        <div>
+          <p class="eyebrow">System reset</p>
+          <h2>Start a new franchise</h2>
         </div>
       </div>
-      
-      <div class="form-group">
-        <label for="managerName">Manager Name</label>
-        <div style="display: flex; gap: 8px;">
-          <input id="managerName" type="text" bind:value={newManagerName} placeholder="E.g., John Doe" style="flex: 1;" />
-          <button class="dice-btn" onclick={randomizeManager} title="Randomize Manager Name">🎲</button>
+      <p class="section-subtitle" style="margin-bottom: 1.25rem;">
+        A reset clears the current save and rebuilds the league from scratch.
+      </p>
+
+      <div class="stack">
+        <div class="field-group">
+          <label class="small-label" for="teamName">Team Name</label>
+          <div class="command-row">
+            <input id="teamName" type="text" bind:value={newTeamName} placeholder="E.g., Mumbai Indians" />
+            <button class="btn-secondary" onclick={randomizeTeam} title="Randomize team name">🎲</button>
+          </div>
         </div>
-      </div>
-      
-      <div class="form-group">
-        <label>Coat of Arms</label>
-        <div style="display: flex; gap: 12px; margin-bottom: 8px; flex-wrap: wrap;">
-          {#each predefinedCoats as coat}
-            <button 
-              class="logo-option" 
-              class:selected={newCoat === coat} 
-              onclick={() => newCoat = coat}
-              style="font-size: 2rem; padding: 0; width: 48px; height: 48px; border: 2px solid {newCoat === coat ? 'var(--success)' : 'var(--border-color)'}; border-radius: 8px; background: var(--bg-tertiary); cursor: pointer; display: flex; align-items: center; justify-content: center;"
-            >
-              {coat}
-            </button>
-          {/each}
+
+        <div class="field-group">
+          <label class="small-label" for="managerName">Manager Name</label>
+          <div class="command-row">
+            <input id="managerName" type="text" bind:value={newManagerName} placeholder="E.g., John Doe" />
+            <button class="btn-secondary" onclick={randomizeManager} title="Randomize manager name">🎲</button>
+          </div>
         </div>
-        <input id="logoUrl" type="text" bind:value={newCoat} placeholder="Or enter custom emoji/character..." style="font-size: 1.5rem;" />
-      </div>
-      
-      <div class="modal-actions">
-        <button class="btn-cancel" onclick={cancelReset}>Cancel</button>
-        <button class="btn-confirm" onclick={confirmReset}>Start New Game</button>
+
+        <div class="field-group">
+          <label class="small-label">Coat of Arms</label>
+          <div class="command-row" style="flex-wrap: wrap;">
+            {#each predefinedCoats as coat}
+              <button
+                class="btn-secondary"
+                class:is-active={newCoat === coat}
+                onclick={() => (newCoat = coat)}
+                style="font-size: 1.35rem; width: 3rem; height: 3rem; padding: 0;"
+                aria-label={`Select ${coat}`}
+              >
+                {coat}
+              </button>
+            {/each}
+          </div>
+          <input id="logoUrl" type="text" bind:value={newCoat} placeholder="Or enter a custom emoji or character" />
+        </div>
+
+        <div class="command-row" style="justify-content: flex-end; margin-top: 0.5rem;">
+          <button class="btn-secondary" onclick={cancelReset}>Cancel</button>
+          <button class="btn-primary" onclick={confirmReset}>Start New Game</button>
+        </div>
       </div>
     </div>
   </div>
 {/if}
-
-<style>
-  .app {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    font-family: 'Lora', serif; /* Fallback if global fails */
-  }
-  
-  header {
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
-    padding: 12px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  nav {
-    display: flex;
-    gap: 24px;
-    max-width: 1200px;
-  }
-  
-  nav a {
-    color: var(--text-secondary);
-    font-weight: 600;
-    transition: color 0.2s ease;
-    font-family: 'Cinzel', serif; /* Use fantasy heading font for nav */
-    letter-spacing: 0.5px;
-  }
-  
-  nav a:hover {
-    color: var(--accent-gold); /* Fantasy hover color */
-    text-decoration: none;
-  }
-  
-  .theme-toggle {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    font-size: 18px;
-    padding: 6px 12px;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .theme-toggle:hover {
-    background: var(--bg-primary);
-  }
-  
-  main {
-    flex: 1;
-    padding: 24px;
-  }
-  
-  .modal-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.75);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    backdrop-filter: blur(2px);
-  }
-  
-  .modal-content {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 32px;
-    width: 100%;
-    max-width: 480px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-  }
-  
-  .modal-content h2 { margin-bottom: 8px; color: var(--text-primary); font-family: 'Cinzel', serif; }
-  .modal-content p { color: var(--text-secondary); margin-bottom: 24px; font-size: 0.95rem; }
-  
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  
-  .form-group label { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); }
-  .form-group input {
-    padding: 10px 12px;
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-size: 1rem;
-    font-family: 'Lora', serif;
-  }
-  
-  .dice-btn {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    font-size: 1.2rem;
-    padding: 0 12px;
-    cursor: pointer;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .dice-btn:hover {
-    background: var(--bg-secondary);
-  }
-  
-  .modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    margin-top: 32px;
-  }
-  
-  .btn-cancel {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    padding: 10px 16px;
-    border-radius: 6px;
-    font-weight: 600;
-    border: 1px solid var(--border-color);
-    cursor: pointer;
-    font-family: inherit;
-  }
-  
-  .btn-confirm {
-    background: var(--success);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  
-  @media (max-width: 640px) {
-    header {
-      flex-direction: column;
-      gap: 16px;
-      padding: 16px;
-    }
-    
-    nav {
-      width: 100%;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 12px 16px;
-    }
-    
-    header > div {
-      width: 100%;
-      justify-content: center;
-    }
-  }
-</style>

@@ -101,58 +101,60 @@
   <div class="grid-layout">
     <div class="column">
       <h2>Facilities</h2>
-      <div class="facility-card">
-        <div class="facility-header">
-          <h3>🏟️ Stadium</h3>
-          <span class="level-badge">Lvl {facilities.stadiumLevel}</span>
+      <div class="facility-grid">
+        <div class="facility-card">
+          <div class="facility-header">
+            <h3>🏟️ Stadium</h3>
+            <span class="level-badge">Lvl {facilities.stadiumLevel}</span>
+          </div>
+          <p class="desc">Increases match-day ticket revenue and sponsorships.</p>
+          <p class="cost-info">Maintenance: ${FACILITY_MAINTENANCE_COSTS.stadium[facilities.stadiumLevel - 1].toLocaleString()}/yr</p>
+          {#if facilities.stadiumLevel < 5}
+            <button class="primary" onclick={() => handleUpgrade('stadium')}>
+              Upgrade to Lvl {facilities.stadiumLevel + 1} (${FACILITY_UPGRADE_COSTS.stadium[facilities.stadiumLevel].toLocaleString()})
+            </button>
+          {:else}
+            <button class="secondary" disabled>Max Level</button>
+          {/if}
         </div>
-        <p class="desc">Increases match-day ticket revenue and sponsorships.</p>
-        <p class="cost-info">Maintenance: ${FACILITY_MAINTENANCE_COSTS.stadium[facilities.stadiumLevel - 1].toLocaleString()}/yr</p>
-        {#if facilities.stadiumLevel < 5}
-          <button class="primary" onclick={() => handleUpgrade('stadium')}>
-            Upgrade to Lvl {facilities.stadiumLevel + 1} (${FACILITY_UPGRADE_COSTS.stadium[facilities.stadiumLevel].toLocaleString()})
-          </button>
-        {:else}
-          <button class="secondary" disabled>Max Level</button>
-        {/if}
-      </div>
 
-      <div class="facility-card">
-        <div class="facility-header">
-          <h3>🏋️ Training Grounds</h3>
-          <span class="level-badge">Lvl {facilities.trainingLevel}</span>
+        <div class="facility-card">
+          <div class="facility-header">
+            <h3>🏋️ Training Grounds</h3>
+            <span class="level-badge">Lvl {facilities.trainingLevel}</span>
+          </div>
+          <p class="desc">Improves Youth Academy prospects and XP gains.</p>
+          <p class="cost-info">Maintenance: ${FACILITY_MAINTENANCE_COSTS.training[facilities.trainingLevel - 1].toLocaleString()}/yr</p>
+          {#if facilities.trainingLevel < 5}
+            <button class="primary" onclick={() => handleUpgrade('training')}>
+              Upgrade to Lvl {facilities.trainingLevel + 1} (${FACILITY_UPGRADE_COSTS.training[facilities.trainingLevel].toLocaleString()})
+            </button>
+          {:else}
+            <button class="secondary" disabled>Max Level</button>
+          {/if}
         </div>
-        <p class="desc">Improves Youth Academy prospects and XP gains.</p>
-        <p class="cost-info">Maintenance: ${FACILITY_MAINTENANCE_COSTS.training[facilities.trainingLevel - 1].toLocaleString()}/yr</p>
-        {#if facilities.trainingLevel < 5}
-          <button class="primary" onclick={() => handleUpgrade('training')}>
-            Upgrade to Lvl {facilities.trainingLevel + 1} (${FACILITY_UPGRADE_COSTS.training[facilities.trainingLevel].toLocaleString()})
-          </button>
-        {:else}
-          <button class="secondary" disabled>Max Level</button>
-        {/if}
-      </div>
 
-      <div class="facility-card">
-        <div class="facility-header">
-          <h3>🏥 Medical Center</h3>
-          <span class="level-badge">Lvl {facilities.medicalLevel}</span>
+        <div class="facility-card">
+          <div class="facility-header">
+            <h3>🏥 Medical Center</h3>
+            <span class="level-badge">Lvl {facilities.medicalLevel}</span>
+          </div>
+          <p class="desc">Speeds up injury recovery and reduces fatigue.</p>
+          <p class="cost-info">Maintenance: ${FACILITY_MAINTENANCE_COSTS.medical[facilities.medicalLevel - 1].toLocaleString()}/yr</p>
+          {#if facilities.medicalLevel < 5}
+            <button class="primary" onclick={() => handleUpgrade('medical')}>
+              Upgrade to Lvl {facilities.medicalLevel + 1} (${FACILITY_UPGRADE_COSTS.medical[facilities.medicalLevel].toLocaleString()})
+            </button>
+          {:else}
+            <button class="secondary" disabled>Max Level</button>
+          {/if}
         </div>
-        <p class="desc">Speeds up injury recovery and reduces fatigue.</p>
-        <p class="cost-info">Maintenance: ${FACILITY_MAINTENANCE_COSTS.medical[facilities.medicalLevel - 1].toLocaleString()}/yr</p>
-        {#if facilities.medicalLevel < 5}
-          <button class="primary" onclick={() => handleUpgrade('medical')}>
-            Upgrade to Lvl {facilities.medicalLevel + 1} (${FACILITY_UPGRADE_COSTS.medical[facilities.medicalLevel].toLocaleString()})
-          </button>
-        {:else}
-          <button class="secondary" disabled>Max Level</button>
-        {/if}
       </div>
     </div>
 
     <div class="column">
       <h2>Your Staff</h2>
-      <div class="staff-list">
+      <div class="staff-grid">
         {#if staff.length === 0}
           <p class="empty-state">No staff members hired.</p>
         {:else}
@@ -170,8 +172,8 @@
         {/if}
       </div>
 
-      <h2 style="margin-top: 32px;">Job Market</h2>
-      <div class="staff-list">
+      <h2 style="margin-top: 16px;">Job Market</h2>
+      <div class="staff-grid">
         {#if staffMarket.length === 0}
           <p class="empty-state">Market is currently empty.</p>
         {:else}
@@ -203,7 +205,7 @@
   }
   
   .header {
-    margin-bottom: 24px;
+    margin-bottom: 12px;
   }
   
   .subtitle {
@@ -212,12 +214,12 @@
   
   .budget-panel {
     display: flex;
-    gap: 24px;
+    gap: 10px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 32px;
+    padding: 14px;
+    margin-bottom: 16px;
   }
   
   .budget-item {
@@ -249,7 +251,7 @@
     color: white;
     padding: 12px 20px;
     border-radius: 6px;
-    margin-bottom: 24px;
+    margin-bottom: 12px;
     font-weight: bold;
     text-align: center;
     animation: fadeInOut 3s forwards;
@@ -265,15 +267,40 @@
   .grid-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 32px;
+    gap: 10px;
+    align-items: start;
+  }
+
+  .column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .facility-grid,
+  .staff-grid {
+    display: grid;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .facility-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  .staff-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   }
   
   .facility-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 16px;
+    padding: 14px;
   }
   
   .facility-header {
@@ -299,30 +326,40 @@
   .desc {
     color: var(--text-secondary);
     font-size: 14px;
+    line-height: 1.5;
+    min-height: 2.8em;
     margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   
   .cost-info {
     font-size: 12px;
     color: var(--warning);
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
-  
-  .staff-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+
+  .facility-card button {
+    margin-top: auto;
   }
   
   .staff-card {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: start;
+    height: 100%;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-left: 4px solid var(--border-color);
     border-radius: 8px;
-    padding: 16px;
+    padding: 14px;
+  }
+
+  .staff-card button {
+    align-self: start;
   }
   
   .staff-card.tier-common { border-left-color: #bdc3c7; }
@@ -333,6 +370,10 @@
   .staff-info h4 {
     margin: 0 0 4px 0;
     font-size: 16px;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .staff-info .role {
@@ -340,18 +381,28 @@
     color: var(--text-secondary);
     display: block;
     margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .staff-info .effect {
     font-size: 13px;
     color: var(--text-primary);
+    line-height: 1.45;
     margin: 0 0 8px 0;
+    min-height: 2.9em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   
   .costs {
     display: flex;
-    gap: 16px;
+    gap: 10px;
     font-size: 12px;
+    flex-wrap: wrap;
   }
   
   .cost { color: var(--danger); }
@@ -362,8 +413,16 @@
     font-style: italic;
   }
 
+  .staff-grid .empty-state {
+    grid-column: 1 / -1;
+  }
+
   @media (max-width: 768px) {
     .grid-layout {
+      grid-template-columns: 1fr;
+    }
+    .facility-grid,
+    .staff-grid {
       grid-template-columns: 1fr;
     }
     .budget-panel {

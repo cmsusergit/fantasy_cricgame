@@ -1,5 +1,6 @@
 import type { FactionType } from './faction';
 import { FACTIONS } from './faction';
+import type { Injury } from '../core/injurySystem';
 
 export type PlayerRole = 'batsman' | 'allrounder' | 'bowler' | 'wicketkeeper';
 
@@ -25,6 +26,7 @@ export type BattingRole = 'Top Order' | 'Middle Order' | 'Finisher' | 'Tail Ende
 export interface Player {
   id: string;
   name: string;
+  originalName?: string;
   role: PlayerRole;
   bowlingType: BowlingType;
   battingType?: BattingType;
@@ -52,6 +54,8 @@ export interface Player {
     runs: number;
     wickets: number;
   };
+  activeInjury?: Injury | null;
+  isInjured?: boolean;
 }
 
 // Base stats for 180-200 average runs on the 20-100 scale

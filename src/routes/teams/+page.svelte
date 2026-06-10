@@ -74,7 +74,7 @@
       {#each teams as team}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="team-selector-item" class:active={selectedTeamId === team.id} onclick={() => selectedTeamId = team.id} style="border-left-color: {getFactionColor(team.faction)}">
+        <div class="team-selector-item" class:active={selectedTeamId === team.id} onclick={() => selectedTeamId = team.id} style="border-left-color: {team.colorPrimary}">
           <div class="team-name">{team.name} {team.isUserTeam ? '(You)' : ''}</div>
           <div class="team-faction">{getFactionName(team.faction)}</div>
         </div>
@@ -84,9 +84,9 @@
 
   <div class="team-details">
     {#if selectedTeam && teamStrength}
-      <div class="team-header" style="border-top: 4px solid {getFactionColor(selectedTeam.faction)}">
+      <div class="team-header" style="border-top: 4px solid {selectedTeam.colorPrimary}; background: linear-gradient(135deg, {selectedTeam.colorPrimary}15, {selectedTeam.colorSecondary}30);">
         <div class="header-main">
-          <h1>{selectedTeam.name}</h1>
+          <h1 style="color: {selectedTeam.colorPrimary}">{selectedTeam.name}</h1>
           <div class="coach-badge">Coach: {selectedTeam.coach}</div>
         </div>
         <div class="team-meta">
@@ -155,7 +155,7 @@
         
         <div class="players-grid">
           {#each displayedPlayers as player}
-             <PlayerCard {player} hideAvailability={true} />
+             <PlayerCard {player} hideAvailability={true} teamColorPrimary={selectedTeam.colorPrimary} teamColorSecondary={selectedTeam.colorSecondary} />
           {/each}
         </div>
       </div>
@@ -168,7 +168,7 @@
     max-width: 1200px;
     margin: 0 auto;
     display: flex;
-    gap: 24px;
+    gap: 10px;
     padding-bottom: 60px;
   }
   
@@ -178,7 +178,7 @@
   }
   
   .teams-sidebar h3 {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border-color);
   }
@@ -190,7 +190,7 @@
   }
   
   .team-selector-item {
-    padding: 12px;
+    padding: 14px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-left-width: 4px;
@@ -225,10 +225,10 @@
   
   .team-header {
     background: var(--bg-secondary);
-    padding: 24px;
+    padding: 14px;
     border-radius: 8px;
     border: 1px solid var(--border-color);
-    margin-bottom: 24px;
+    margin-bottom: 12px;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -249,7 +249,7 @@
   
   .team-meta {
     display: flex;
-    gap: 32px;
+    gap: 10px;
     text-align: right;
   }
   
@@ -267,7 +267,7 @@
   }
   
   .meta-item .value {
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 600;
     text-transform: capitalize;
   }
@@ -279,19 +279,19 @@
   .analysis-panel {
     display: grid;
     grid-template-columns: 2fr 1fr;
-    gap: 24px;
-    margin-bottom: 32px;
+    gap: 10px;
+    margin-bottom: 16px;
   }
   
   .strength-bars, .star-players {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 20px;
+    padding: 14px;
   }
   
   .strength-bars h3, .star-players h3 {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     font-size: 16px;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -301,7 +301,7 @@
   .stat-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     margin-bottom: 12px;
   }
   
@@ -362,13 +362,13 @@
     text-transform: capitalize;
   }
 
-  .roster-section h3 { margin-bottom: 16px; }
+  .roster-section h3 { margin-bottom: 12px; }
 
   .roster-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
   }
 
   .role-filter {
@@ -382,7 +382,7 @@
   .players-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
+    gap: 10px;
   }
 
   @media (max-width: 768px) {
@@ -402,7 +402,7 @@
     }
     .team-meta {
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       text-align: left;
     }
   }

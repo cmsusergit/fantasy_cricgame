@@ -11,7 +11,7 @@ export const INTENT_MULTIPLIERS: Record<IntentType, number> = {
   very_aggressive: 3.0
 };
 
-export type BallResult = 'dot' | 'single' | 'four' | 'six' | 'wicket' | 'noball' | 'wide';
+export type BallResult = 'dot' | 'single' | 'two' | 'three' | 'four' | 'six' | 'wicket' | 'noball' | 'wide';
 
 export type BallType = 'normal' | 'bouncer' | 'yorker' | 'slower' | 'inswinger' | 'outswinger' | 'off_spin' | 'leg_spin' | 'googly' | 'doosra' | 'arm_ball';
 
@@ -44,6 +44,8 @@ export interface innings {
   impactUsed?: boolean;
   powerplayRuns?: number;
   deathOverRuns?: number;
+  batsmanConcentration?: Record<string, number>;
+  bowlerRhythm?: Record<string, number>;
 }
 
 export interface Match {

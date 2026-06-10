@@ -52,12 +52,12 @@
 
   let winnerName = $derived(state.currentBidderId ? $teamStore.find((t: Team) => t.id === state.currentBidderId)?.name : 'Nobody');
 
-  let logListContainer: HTMLDivElement;
-
   $effect(() => {
-    // Scroll to bottom of log when new entries are added
-    if (logListContainer) {
-      logListContainer.scrollTop = logListContainer.scrollHeight;
+    state.auctionLog.length;
+    if (typeof document === 'undefined') return;
+    const logWrapper = document.querySelector('.log-list-wrapper') as HTMLDivElement | null;
+    if (logWrapper) {
+      logWrapper.scrollTop = logWrapper.scrollHeight;
     }
   });
 </script>
@@ -111,8 +111,8 @@
                Bid ${nextBidAmount.toLocaleString()}
             </button>
             <div style="display: flex; gap: 8px; margin-top: 8px;">
-               <button class="btn-pass" onclick={() => auctionStore.fastForwardPlayer()} style="flex: 1; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 8px; font-weight: bold; cursor: pointer;">Pass (Auto-Bid)</button>
-               <button class="btn-end" onclick={() => { auctionStore.autoComplete(); skipToTournament(); }} style="flex: 1; padding: 12px; background: var(--danger); border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer;">End Auction</button>
+               <button class="btn-pass" onclick={() => auctionStore.fastForwardPlayer()} style="flex: 1; padding: 14px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 8px; font-weight: bold; cursor: pointer;">Pass (Auto-Bid)</button>
+               <button class="btn-end" onclick={() => { auctionStore.autoComplete(); skipToTournament(); }} style="flex: 1; padding: 14px; background: var(--danger); border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer;">End Auction</button>
             </div>
             {#if currentBudget < nextBidAmount}
                <p class="error-msg">Insufficient Funds!</p>
@@ -124,7 +124,7 @@
 
          <div class="auction-log">
              <h3>Activity Log</h3>
-             <div class="log-list-wrapper" bind:this={logListContainer}>
+             <div class="log-list-wrapper">
                <ul class="log-list">
                    {#each state.auctionLog as log}
                       <li class="log-entry" 
@@ -152,17 +152,17 @@
 </div>
 
 <style>
-  .auction-page { max-width: 1200px; margin: 0 auto; padding: 20px; font-family: sans-serif; }
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; background: var(--bg-secondary); padding: 16px 24px; border-radius: 12px; border: 1px solid var(--border-color); }
-  .header h1 { color: var(--warning); margin: 0; font-size: 2rem; text-transform: uppercase; letter-spacing: 1px; }
-  .purse-display { font-size: 1.25rem; font-weight: 600; display: flex; gap: 12px; align-items: center; }
-  .purse-display .success { color: var(--success); font-size: 1.5rem; font-family: monospace; }
-  .purse-display .danger { color: var(--danger); font-size: 1.5rem; font-family: monospace; }
+  .auction-page { max-width: 1200px; margin: 0 auto; padding: 14px; font-family: sans-serif; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: var(--bg-secondary); padding: 16px 24px; border-radius: 12px; border: 1px solid var(--border-color); }
+  .header h1 { color: var(--warning); margin: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
+  .purse-display { font-size: 1rem; font-weight: 600; display: flex; gap: 10px; align-items: center; }
+  .purse-display .success { color: var(--success); font-size: 1rem; font-family: monospace; }
+  .purse-display .danger { color: var(--danger); font-size: 1rem; font-family: monospace; }
   
-  .auction-layout { display: flex; gap: 24px; height: 75vh; min-height: 600px; }
+  .auction-layout { display: flex; gap: 10px; height: 75vh; min-height: 600px; }
   
-  .main-stage { flex: 2; background: radial-gradient(circle at center, var(--bg-tertiary), var(--bg-secondary)); border: 2px solid var(--warning); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(245, 158, 11, 0.15); perspective: 1000px; }
-  .stage-header { position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.5); padding: 12px; text-align: center; font-weight: 800; letter-spacing: 2px; color: var(--text-muted); border-bottom: 1px solid rgba(245, 158, 11, 0.3); z-index: 10; }
+  .main-stage { flex: 2; background: radial-gradient(circle at center, var(--bg-tertiary), var(--bg-secondary)); border: 2px solid var(--warning); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; box-shadow: none; perspective: 1000px; }
+  .stage-header { position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.5); padding: 14px; text-align: center; font-weight: 800; letter-spacing: 2px; color: var(--text-muted); border-bottom: 1px solid rgba(245, 158, 11, 0.3); z-index: 10; }
   .player-showcase { 
     transform: scale(1.3); transform-origin: center; z-index: 10; 
     animation: card-appear 0.8s ease-out forwards;
@@ -175,20 +175,20 @@
     100% { transform: scale(1.3) translateY(0) rotateX(0deg); opacity: 1; }
   }
   
-  .bidding-sidebar { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+  .bidding-sidebar { flex: 1; display: flex; flex-direction: column; gap: 10px; }
   .bid-status { background: var(--bg-secondary); padding: 32px 24px; border-radius: 12px; text-align: center; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
   .bid-status h2 { font-size: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-  .bid-amount { font-size: 3rem; font-weight: 900; color: var(--success); font-family: monospace; margin-bottom: 8px; }
-  .bidder { font-size: 1.25rem; font-weight: 700; color: var(--info); }
+  .bid-amount { font-size: 1.75rem; font-weight: 900; color: var(--success); font-family: monospace; margin-bottom: 8px; }
+  .bidder { font-size: 1rem; font-weight: 700; color: var(--info); }
   
   .timer-container { background: var(--bg-tertiary); height: 40px; border-radius: 20px; position: relative; overflow: hidden; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; }
   .timer-bar { position: absolute; top: 0; left: 0; bottom: 0; background: var(--success); transition: width 1s linear, background-color 0.3s; z-index: 1; }
   .timer-bar.warning { background: var(--danger); animation: pulse-red 1s infinite alternate; }
   
-  .timer-text { position: relative; z-index: 2; font-weight: 800; font-family: monospace; font-size: 1.2rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); color: white; }
+  .timer-text { position: relative; z-index: 2; font-weight: 800; font-family: monospace; font-size: 1.1rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); color: white; }
   
-  .bid-actions { background: var(--bg-secondary); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); text-align: center; }
-  .btn-bid { width: 100%; padding: 20px; font-size: 1.5rem; font-weight: 800; background: var(--info); color: white; border: none; border-radius: 12px; cursor: pointer; transition: transform 0.1s, background 0.2s; text-transform: uppercase; box-shadow: 0 6px 0 #1e40af; margin-bottom: 8px; }
+  .bid-actions { background: var(--bg-secondary); padding: 14px; border-radius: 12px; border: 1px solid var(--border-color); text-align: center; }
+  .btn-bid { width: 100%; padding: 14px; font-size: 1rem; font-weight: 800; background: var(--info); color: white; border: none; border-radius: 12px; cursor: pointer; transition: transform 0.1s, background 0.2s; text-transform: uppercase; box-shadow: none; margin-bottom: 8px; }
   .btn-bid:active:not(:disabled) { transform: translateY(6px); box-shadow: none; }
   .btn-bid:hover:not(:disabled) { background: #3b82f6; filter: brightness(1.1); }
   .btn-bid:disabled { background: var(--bg-tertiary); color: var(--text-muted); cursor: not-allowed; box-shadow: none; transform: none; border: 1px solid var(--border-color); }
@@ -197,7 +197,7 @@
   .info-msg { color: var(--success); font-weight: 600; font-size: 0.9rem; }
   
   .auction-log { flex: 1; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
-  .auction-log h3 { padding: 12px 16px; margin: 0; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); }
+  .auction-log h3 { padding: 16px 20px; margin: 0; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); }
   .log-list-wrapper {
     flex: 1;
     overflow-y: auto;

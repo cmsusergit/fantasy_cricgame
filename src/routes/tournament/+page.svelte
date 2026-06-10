@@ -202,7 +202,7 @@
   h1 { margin-bottom: 4px; }
   .subtitle {
     color: var(--text-secondary);
-    margin-bottom: 32px;
+    margin-bottom: 16px;
   }
   
   .home-tag {
@@ -218,22 +218,22 @@
   .user-standings {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
     background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
     border: 2px solid var(--success);
     border-radius: 8px;
     padding: 16px 24px;
-    margin-bottom: 24px;
+    margin-bottom: 12px;
   }
   
   .user-standings .position {
-    font-size: 24px;
+    font-size: 15px;
     font-weight: 700;
   }
   
   .user-standings .team-name {
     flex: 1;
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 600;
   }
   
@@ -245,12 +245,12 @@
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 32px;
+    padding: 14px;
+    margin-bottom: 16px;
   }
   
   .standings-table h2 {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
   
   table {
@@ -259,7 +259,7 @@
   }
   
   th, td {
-    padding: 12px;
+    padding: 14px;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
   }
@@ -275,28 +275,28 @@
   }
   
   .matches-section h2 {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
   
   .matches-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
   
   .matches-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 24px;
+    gap: 10px;
+    margin-bottom: 12px;
   }
   
   .match-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 16px;
+    padding: 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -309,7 +309,7 @@
   .match-teams {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     margin-bottom: 4px;
   }
   
@@ -348,7 +348,7 @@
   .tabs {
     display: flex;
     gap: 8px;
-    margin-bottom: 24px;
+    margin-bottom: 12px;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 8px;
   }
@@ -370,7 +370,7 @@
   }
 
   .schedule-filters {
-    margin-bottom: 24px;
+    margin-bottom: 12px;
   }
   
   .schedule-filters select {
@@ -383,7 +383,7 @@
   }
 
   .schedule-day-group {
-    margin-bottom: 32px;
+    margin-bottom: 16px;
   }
   
   .day-header {
@@ -400,19 +400,19 @@
   .leaderboard-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 24px;
+    gap: 10px;
   }
   
   .leaderboard-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 16px;
+    padding: 14px;
   }
   
   .leaderboard-card h2 {
-    margin-bottom: 16px;
-    font-size: 18px;
+    margin-bottom: 12px;
+    font-size: 15px;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 8px;
   }

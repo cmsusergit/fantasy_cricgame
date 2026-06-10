@@ -6,6 +6,15 @@
   export let inningsList: innings[];
   export let teams: Team[];
   export let matchComplete: boolean = false;
+  export let matchResult: any = null;
+
+  $: userTeam = teams.find(t => t.isUserTeam) || null;
+  $: userTeamId = userTeam?.id || null;
+  $: fanUpdateLabels = userTeamId && inningsList[0]
+    ? (inningsList[0].teamId === userTeamId
+      ? { first: 'Your club', second: 'Opponent club' }
+      : { first: 'Opponent club', second: 'Your club' })
+    : { first: 'Team 1', second: 'Team 2' };
 
   let expandedDetails = -1;
 
@@ -112,15 +121,19 @@
       return bestPlayer;
   }
 
-  const pom = calculatePlayerOfTheMatch();
+  const pom = matchResult?.playerOfTheMatch?.name || calculatePlayerOfTheMatch();
 
 </script>
 
 <div class="match-summary">
     {#if matchComplete && pom}
         <div class="pom-card">
-            <h3>🏆 Player of the Match</h3>
-            <p class="pom-name">{pom}</p>
+            <p class="eyebrow">Broadcast highlight</p>
+            <h3>Player of the Match</h3>
+            <p class="pom-name">{typeof pom === 'string' ? pom : pom.name}</p>
+            {#if matchResult?.playerOfTheMatch?.stats}
+              <p class="pom-stats">{matchResult.playerOfTheMatch.stats}</p>
+            {/if}
         </div>
     {/if}
 
@@ -134,14 +147,14 @@
                     <span class="innings-score">{inn.totalRuns}/{inn.wickets} <small>({Math.floor(inn.balls/6)}.{inn.balls%6} ov)</small></span>
                 </div>
 
-                <div class="commentary-toggle" style="border-top: none; background: transparent; padding: 12px 20px;">
+                <div class="commentary-toggle">
                     <button class="btn-toggle" on:click={() => toggleDetails(index)}>
                         {expandedDetails === index ? 'Hide' : 'Show'} Detailed Scorecard
                     </button>
                 </div>
 
                 {#if expandedDetails === index}
-                <div class="scorecard" style="border-top: 1px solid var(--border-color);">
+                <div class="scorecard">
                     <table class="batting-table">
                         <thead>
                             <tr>
@@ -213,83 +226,260 @@
             </div>
         {/if}
     {/each}
+
+    {#if matchComplete && matchResult}
+      <div class="afterglow-grid">
+        {#if matchResult.fanUpdates}
+          <div class="afterglow-card info">
+            <p class="eyebrow">Crowd pulse</p>
+            <h4>Fan impact</h4>
+            <div class="afterglow-row">
+              <span>{fanUpdateLabels.first} popularity</span>
+              <strong>{matchResult.fanUpdates.team1?.popularity ?? '-'}</strong>
+            </div>
+            <div class="afterglow-row">
+              <span>{fanUpdateLabels.first} home advantage</span>
+              <strong>{matchResult.fanUpdates.team1?.homeAdvantage ?? 0}</strong>
+            </div>
+            <div class="afterglow-row">
+              <span>{fanUpdateLabels.second} popularity</span>
+              <strong>{matchResult.fanUpdates.team2?.popularity ?? '-'}</strong>
+            </div>
+            <div class="afterglow-row">
+              <span>{fanUpdateLabels.second} home advantage</span>
+              <strong>{matchResult.fanUpdates.team2?.homeAdvantage ?? 0}</strong>
+            </div>
+          </div>
+        {/if}
+
+        {#if matchResult.injuries?.length}
+          <div class="afterglow-card danger">
+            <p class="eyebrow">Medical report</p>
+            <h4>Post-match injuries</h4>
+            <div class="injury-list">
+              {#each matchResult.injuries as injury}
+                <div class="afterglow-row">
+                  <span>{injury.playerName}</span>
+                  <strong>{injury.type}</strong>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/if}
 </div>
 
 <style>
-    .match-summary { display: flex; flex-direction: column; gap: 24px; width: 100%; }
-    
-    .pom-card {
-        background: linear-gradient(135deg, rgba(var(--accent-fire-rgb), 0.2), rgba(var(--accent-fire-rgb), 0.1));
-        border: 1px solid rgba(var(--accent-fire-rgb), 0.5);
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
+    .match-summary {
+        display: grid;
+        gap: 1rem;
+        width: 100%;
     }
-    .pom-card h3 { color: var(--warning); margin-bottom: 8px; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
-    .pom-name { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); }
 
+    .pom-card,
+    .afterglow-card,
     .innings-card {
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
+        position: relative;
         overflow: hidden;
+        padding: 1rem;
+        border-radius: 18px;
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)),
+            var(--bg-surface);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        box-shadow: none;
+    }
+
+    .pom-card {
+        display: grid;
+        gap: 0.35rem;
+        text-align: center;
+        background:
+            linear-gradient(135deg, rgba(var(--accent-gold-rgb), 0.16), rgba(var(--accent-fire-rgb), 0.1)),
+            var(--bg-surface);
+        border-color: rgba(var(--accent-gold-rgb), 0.24);
+    }
+
+    .pom-card h3 {
+        color: var(--warning);
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+    }
+
+    .pom-name {
+        font-size: clamp(1.4rem, 2.6vw, 2rem);
+        font-weight: 800;
+    }
+
+    .pom-stats {
+        color: var(--text-secondary);
+        font-size: 0.92rem;
     }
 
     .innings-header {
-        background: rgba(0,0,0,0.2);
-        padding: 16px 20px;
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid var(--border-color);
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.8rem;
+        padding-bottom: 0.85rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
     }
-    .innings-header h4 { font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin: 0; }
-    .innings-score { font-size: 1.25rem; font-weight: 800; color: var(--text-primary); }
-    .innings-score small { font-size: 0.9rem; font-weight: 400; color: var(--text-muted); }
 
-    .scorecard { padding: 20px; overflow-x: auto; }
-    
-    table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.95rem; }
-    th { padding: 8px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border-color); }
-    td { padding: 10px 8px; border-bottom: 1px solid rgba(150, 150, 150, 0.1); }
-    
-    .text-left { text-align: left; }
-    .font-semibold { font-weight: 600; }
-    .font-bold { font-weight: 700; }
-    .text-sm { font-size: 0.85rem; }
-    .text-gray-400 { color: var(--text-muted); }
-    .text-blue-400 { color: var(--info); }
-    
-    .not-out { color: var(--success); }
-    .mt-4 { margin-top: 16px; }
+    .innings-header h4 {
+        font-size: 1.05rem;
+        color: var(--text-primary);
+    }
+
+    .innings-score {
+        font-size: 1.1rem;
+        font-weight: 800;
+    }
+
+    .innings-score small {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .scorecard {
+        padding-top: 0.85rem;
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: center;
+        font-size: 0.92rem;
+    }
+
+    th {
+        padding: 0.55rem 0.5rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    td {
+        padding: 0.7rem 0.5rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    .text-left {
+        text-align: left;
+    }
+
+    .font-semibold {
+        font-weight: 600;
+    }
+
+    .font-bold {
+        font-weight: 700;
+    }
+
+    .text-sm {
+        font-size: 0.85rem;
+    }
+
+    .text-gray-400 {
+        color: var(--text-muted);
+    }
+
+    .text-blue-400 {
+        color: var(--info);
+    }
+
+    .not-out {
+        color: var(--success);
+    }
 
     .commentary-toggle {
-        padding: 12px 20px;
-        background: rgba(0,0,0,0.1);
-        border-top: 1px solid var(--border-color);
-        text-align: center;
+        display: flex;
+        justify-content: center;
+        padding: 0.75rem 0 0;
     }
+
     .btn-toggle {
-        background: var(--bg-tertiary);
-        border: 1px solid var(--border-color);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(148, 163, 184, 0.14);
         color: var(--text-primary);
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: background 0.2s;
+        padding: 0.75rem 1rem;
+        border-radius: 999px;
+        font-weight: 700;
     }
-    .btn-toggle:hover { background: var(--border-color); }
+
+    .btn-toggle:hover {
+        border-color: rgba(var(--accent-sapphire-rgb), 0.32);
+        background: rgba(var(--accent-sapphire-rgb), 0.12);
+    }
 
     .detailed-analysis {
-        padding: 20px;
-        border-top: 1px solid var(--border-color);
-        background: var(--bg-primary);
+        padding-top: 1rem;
+        border-top: 1px solid rgba(148, 163, 184, 0.12);
     }
-    .detailed-analysis h5 { color: var(--text-primary); margin-bottom: 16px; font-size: 1.1rem; }
+
+    .detailed-analysis h5 {
+        margin-bottom: 0.8rem;
+        color: var(--text-secondary);
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+    }
+
     .commentary-scroll {
-        max-height: 300px;
+        max-height: 280px;
         overflow-y: auto;
-        padding-right: 10px;
+        padding-right: 0.35rem;
+    }
+
+    .afterglow-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+    }
+
+    .afterglow-card {
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    .afterglow-card.info {
+        border-color: rgba(var(--accent-sapphire-rgb), 0.24);
+        background:
+            linear-gradient(180deg, rgba(var(--accent-sapphire-rgb), 0.08), rgba(255, 255, 255, 0)),
+            var(--bg-surface);
+    }
+
+    .afterglow-card.danger {
+        border-color: rgba(var(--accent-ruby-rgb), 0.24);
+        background:
+            linear-gradient(180deg, rgba(var(--accent-ruby-rgb), 0.08), rgba(255, 255, 255, 0)),
+            var(--bg-surface);
+    }
+
+    .afterglow-card h4 {
+        font-size: 1rem;
+    }
+
+    .afterglow-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.55rem 0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+    }
+
+    .afterglow-row:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .injury-list {
+        display: grid;
+        gap: 0.35rem;
     }
 </style>

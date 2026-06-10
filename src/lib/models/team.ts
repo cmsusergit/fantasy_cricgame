@@ -39,6 +39,8 @@ export interface Team {
   personality: TeamPersonality;
   tendency: TeamTendency;
   faction?: FactionType;
+  colorPrimary: string;
+  colorSecondary: string;
   playing11?: string[]; // Array of player IDs
   captain?: string; // Player ID
   wicketKeeper?: string; // Player ID

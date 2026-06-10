@@ -144,26 +144,26 @@
   .scouting-page {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 24px;
+    padding: 14px;
   }
 
   .page-header {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 32px;
+    margin-bottom: 16px;
   }
 
   .page-header h1 {
-    font-size: 2.5rem;
+    font-size: 1rem;
     color: var(--text-primary);
     margin-bottom: 8px;
   }
 
   .subtitle {
     color: var(--text-secondary);
-    font-size: 1.2rem;
-    margin-bottom: 20px;
+    font-size: 1.1rem;
+    margin-bottom: 16px;
   }
 
   .budget-panel {
@@ -173,11 +173,11 @@
     border-radius: 20px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
 
   .budget-label { color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; }
-  .budget-value { color: var(--success); font-size: 1.5rem; font-weight: 800; font-family: monospace; }
+  .budget-value { color: var(--success); font-size: 1rem; font-weight: 800; font-family: monospace; }
 
   .info-banner {
     background: rgba(59, 130, 246, 0.15);
@@ -185,7 +185,7 @@
     color: var(--info);
     padding: 16px 24px;
     border-radius: 8px;
-    margin-bottom: 32px;
+    margin-bottom: 16px;
     line-height: 1.5;
   }
 
@@ -198,7 +198,7 @@
     color: white;
     font-weight: 600;
     z-index: 100;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: none;
     animation: slideIn 0.3s ease-out;
   }
 
@@ -210,36 +210,36 @@
   .players-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 40px;
+    gap: 10px;
+    margin-bottom: 12px;
   }
 
   .scout-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 16px;
+    padding: 14px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 10px;
     transition: transform 0.2s, box-shadow 0.2s;
   }
 
   .scout-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    box-shadow: none;
   }
 
   .player-header {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 12px;
   }
 
   .faction-icon {
-    font-size: 1.5rem;
+    font-size: 1rem;
     background: var(--bg-tertiary);
     width: 40px;
     height: 40px;
@@ -250,7 +250,7 @@
   }
 
   .player-info { display: flex; flex-direction: column; }
-  .player-info .name { font-weight: 700; font-size: 1.1rem; }
+  .player-info .name { font-weight: 700; font-size: 1rem; }
   .player-info .role { font-size: 0.85rem; color: var(--text-secondary); text-transform: capitalize; }
 
   .hidden-stats {
@@ -261,7 +261,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
     min-height: 120px;
   }
 
@@ -274,7 +274,7 @@
   }
 
   .question-mark {
-    font-size: 3rem;
+    font-size: 1.75rem;
     font-weight: 800;
     line-height: 1;
     opacity: 0.5;
@@ -295,7 +295,7 @@
     background: var(--info);
     color: white;
     border: none;
-    padding: 12px;
+    padding: 14px;
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
@@ -307,7 +307,7 @@
   .empty-state {
     grid-column: 1 / -1;
     text-align: center;
-    padding: 40px;
+    padding: 14px;
     background: var(--bg-tertiary);
     border-radius: 12px;
     color: var(--text-secondary);
@@ -322,12 +322,12 @@
     background: var(--success);
     color: white;
     padding: 16px 32px;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 700;
     border-radius: 12px;
     border: none;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(35, 134, 54, 0.4);
+    box-shadow: none;
     transition: transform 0.2s;
   }
 

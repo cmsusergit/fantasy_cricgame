@@ -8,6 +8,17 @@ import { TEAM_PERSONALITIES, createTeamTendency, PERSONALITY_NAMES } from '../co
 import { generateTournamentSchedule, type TournamentSchedule, type ScheduledMatch, type GameDay } from '../core/schedule';
 import { saveGame, loadGame, clearSave } from '../services/storage';
 
+const TEAM_COLORS = [
+  { primary: '#0969da', secondary: '#24292f' },
+  { primary: '#1a7f37', secondary: '#24292f' },
+  { primary: '#cf222e', secondary: '#24292f' },
+  { primary: '#9a6700', secondary: '#24292f' },
+  { primary: '#8250df', secondary: '#24292f' },
+  { primary: '#0598bc', secondary: '#24292f' },
+  { primary: '#bf3989', secondary: '#24292f' },
+  { primary: '#ff7b72', secondary: '#24292f' },
+];
+
 function createPlayerStore() {
   const { subscribe, set, update } = writable<Player[]>([]);
 
@@ -83,7 +94,9 @@ function createTeamStore() {
           injuries: [],
           personality: isUserTeam ? 'balanced' : TEAM_PERSONALITIES[i - 1] || 'balanced',
           tendency: createTeamTendency(isUserTeam ? 'balanced' : TEAM_PERSONALITIES[i - 1] || 'balanced'),
-          faction
+          faction,
+          colorPrimary: TEAM_COLORS[i % TEAM_COLORS.length].primary,
+          colorSecondary: TEAM_COLORS[i % TEAM_COLORS.length].secondary
         });
       }
       
@@ -99,6 +112,28 @@ function createTeamStore() {
               matchesPlayed: t.matchesPlayed + 1,
               runsFor: t.runsFor + runsFor,
               runsAgainst: t.runsAgainst + runsAgainst
+            };
+          }
+          return t;
+        })
+      );
+    },
+    renamePlayer: (teamId: string, playerId: string, newName: string) => {
+      update(teams =>
+        teams.map(t => {
+          if (t.id === teamId) {
+            return {
+              ...t,
+              players: t.players.map(p => {
+                if (p.id === playerId) {
+                  return {
+                    ...p,
+                    name: newName,
+                    originalName: p.originalName || p.name
+                  };
+                }
+                return p;
+              })
             };
           }
           return t;
@@ -351,7 +386,9 @@ export async function initializeGame(teamName: string = 'Your Team', managerName
         injuries: [],
         personality,
         tendency,
-        faction
+        faction,
+        colorPrimary: TEAM_COLORS[i % TEAM_COLORS.length].primary,
+        colorSecondary: TEAM_COLORS[i % TEAM_COLORS.length].secondary
       });
     }
     

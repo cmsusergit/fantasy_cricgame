@@ -88,7 +88,17 @@ export function getFactionArchetype(faction: FactionType): 'balanced' | 'tech' |
   return FACTIONS[faction].archetype;
 }
 
+const FACTION_PORTRAIT_COUNTS: Record<FactionType, number> = {
+  dwarf: 36,
+  elf: 16,
+  goblin: 25,
+  human: 16,
+  nightelf: 16,
+  orc: 30
+};
+
 export function getAvatarUrl(factionType: FactionType, portraitId: number): string {
-  const localId = ((portraitId - 1) % 5) + 1;
-  return `/portraits/${factionType}_${localId}.svg`;
+  const maxCount = FACTION_PORTRAIT_COUNTS[factionType] || 1;
+  const localId = (portraitId % maxCount).toString().padStart(3, '0');
+  return `/assets/factionportrit/${factionType}/tile${localId}.png`;
 }

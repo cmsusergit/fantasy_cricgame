@@ -160,7 +160,9 @@ export function generateAITeam(
           sponsorships: [],
           tournamentWins: 0,
           injuries: [],    personality,
-    tendency
+    tendency,
+    colorPrimary: '#0969da',
+    colorSecondary: '#24292f'
   };
 }
 
@@ -189,7 +191,9 @@ export function generateUserTeam(playerPool: Player[]): Team {
     tournamentWins: 0,
     injuries: [],
     personality: 'balanced',
-    tendency
+    tendency,
+    colorPrimary: '#0969da',
+    colorSecondary: '#24292f'
   };
 }
 

@@ -140,7 +140,7 @@
   .review-page {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 14px;
   }
 
   .loading {
@@ -158,22 +158,22 @@
     border-top-color: transparent;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   @keyframes spin { 100% { transform: rotate(360deg); } }
 
   .review-header {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 12px;
     background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
-    padding: 40px;
+    padding: 14px;
     border-radius: 16px;
     border: 1px solid var(--border-color);
   }
 
   .review-header h1 {
-    font-size: 2.5rem;
+    font-size: 1rem;
     color: var(--warning);
     margin-bottom: 8px;
     text-transform: uppercase;
@@ -183,29 +183,29 @@
   .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr 2fr;
-    gap: 24px;
-    margin-bottom: 40px;
+    gap: 10px;
+    margin-bottom: 12px;
   }
 
   .panel {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 24px;
+    padding: 14px;
   }
 
   .panel h2 {
-    font-size: 1.5rem;
-    margin-bottom: 20px;
+    font-size: 1rem;
+    margin-bottom: 16px;
     border-bottom: 2px solid var(--border-color);
     padding-bottom: 10px;
   }
 
   .stat-card {
     background: var(--bg-tertiary);
-    padding: 20px;
+    padding: 14px;
     border-radius: 8px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -230,7 +230,7 @@
   }
 
   .stat-card .value {
-    font-size: 2rem;
+    font-size: 1rem;
     font-weight: 800;
     font-family: monospace;
   }
@@ -241,7 +241,7 @@
 
   .awards-grid {
     display: flex;
-    gap: 20px;
+    gap: 10px;
     flex-wrap: wrap;
   }
 
@@ -249,11 +249,11 @@
     flex: 1;
     min-width: 250px;
     background: var(--bg-tertiary);
-    padding: 16px;
+    padding: 14px;
     border-radius: 8px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
 
   .award-card.mvp {
@@ -274,21 +274,21 @@
 
   .info-text {
     color: var(--text-secondary);
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
 
   .retiring-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
   }
 
   .retired-item {
     background: var(--bg-tertiary);
-    padding: 12px 16px;
+    padding: 16px 20px;
     border-radius: 6px;
     display: flex;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
     border-left: 3px solid var(--danger);
   }
@@ -300,19 +300,19 @@
   .actions {
     display: flex;
     justify-content: center;
-    margin-top: 40px;
+    margin-top: 12px;
   }
 
   .btn-primary {
     background: var(--success);
     color: white;
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: 700;
     padding: 16px 32px;
     border: none;
     border-radius: 12px;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(35, 134, 54, 0.4);
+    box-shadow: none;
     transition: transform 0.2s;
   }
 

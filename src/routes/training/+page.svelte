@@ -130,22 +130,22 @@
   h1 { margin-bottom: 4px; }
   .subtitle {
     color: var(--text-secondary);
-    margin-bottom: 24px;
+    margin-bottom: 12px;
   }
   
   .budget-display {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 16px 24px;
-    margin-bottom: 24px;
+    margin-bottom: 12px;
   }
   
   .budget-display .amount {
-    font-size: 24px;
+    font-size: 15px;
     font-weight: 700;
     color: var(--accent-dwarf);
   }
@@ -153,19 +153,19 @@
   .training-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 24px;
+    gap: 10px;
   }
   
   .players-section, .training-section {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 16px;
+    padding: 14px;
   }
   
   h2 {
-    margin-bottom: 16px;
-    font-size: 18px;
+    margin-bottom: 12px;
+    font-size: 15px;
   }
   
   .players-list {
@@ -177,8 +177,8 @@
   .player-row {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px;
+    gap: 10px;
+    padding: 14px;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     border-radius: 6px;
@@ -221,7 +221,7 @@
   }
   
   .selected-player {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     padding-bottom: 16px;
     border-bottom: 1px solid var(--border-color);
   }
@@ -241,14 +241,14 @@
   .training-options {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
   
   .training-card {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 12px;
+    gap: 10px;
+    padding: 14px;
     background: var(--bg-tertiary);
     border-radius: 6px;
   }
@@ -278,7 +278,7 @@
   .select-prompt {
     text-align: center;
     color: var(--text-secondary);
-    padding: 40px;
+    padding: 14px;
   }
   
   @media (max-width: 768px) {

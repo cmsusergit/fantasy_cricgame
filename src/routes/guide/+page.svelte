@@ -171,7 +171,7 @@
   }
   
   .header {
-    margin-bottom: 32px;
+    margin-bottom: 16px;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 16px;
   }
@@ -182,7 +182,7 @@
   
   .guide-layout {
     display: flex;
-    gap: 32px;
+    gap: 10px;
   }
   
   .sidebar {
@@ -191,7 +191,7 @@
   }
   
   .sidebar h3 {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     text-transform: uppercase;
     font-size: 14px;
     letter-spacing: 1px;
@@ -206,7 +206,7 @@
   
   .topic-btn {
     text-align: left;
-    padding: 12px 16px;
+    padding: 16px 20px;
     background: transparent;
     border: 1px solid var(--border-color);
     border-left-width: 4px;
@@ -232,30 +232,30 @@
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 32px;
+    padding: 14px;
     line-height: 1.6;
   }
 
   .content-pane h2 {
-    margin-bottom: 24px;
+    margin-bottom: 12px;
     color: var(--accent-gold);
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 8px;
   }
 
   .content-pane h3 {
-    margin-top: 24px;
+    margin-top: 12px;
     margin-bottom: 12px;
     color: var(--text-primary);
   }
 
   .content-pane p {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     color: var(--text-primary);
   }
 
   .content-pane ul, .content-pane ol {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     padding-left: 24px;
   }
 
@@ -264,23 +264,23 @@
   }
 
   .pro-tip {
-    padding: 16px;
+    padding: 14px;
     background: rgba(35, 134, 54, 0.1);
     border-left: 4px solid var(--success);
     border-radius: 4px;
-    margin-top: 24px;
+    margin-top: 12px;
   }
 
   .faction-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-top: 16px;
+    gap: 10px;
+    margin-top: 12px;
   }
 
   .faction-card {
     background: var(--bg-tertiary);
-    padding: 16px;
+    padding: 14px;
     border-radius: 6px;
     border: 1px solid var(--border-color);
   }

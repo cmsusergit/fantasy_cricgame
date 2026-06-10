@@ -5,7 +5,7 @@
   import type { Player } from '$lib/models/player';
   import PlayerCard from '$lib/components/team/PlayerCard.svelte';
   import { MAX_SQUAD_SIZE } from '$lib/core/retentionSystem';
-  import { dndzone } from 'svelte-dnd-action';
+  import { dndzone, type DndEvent } from 'svelte-dnd-action';
 
   let teams: any[] = $state([]);
   let userTeam = $derived(teams.find((t: any) => t.isUserTeam));
@@ -54,11 +54,11 @@
     );
   })());
 
-  function handleDndConsider(e: CustomEvent<DndEvent<Player[]>>) {
+  function handleDndConsider(e: CustomEvent<DndEvent<Player>>) {
     dndPlayers = e.detail.items;
   }
 
-  function handleDndFinalize(e: CustomEvent<DndEvent<Player[]>>) {
+  function handleDndFinalize(e: CustomEvent<DndEvent<Player>>) {
     dndPlayers = e.detail.items;
     playing11 = dndPlayers.filter(p => playing11.includes(p.id)).map(p => p.id);
   }
@@ -165,14 +165,14 @@
 </svelte:head>
 
 <div class="squad-page">
-  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px;">
     <div>
       <h1>🛡️ Squad Selection</h1>
       <p class="subtitle" style="margin-bottom: 0;">Strategize and finalize your playing 11 for the upcoming match.</p>
     </div>
     <div style="text-align: right;">
       <span style="font-size: 0.9rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Roster Size</span>
-      <div style="font-size: 1.5rem; font-family: 'Cinzel', serif; font-weight: bold; color: {userTeam?.players.length === MAX_SQUAD_SIZE ? 'var(--warning)' : 'var(--text-primary)'};">
+      <div style="font-size: 1rem; font-family: 'Cinzel', serif; font-weight: bold; color: {userTeam?.players.length === MAX_SQUAD_SIZE ? 'var(--warning)' : 'var(--text-primary)'};">
         {userTeam?.players.length || 0} <span style="font-size: 1rem; color: var(--text-muted);">/ {MAX_SQUAD_SIZE}</span>
       </div>
     </div>
@@ -211,11 +211,15 @@
         {@const isWk = wicketKeeper === player.id}
         
         <div class="player-wrapper">
-          {#if isCaptain}
-            <div class="role-badge captain" title="Captain">C</div>
-          {/if}
-          {#if isWk}
-            <div class="role-badge wk" title="Wicket Keeper">WK</div>
+          {#if isCaptain || isWk}
+            <div class="role-badges" aria-hidden="true">
+              {#if isCaptain}
+                <div class="role-badge captain" title="Captain">C</div>
+              {/if}
+              {#if isWk}
+                <div class="role-badge wk" title="Wicket Keeper">WK</div>
+              {/if}
+            </div>
           {/if}
           <PlayerCard 
             {player} 
@@ -224,6 +228,10 @@
             actionText="Add to 11"
             selectedActionText="Remove from 11"
             onSelect={() => togglePlayerSelection(player)}
+            allowRename={true}
+            onRename={(newName) => teamStore.renamePlayer('user_team', player.id, newName)}
+            teamColorPrimary={userTeam?.colorPrimary}
+            teamColorSecondary={userTeam?.colorSecondary}
           >
             <div class="player-controls" style="margin-top: 8px;">
               <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -302,18 +310,18 @@
   
   .subtitle {
     color: var(--text-secondary);
-    margin-bottom: 24px;
+    margin-bottom: 12px;
   }
   
   .budget-display {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 16px 24px;
-    margin-bottom: 24px;
+    margin-bottom: 12px;
   }
   
   .budget-display .label {
@@ -322,7 +330,7 @@
   }
   
   .budget-display .amount {
-    font-size: 24px;
+    font-size: 15px;
     font-weight: 700;
     color: var(--warning);
   }
@@ -333,8 +341,8 @@
   
   .filters {
     display: flex;
-    gap: 12px;
-    margin-bottom: 24px;
+    gap: 10px;
+    margin-bottom: 12px;
     align-items: center;
   }
   
@@ -359,17 +367,58 @@
   
   .players-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 32px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 10px;
+    align-items: stretch;
+    margin-bottom: 16px;
   }
-  
+
   .player-wrapper {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    height: 100%;
+    min-width: 0;
   }
-  
+
+  .role-badges {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.75rem;
+    display: flex;
+    gap: 0.35rem;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .role-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.9rem;
+    height: 1.45rem;
+    padding: 0 0.45rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    box-shadow: none;
+  }
+
+  .role-badge.captain {
+    background: rgba(var(--accent-gold-rgb), 0.94);
+    color: #211300;
+    border-color: rgba(var(--accent-gold-rgb), 0.34);
+  }
+
+  .role-badge.wk {
+    background: rgba(var(--accent-sapphire-rgb), 0.94);
+    color: #071425;
+    border-color: rgba(var(--accent-sapphire-rgb), 0.34);
+  }
+
   .player-controls {
     display: flex;
     gap: 8px;
@@ -414,7 +463,7 @@
     right: 0;
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-color);
-    padding: 20px;
+    padding: 14px;
     z-index: 100;
   }
   
@@ -424,8 +473,8 @@
   
   .status-details {
     display: flex;
-    gap: 24px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 12px;
     padding-top: 12px;
     border-top: 1px solid var(--border-color);
     font-size: 14px;
@@ -461,22 +510,22 @@
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    margin-top: 40px;
+    margin-top: 12px;
   }
   
   .empty-icon {
     font-size: 48px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
   
   .empty-state h2 {
-    font-size: 24px;
+    font-size: 15px;
     margin-bottom: 12px;
   }
   
   .empty-state p {
     color: var(--text-secondary);
-    margin-bottom: 24px;
+    margin-bottom: 12px;
   }
   
   @media (max-width: 768px) {
@@ -495,7 +544,7 @@
     
     .bid-btn {
       position: static;
-      margin-top: 16px;
+      margin-top: 12px;
       max-width: 100%;
     }
   }

@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { teamStore, scheduleStore } from '$lib/stores/gameState';
-  import { resolveBall, updateFatigueAndMorale, calculateRunRate, resolveMatch } from '$lib/core/matchEngine';
+  import { getAvatarUrl } from '$lib/models/faction';
+  import { loadActiveMatch, saveActiveMatch, clearActiveMatch } from '$lib/services/storage';
+  import { resolveBall, updateFatigueAndMorale, calculateCurrentRunRate, getOverBalls, resolveMatch } from '$lib/core/matchEngine';
   import { getAIIntent } from '$lib/core/teamBuilder';
   import type { Player } from '$lib/models/player';
   import type { Team } from '$lib/models/team';
@@ -10,6 +12,7 @@
   import MatchControls, { type SimSpeed } from '$lib/components/match/MatchControls.svelte';
   import BallFeed from '$lib/components/match/BallFeed.svelte';
   import Scoreboard from '$lib/components/match/Scoreboard.svelte';
+  import ScorecardDrawer from '$lib/components/match/ScorecardDrawer.svelte';
   import MatchSummary from '$lib/components/match/MatchSummary.svelte';
   import { goto } from '$app/navigation';
   
@@ -42,8 +45,8 @@
   let currentBowlerIndex = $state(0);
   let ballInterval: any = null;
   
-  let gameSpeed: SimSpeed = $state('ball');
-  let autoPlayDelay = $state(1000);
+  let gameSpeed = $state<SimSpeed>('ball');
+
   let isComplete = $state(false);
   let battingIntent: IntentType = $state('balanced');
   let bowlingIntent: IntentType = $state('balanced');
@@ -51,14 +54,110 @@
   let avoidSingles = $state(false);  
   let noMatchAvailable = $state(false);
   let autoResume = $state(false);
+  let speed = $state<'instant' | 'ball' | 'over'>('instant');
+  let autoPlayDelay = $state<number>(1000);
+  let targetOver = $state<number>(15);
+  
+  type SimTarget = { type: 'innings' | 'over' | 'specific_over' | 'wicket', value?: number } | null;
+  let simulationTarget = $state<SimTarget>(null);
+
+  // Derived properties - Order matters!
+  let currentInningsData = $derived(currentInnings === 1 ? innings1 : innings2);
+  let currentBattingTeam = $derived(
+    currentInnings === 1 
+      ? (innings1.teamId === matchTeam1?.id ? matchTeam1 : matchTeam2)
+      : (innings2.teamId === matchTeam1?.id ? matchTeam1 : matchTeam2)
+  );
+  let currentBowlingTeam = $derived(
+    currentInnings === 1 
+      ? (innings1.teamId === matchTeam1?.id ? matchTeam2 : matchTeam1)
+      : (innings2.teamId === matchTeam1?.id ? matchTeam2 : matchTeam1)
+  );
+
+  
+  let runRate = $derived(calculateCurrentRunRate(currentInningsData));
+  let currentOverBalls = $derived(getOverBalls(currentInningsData));
+
+  let showSuggestion = $state(false);
+  let currentSuggestion = $derived.by(() => {
+     if (!currentInningsData) return "No suggestions available yet.";
+     
+     const totalOvers = 20; // Assuming T20 for now
+     const currentOver = Math.floor(currentInningsData.balls / 6);
+     const isBatting = currentBattingTeam?.id === 'user_team';
+     const isBowling = currentBowlingTeam?.id === 'user_team';
+     const wickets = currentInningsData.wickets;
+     const runRateValue = parseFloat(calculateCurrentRunRate(currentInningsData));
+     const reqRate = target ? ((target - currentInningsData.totalRuns) / Math.max(1, (120 - currentInningsData.balls))) * 6 : null;
+
+     let suggestion = "";
+     
+     let currentBatsman: Player | undefined;
+     let currentBowler: Player | undefined;
+
+     if (isBatting) {
+        currentBatsman = currentBattingTeam?.players.find(p => p.id === currentInningsData.currentBatsmen[0]);
+        if (!currentBatsman) return "Error: Current batsman not found.";
+        
+        if (currentOver < 6) {
+           suggestion = "Powerplay! Exploit field restrictions.";
+           if (currentBatsman.stats.power > 70) suggestion += ` ${currentBatsman.name} is powerful, consider 'Aggressive' intent.`;
+           else if (currentBatsman.stats.technique > 70) suggestion += ` ${currentBatsman.name} has good technique, 'Balanced' might preserve wickets.`;
+           
+           if (wickets >= 2) suggestion += " Early wickets lost! Maybe drop to 'Balanced' or 'Defensive' to rebuild, especially if current batsman has low technique.";
+           else suggestion += " 'Aggressive' intent is usually good.";
+
+        } else if (currentOver > 15) {
+           suggestion = "Death overs!";
+           if (currentBatsman.stats.power > 80) suggestion += ` ${currentBatsman.name} is a strong hitter, go 'Very Aggressive' to maximize runs.`;
+           else suggestion += " Try to hit boundaries, go 'Aggressive' or 'Very Aggressive'.";
+           
+        } else { // Middle overs
+           if (wickets >= 5) suggestion = "Middle overs, lost too many wickets. Play 'Defensive' to survive.";
+           else if (reqRate && reqRate > runRateValue + 2) suggestion = "Falling behind required rate! Time to shift to 'Aggressive'.";
+           else suggestion = "Middle overs. 'Balanced' is a safe bet to keep the scoreboard ticking.";
+
+           if (currentBatsman.stats.technique < 50) suggestion += ` ${currentBatsman.name}'s technique is low, be cautious.`;
+        }
+     } else if (isBowling) {
+        currentBowler = currentBowlingTeam?.players.find(p => p.id === selectedBowlerId); // Using selectedBowlerId for user intent
+        
+        if (phase === 'selectOpeningBowler' || phase === 'selectNextBowler') {
+            const topBowlers = getAvailableBowlers().sort((a,b) => b.stats.bowling - a.stats.bowling);
+            if (topBowlers.length > 0) suggestion = `Consider selecting ${topBowlers[0].name} (Bowling: ${topBowlers[0].stats.bowling}). `;
+            suggestion += "Look for bowlers with good stamina if you want them for multiple overs.";
+        } else if (currentBowler) {
+            if (currentOver < 6) {
+               suggestion = "Powerplay! Batsmen will attack.";
+               if (currentBowler.stats.bowling > 75) suggestion += ` ${currentBowler.name} is a strong bowler, 'Aggressive' might get an early wicket.`;
+               else suggestion += " 'Defensive' can stem the flow.";
+            } else if (currentOver > 15) {
+               suggestion = "Death overs!";
+               if (currentBowler.bowlingType === 'fast' || currentBowler.bowlingType === 'swinger') suggestion += ` ${currentBowler.name} can bowl 'Yorker' or 'Slower' balls. Use 'Defensive' intent.`;
+               else if (currentBowler.bowlingType === 'spinner') suggestion += ` ${currentBowler.name} might try variations like 'Googly' or 'Arm Ball'. Use 'Defensive' intent.`;
+               else suggestion += " Use 'Defensive' intent with appropriate ball types.";
+            } else { // Middle overs
+               if (runRateValue > 9) suggestion = "They are scoring fast! 'Defensive' intent and 'Avoid Singles' might help.";
+               else suggestion = "Middle overs. 'Balanced' or 'Aggressive' to try and break partnerships.";
+
+               if (currentBowler.stats.bowling < 60) suggestion += ` ${currentBowler.name}'s bowling skill is moderate, be careful with 'Aggressive' intent.`;
+            }
+        } else {
+            suggestion = "Select a bowler to get more specific advice!";
+        }
+     }
+
+     return suggestion;
+  });
 
   let selectedBatsmen = $state<string[]>([]);
+  let tempSelectedBowlerId = $state<string | null>(null);
   let selectedBowlerId = $state<string | null>(null);
   let pendingBowlerSelection = $state(false);
   let placeholderBatsman = $state<string | null>(null);
 
   let showFullBattingDrawer = $state(false);
-  let showFullBowlingDrawer = $state(false);
+  let showScorecardDrawer = $state(false);
 
   let tossWinner = $state<string | null>(null);
   let tossChoice = $state<'bat' | 'bowl' | null>(null);
@@ -71,7 +170,8 @@
   function createEmptyInnings(): innings {
     return {
       teamId: '', totalRuns: 0, wickets: 0, overs: 0, balls: 0, extras: 0,
-      ballsFaced: [], battingOrder: [], currentBatsmen: ['', '']
+      ballsFaced: [], battingOrder: [], currentBatsmen: ['', ''],
+      batsmanConcentration: {}, bowlerRhythm: {}
     };
   }
   
@@ -96,40 +196,87 @@
     }
     return 'balanced';
   }
-  
+
+  async function initMatchState(s: any) {
+    if (s && teams.length >= 2 && phase === 'loading') {
+      const userMatch = s.matches.find((m: any) => 
+        m.status === 'scheduled' && 
+        (m.team1Id === 'user_team' || m.team2Id === 'user_team') &&
+        m.day === s.currentDay
+      );
+      
+      const userT = teams.find(t => t.id === 'user_team');
+      
+      if (userMatch) {
+        if (!userT || !userT.playing11 || userT.playing11.length !== 11 || !userT.captain || !userT.wicketKeeper) {
+          phase = 'invalidSquad';
+          return;
+        }
+
+        currentMatch = userMatch;
+        matchTeam1 = teams.find(t => t.id === userMatch.team1Id) || null;
+        matchTeam2 = teams.find(t => t.id === userMatch.team2Id) || null;
+        
+        // Check for existing saved match state
+        const savedMatch = await loadActiveMatch();
+        if (savedMatch && savedMatch.matchId === userMatch.id) {
+            phase = savedMatch.phase as Phase;
+            innings1 = savedMatch.innings1;
+            innings2 = savedMatch.innings2;
+            currentInnings = savedMatch.currentInnings;
+            target = savedMatch.target;
+            weather = savedMatch.weather;
+            pitch = savedMatch.pitch;
+            tossWinner = savedMatch.tossWinner;
+            tossChoice = savedMatch.tossChoice;
+            currentBowlerIndex = savedMatch.currentBowlerIndex;
+            selectedBatsmen = savedMatch.selectedBatsmen;
+            selectedBowlerId = savedMatch.selectedBowlerId;
+            placeholderBatsman = savedMatch.placeholderBatsman;
+            pendingBowlerSelection = savedMatch.pendingBowlerSelection;
+        } else {
+            weather = getRandomWeather();
+            pitch = getRandomPitch();
+            phase = 'toss';
+            clearActiveMatch();
+        }
+      } else {
+        noMatchAvailable = true;
+      }
+    }
+  }
+
   onMount(() => {
     const unsubTeam = teamStore.subscribe(t => teams = t);
     const unsubSchedule = scheduleStore.subscribe(s => {
       schedule = s;
-      if (s && teams.length >= 2 && phase === 'loading') {
-        const userMatch = s.matches.find(m => 
-          m.status === 'scheduled' && 
-          (m.team1Id === 'user_team' || m.team2Id === 'user_team') &&
-          m.day === s.currentDay
-        );
-        
-        const userT = teams.find(t => t.id === 'user_team');
-        
-        if (userMatch) {
-          if (!userT || !userT.playing11 || userT.playing11.length !== 11 || !userT.captain || !userT.wicketKeeper) {
-            phase = 'invalidSquad';
-            return;
-          }
-
-          currentMatch = userMatch;
-          matchTeam1 = teams.find(t => t.id === userMatch.team1Id) || null;
-          matchTeam2 = teams.find(t => t.id === userMatch.team2Id) || null;
-          weather = getRandomWeather();
-          pitch = getRandomPitch();
-          phase = 'toss';
-        } else {
-          noMatchAvailable = true;
-        }
-      }
+      initMatchState(s);
     });
     
     return () => { unsubTeam(); unsubSchedule(); };
   });
+
+  function syncActiveMatchState() {
+      if (!currentMatch || phase === 'loading' || phase === 'invalidSquad' || phase === 'complete' || noMatchAvailable) return;
+      saveActiveMatch({
+          matchId: currentMatch.id,
+          phase,
+          innings1,
+          innings2,
+          currentInnings,
+          target,
+          weather,
+          pitch,
+          tossWinner,
+          tossChoice,
+          currentBowlerIndex,
+          selectedBatsmen,
+          selectedBowlerId,
+          placeholderBatsman,
+          pendingBowlerSelection,
+          savedAt: Date.now()
+      });
+  }
   
   function getPlaying11(team: Team) {
     return team.playing11 && team.playing11.length === 11 
@@ -229,37 +376,16 @@
     if (phase === 'playing') {
       phase = 'paused';
       autoResume = false;
+      simulationTarget = null;
       if (ballInterval) clearInterval(ballInterval);
-    } else if (phase === 'paused') {
-      phase = 'playing';
-      autoResume = true;
-      if (gameSpeed === 'instant') simulateFullMatch();
-      else if (gameSpeed === 'over') simulateOver();
-      else playAutoBall();
     }
   }
   
   function handleSpeedChange(speed: SimSpeed) {
     gameSpeed = speed;
-    if (phase === 'playing') {
-      if (ballInterval) clearInterval(ballInterval);
-      if (speed === 'instant') simulateFullMatch();
-      else if (speed === 'over') simulateOver();
-      else playAutoBall();
-    }
   }
   
-  let currentInningsData = $derived(currentInnings === 1 ? innings1 : innings2);
-  let currentBattingTeam = $derived(
-    currentInnings === 1 
-      ? (innings1.teamId === matchTeam1?.id ? matchTeam1 : matchTeam2)
-      : (innings2.teamId === matchTeam1?.id ? matchTeam1 : matchTeam2)
-  );
-  let currentBowlingTeam = $derived(
-    currentInnings === 1 
-      ? (innings1.teamId === matchTeam1?.id ? matchTeam2 : matchTeam1)
-      : (innings2.teamId === matchTeam1?.id ? matchTeam2 : matchTeam1)
-  );
+
 
   function getTeamName(teamId: string) {
     return teamId === matchTeam1?.id ? matchTeam1?.name : matchTeam2?.name;
@@ -368,7 +494,36 @@
 
     const bowlingFieldingAvg = currentBowlingTeam.players.filter(p => getPlaying11(currentBowlingTeam).includes(p.id)).reduce((sum, p) => sum + (p.stats.fielding || 60), 0) / 11;
 
-    const ballEvent = resolveBall(striker, bowler, currentInn.balls, totalOvers, battingIntent, weather as any, pitch as any, 0, false, bowlingIntent, avoidSingles, bowlingFieldingAvg, currentBallType);
+    if (!currentInn.batsmanConcentration) currentInn.batsmanConcentration = {};
+    if (currentInn.batsmanConcentration[strikerId] === undefined) currentInn.batsmanConcentration[strikerId] = 0;
+    let conc = currentInn.batsmanConcentration[strikerId];
+    let concMult = 1.0 + (conc / 100) * 0.15;
+
+    if (!currentInn.bowlerRhythm) currentInn.bowlerRhythm = {};
+    if (currentInn.bowlerRhythm[bowlerId] === undefined) currentInn.bowlerRhythm[bowlerId] = 0;
+    let rhythm = currentInn.bowlerRhythm[bowlerId];
+    let rhythmMult = 1.0 + (rhythm / 100) * 0.15;
+
+    const ballEvent = resolveBall(striker, bowler, currentInn.balls, totalOvers, battingIntent, weather as any, pitch as any, 0, false, bowlingIntent, avoidSingles, bowlingFieldingAvg, currentBallType, concMult, rhythmMult);
+
+    if (ballEvent.result === 'dot') {
+       conc = Math.max(0, conc - 5);
+       rhythm = Math.min(100, rhythm + 5);
+    } else if (ballEvent.runs === 4 || ballEvent.runs === 6) {
+       conc = Math.min(100, conc + 15);
+       rhythm = Math.max(0, rhythm - 10);
+    } else if (ballEvent.runs > 0) {
+       conc = Math.min(100, conc + 5);
+    }
+    if (ballEvent.result === 'wide' || ballEvent.result === 'noball') {
+       rhythm = Math.max(0, rhythm - 5);
+    }
+    if (ballEvent.isWicket) {
+       rhythm = Math.min(100, rhythm + 25);
+    }
+
+    currentInn.batsmanConcentration[strikerId] = conc;
+    currentInn.bowlerRhythm[bowlerId] = rhythm;
     
     // Trigger impact animations
     if (ballEvent.isWicket) {
@@ -444,7 +599,7 @@
     if (needsBatsman) {
         phase = 'selectNextBatsman';
         if (ballInterval) clearInterval(ballInterval);
-        if (needsBowler) pendingBowlerSelection = true;
+        if (pendingBowlerSelection) pendingBowlerSelection = false; // Clear pending if batsman selected first
         return true;
     } else if (needsBowler) {
         phase = 'selectNextBowler';
@@ -455,42 +610,66 @@
     return false;
   }
 
-  function playAutoBall() {
-    if (phase !== 'playing' || isComplete) return;
-    executeSingleBall();
-    if (!isComplete && phase === 'playing') {
-      ballInterval = setTimeout(playAutoBall, autoPlayDelay);
-    }
+  function handleSimulateTarget(target: SimTarget) {
+      if (phase !== 'paused' && phase !== 'playing' && phase !== 'ready') return;
+      simulationTarget = target;
+      phase = 'playing';
+      autoResume = true;
+      if (ballInterval) clearInterval(ballInterval);
+      playTargetedLoop();
   }
 
-  function simulateOver() {
+  function playTargetedLoop() {
     if (phase !== 'playing' || isComplete) return;
-    
+
     const currentInn = currentInnings === 1 ? innings1 : innings2;
-    const ballsInOver = currentInn.balls % 6;
-    const ballsToBowl = ballsInOver === 0 ? 6 : 6 - ballsInOver;
+    const initialBalls = currentInn.balls;
+
+    const phaseChanged = executeSingleBall();
+    syncActiveMatchState();
+
+    if (isComplete) {
+        simulationTarget = null;
+        return;
+    }
     
-    for (let i = 0; i < ballsToBowl; i++) {
-      if (isComplete || phase !== 'playing') break;
-      const phaseChanged = executeSingleBall();
-      if (phaseChanged) break;
+    if (phaseChanged || phase !== 'playing') {
+        if ((phase as string) === 'inningBreak') {
+            simulationTarget = null;
+            autoResume = false;
+        }
+        // Paused for user selection. Keep autoResume and simulationTarget intact (unless innings break).
+        return;
     }
-    if (!isComplete && phase === 'playing') {
-      ballInterval = setTimeout(simulateOver, autoPlayDelay);
+
+    const newInn = currentInnings === 1 ? innings1 : innings2;
+    const lastBallEvent = newInn.ballsFaced[newInn.ballsFaced.length - 1];
+
+    let targetMet = false;
+    if (simulationTarget) {
+        if (simulationTarget.type === 'wicket' && lastBallEvent?.isWicket) targetMet = true;
+        if (simulationTarget.type === 'over' && newInn.balls % 6 === 0 && newInn.balls > initialBalls) targetMet = true;
+        if (simulationTarget.type === 'specific_over' && newInn.overs >= (simulationTarget.value || 20)) targetMet = true;
     }
-  }
-  
-  function simulateFullMatch() {
-    if (phase !== 'playing' || isComplete) return;
-    while (!isComplete && phase === 'playing') {
-      const phaseChanged = executeSingleBall();
-      if (phaseChanged) break;
+
+    if (targetMet) {
+        simulationTarget = null;
+        phase = 'paused';
+        return;
     }
+
+    let delay = autoPlayDelay;
+    if (gameSpeed === 'instant') {
+       delay = 10; 
+    }
+
+    ballInterval = setTimeout(playTargetedLoop, delay);
   }
 
   function playSingleBallAction() {
     if (phase === 'playing') return;
     executeSingleBall();
+    syncActiveMatchState();
   }
 
   function playSingleOverAction() {
@@ -764,8 +943,8 @@
       
       <!-- LEFT PANE: Batting Team -->
       <div class="pane left-pane">
-        <div class="pane-header batting-header">
-          <h3>{currentBattingTeam?.name}</h3>
+        <div class="pane-header batting-header" style="border-bottom-color: {currentBattingTeam?.colorPrimary}; background: linear-gradient(90deg, {currentBattingTeam?.colorPrimary}1A, transparent);">
+          <h3 style="color: {currentBattingTeam?.colorPrimary}">{currentBattingTeam?.name}</h3>
           <span class="role-badge">Batting</span>
         </div>
         
@@ -775,12 +954,22 @@
                <div class="selection-prompt">{phase === 'selectOpeningBatsmen' ? 'Pick 2 Openers' : 'Pick Next Batsman'}</div>
                <div class="selection-list">
                  {#each getAvailableBatsmen() as p}
-                    <button class="player-select-btn {selectedBatsmen.includes(p.id) ? 'selected' : ''}"
-                            data-faction={p.faction}
-                            onclick={() => phase === 'selectOpeningBatsmen' ? toggleBatsman(p.id) : confirmNextBatsman(p.id)}>
-                        <div class="player-info">
-                           <span class="name"><span class="faction-icon faction-{p.faction}">{p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}</span> {p.name}</span>
-                           <span class="role">{p.role} • {p.battingType || 'RHB'} • {p.battingRole || 'Middle Order'}{p.bowlingType && p.bowlingType !== 'none' ? ` • ${p.bowlingType}` : ''}</span>
+                 <button class="player-select-btn {selectedBatsmen.includes(p.id) ? 'selected' : ''}" 
+                         data-faction={p.faction} 
+                         style="--team-primary: {currentBattingTeam?.colorPrimary}; --team-secondary: {currentBattingTeam?.colorSecondary}; background-image: linear-gradient(135deg, {currentBattingTeam?.colorPrimary}15, {currentBattingTeam?.colorSecondary}30)"
+                         onclick={() => toggleBatsman(p.id)}
+                         disabled={!p.isAvailable || (p as any).activeInjury || p.fatigue > 90}>
+                        <div class="player-identity">
+                            <div class="avatar-wrapper">
+                                <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
+                                <div class="faction-badge-mini faction-{p.faction}">
+                                    {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
+                                </div>
+                            </div>
+                            <div class="player-info" style="text-align: left;">
+                               <span class="name">{p.name}</span>
+                               <span class="role">{p.role} • {p.battingType || 'RHB'} • {p.battingRole || 'Middle Order'}{p.bowlingType && p.bowlingType !== 'none' ? ` • ${p.bowlingType}` : ''}</span>
+                            </div>
                         </div>
                         <span class="stat-badge">Bat: {p.stats.batting}</span>
                     </button>
@@ -795,11 +984,19 @@
               {#each currentBattingTeam?.players.filter(p => getPlaying11(currentBattingTeam!).includes(p.id)) || [] as p}
                 {@const stats = getBatsmanStats(p.id)}
                 {#if stats.isBatting}
-                <div class="scorecard-item {stats.isBatting ? 'active' : ''}" data-faction={p.faction}>
+                <div class="scorecard-item {stats.isBatting ? 'active' : ''}" data-faction={p.faction} style="--team-primary: {currentBattingTeam?.colorPrimary}; --team-secondary: {currentBattingTeam?.colorSecondary}; background-image: linear-gradient(135deg, {currentBattingTeam?.colorPrimary}15, {currentBattingTeam?.colorSecondary}30)">
                     <div class="top-row">
-                        <span class="player-name {stats.isBatting ? 'highlight' : ''}">
-                          <span class="faction-icon faction-{p.faction}">{p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}</span> {p.name}
-                        </span>
+                        <div class="player-identity">
+                            <div class="avatar-wrapper">
+                                <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
+                                <div class="faction-badge-mini faction-{p.faction}">
+                                    {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
+                                </div>
+                            </div>
+                            <span class="player-name {stats.isBatting ? 'highlight' : ''}">
+                              {p.name}
+                            </span>
+                        </div>
                         <span class="player-score {stats.isBatting ? 'highlight' : ''}">{stats.runs} <span class="balls">({stats.balls})</span></span>
                     </div>
                     {#if stats.isOut}
@@ -814,41 +1011,9 @@
               {/each}
             </div>
 
-            <button class="btn-drawer-toggle" onclick={() => showFullBattingDrawer = true}>
+            <button class="btn-drawer-toggle" onclick={() => showScorecardDrawer = true}>
               View Full Scorecard
             </button>
-
-            {#if showFullBattingDrawer}
-              <!-- svelte-ignore a11y_click_events_have_key_events -->
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="drawer-overlay" onclick={() => showFullBattingDrawer = false}></div>
-              <div class="drawer batting-drawer">
-                <div class="drawer-header">
-                   <h3>{currentBattingTeam?.name} Scorecard</h3>
-                   <button class="btn-close" onclick={() => showFullBattingDrawer = false}>×</button>
-                </div>
-                <div class="drawer-content scorecard-list">
-                  {#each currentBattingTeam?.players.filter(p => getPlaying11(currentBattingTeam!).includes(p.id)) || [] as p}
-                    {@const stats = getBatsmanStats(p.id)}
-                    <div class="scorecard-item {stats.isBatting ? 'active' : ''}" data-faction={p.faction}>
-                        <div class="top-row">
-                            <span class="player-name {stats.isBatting ? 'highlight' : ''}">
-                          <span class="faction-icon faction-{p.faction}">{p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}</span> {p.name}
-                        </span>
-                            <span class="player-score {stats.isBatting ? 'highlight' : ''}">{stats.runs} <span class="balls">({stats.balls})</span></span>
-                        </div>
-                        {#if stats.isOut}
-                           <div class="status out">b. {stats.outType}</div>
-                        {:else if !stats.isBatting && stats.balls === 0}
-                           <div class="status waiting">Yet to bat</div>
-                        {:else if stats.isBatting}
-                           <div class="status playing"><span class="pulse-dot"></span> Batting</div>
-                        {/if}
-                    </div>
-                  {/each}
-                </div>
-              </div>
-            {/if}
           {/if}
         </div>
       </div>
@@ -859,13 +1024,25 @@
         <div class="scoreboard-panel">
            <div class="scoreboard-header">
              <span class="innings-label">{currentInnings === 1 ? '1st' : '2nd'} Innings</span>
-             <div class="conditions-mini">
-               <span title="Weather">{weatherEmojis[weather]} {weather}</span>
-               <span class="separator">|</span>
-               <span title="Pitch">{pitchEmojis[pitch]} {pitch}</span>
-             </div>
            </div>
-           <Scoreboard inningsData={currentInningsData} battingTeamName={currentBattingTeam?.name || ''} target={currentInnings === 2 ? target : undefined} />
+           <Scoreboard 
+              inningsData={currentInningsData} 
+              battingTeamName={currentBattingTeam?.name || ''} 
+              target={currentInnings === 2 ? target : undefined} 
+              {battingIntent}
+              {bowlingIntent}
+              isUserBatting={currentBattingTeam?.id === 'user_team'}
+              isUserBowling={currentBowlingTeam?.id === 'user_team'}
+              onBattingIntentChange={(i: IntentType) => battingIntent = i}
+              onBowlingIntentChange={(i: IntentType) => bowlingIntent = i}
+              ballType={currentBallType}
+              currentBowlerType={currentLiveBowlerId ? (currentBowlingTeam?.players.find(x => x.id === currentLiveBowlerId)?.bowlingType || 'none') : 'none'}
+              {avoidSingles}
+              onBallTypeChange={(b: BallType) => currentBallType = b}
+              onAvoidSinglesChange={(v: boolean) => avoidSingles = v}
+              weather={weather}
+              pitch={pitch}
+           />
         </div>
 
         {#if phase === 'ready'}
@@ -932,6 +1109,7 @@
           <div class="commentary-panel">
              <div class="commentary-header">
                <span>Live Commentary</span>
+               <button class="btn-secondary small" onclick={() => showScorecardDrawer = true}>View Scorecard</button>
                {#if currentLiveBowlerId}
                  {@const b = currentBowlingTeam?.players.find(x => x.id === currentLiveBowlerId)}
                  <span class="live-bowler">Bowling: {b?.name}</span>
@@ -943,17 +1121,37 @@
           </div>
         {:else}
           <div class="controls-panel">
-             <MatchControls bind:speed={gameSpeed} isPaused={phase === 'paused'} {battingIntent} {bowlingIntent} ballType={currentBallType} currentBowlerType={currentLiveBowlerId ? currentBowlingTeam?.players.find(x => x.id === currentLiveBowlerId)?.bowlingType : 'none'} {avoidSingles}
-               isUserBatting={currentBattingTeam?.id === 'user_team'} isUserBowling={currentBowlingTeam?.id === 'user_team'}
-               {autoPlayDelay} onAutoPlayDelayChange={(d) => autoPlayDelay = d}
-               onSpeedChange={handleSpeedChange} onPauseToggle={togglePause}
-               onBattingIntentChange={(i) => battingIntent = i} onBowlingIntentChange={(i) => bowlingIntent = i} onBallTypeChange={(b) => currentBallType = b} onAvoidSinglesChange={(v) => avoidSingles = v}
-               onPlaySingleBall={playSingleBallAction} onPlaySingleOver={playSingleOverAction} />
+             <MatchControls
+              isPaused={phase !== 'playing'}
+              onPause={togglePause}
+              onPlaySingleBall={playSingleBallAction}
+              onSimulateTarget={handleSimulateTarget}
+              bind:speed={gameSpeed}
+              autoPlayDelay={autoPlayDelay}
+              onSpeedChange={(s) => gameSpeed = s}
+              onAutoPlayDelayChange={(d: number) => autoPlayDelay = d}
+              battingIntent={battingIntent}
+              bowlingIntent={bowlingIntent}
+              ballType={currentBallType}
+              currentBowlerType={currentLiveBowlerId ? (currentBowlingTeam?.players.find(x => x.id === currentLiveBowlerId)?.bowlingType || 'none') : 'none'}
+              avoidSingles={avoidSingles}
+              isUserBatting={currentBattingTeam?.id === 'user_team'}
+              isUserBowling={currentBowlingTeam?.id === 'user_team'}
+              onBattingIntentChange={(i: IntentType) => battingIntent = i}
+              onBowlingIntentChange={(i: IntentType) => bowlingIntent = i}
+              onBallTypeChange={(b: BallType) => currentBallType = b}
+              onAvoidSinglesChange={(v: boolean) => avoidSingles = v}
+              currentInningsData={currentInningsData}
+              runRate={runRate}
+              currentOverBalls={currentOverBalls}
+              currentSuggestion={currentSuggestion}
+              />
           </div>
           
           <div class="commentary-panel">
              <div class="commentary-header">
                <span>Live Commentary</span>
+               <button class="btn-secondary small" onclick={() => showScorecardDrawer = true}>View Scorecard</button>
                {#if currentLiveBowlerId}
                  {@const b = currentBowlingTeam?.players.find(x => x.id === currentLiveBowlerId)}
                  <span class="live-bowler">Bowling: {b?.name}</span>
@@ -964,12 +1162,17 @@
              </div>
           </div>
         {/if}
+        <ScorecardDrawer bind:show={showScorecardDrawer}
+                         currentInningsData={currentInningsData}
+                         battingTeamPlayers={currentBattingTeam?.players || []}
+                         bowlingTeamPlayers={currentBowlingTeam?.players || []}
+        />
       </div>
 
       <!-- RIGHT PANE: Bowling Team -->
       <div class="pane right-pane">
-        <div class="pane-header bowling-header">
-          <h3>{currentBowlingTeam?.name}</h3>
+        <div class="pane-header bowling-header" style="border-bottom-color: {currentBowlingTeam?.colorPrimary}; background: linear-gradient(90deg, {currentBowlingTeam?.colorPrimary}1A, transparent);">
+          <h3 style="color: {currentBowlingTeam?.colorPrimary}">{currentBowlingTeam?.name}</h3>
           <span class="role-badge">Bowling</span>
         </div>
         
@@ -979,10 +1182,18 @@
                <div class="selection-prompt">Select Bowler for the Over</div>
                <div class="selection-list">
                  {#each getAvailableBowlers() as p}
-                    <button class="player-select-btn" data-faction={p.faction} onclick={() => confirmBowler(p.id)}>
-                        <div class="player-info">
-                           <span class="name"><span class="faction-icon faction-{p.faction}">{p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}</span> {p.name}</span>
-                           <span class="role">{p.role} • {p.battingType || 'RHB'} • {p.battingRole || 'Middle Order'}{p.bowlingType && p.bowlingType !== 'none' ? ` • ${p.bowlingType}` : ''}</span>
+                    <button class="player-select-btn" data-faction={p.faction} onclick={() => confirmBowler(p.id)} style="--team-primary: {currentBowlingTeam?.colorPrimary}; --team-secondary: {currentBowlingTeam?.colorSecondary}; background-image: linear-gradient(135deg, {currentBowlingTeam?.colorPrimary}15, {currentBowlingTeam?.colorSecondary}30)">
+                        <div class="player-identity">
+                            <div class="avatar-wrapper">
+                                <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
+                                <div class="faction-badge-mini faction-{p.faction}">
+                                    {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
+                                </div>
+                            </div>
+                            <div class="player-info" style="text-align: left;">
+                               <span class="name">{p.name}</span>
+                               <span class="role">{p.role} • {p.battingType || 'RHB'} • {p.battingRole || 'Middle Order'}{p.bowlingType && p.bowlingType !== 'none' ? ` • ${p.bowlingType}` : ''}</span>
+                            </div>
                         </div>
                         <span class="stat-badge">Bowl: {p.stats.bowling}</span>
                     </button>
@@ -994,11 +1205,19 @@
               {#each currentBowlingTeam?.players.filter(p => getPlaying11(currentBowlingTeam!).includes(p.id)) || [] as p}
                 {@const stats = getBowlerStats(p.id)}
                 {#if p.id === currentLiveBowlerId}
-                <div class="scorecard-item {p.id === currentLiveBowlerId ? 'active-bowl' : ''}" data-faction={p.faction}>
+                <div class="scorecard-item {p.id === currentLiveBowlerId ? 'active-bowl' : ''}" data-faction={p.faction} style="--team-primary: {currentBowlingTeam?.colorPrimary}; --team-secondary: {currentBowlingTeam?.colorSecondary}; background-image: linear-gradient(135deg, {currentBowlingTeam?.colorPrimary}15, {currentBowlingTeam?.colorSecondary}30)">
                     <div class="top-row">
-                        <span class="player-name {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">
-                           <span class="faction-icon faction-{p.faction}">{p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}</span> {p.name}
-                        </span>
+                        <div class="player-identity">
+                            <div class="avatar-wrapper">
+                                <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
+                                <div class="faction-badge-mini faction-{p.faction}">
+                                    {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
+                                </div>
+                            </div>
+                            <span class="player-name {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">
+                              {p.name}
+                            </span>
+                        </div>
                         <span class="player-score {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">{stats.wickets}-{stats.runs} <span class="overs">({stats.overs})</span></span>
                     </div>
                     {#if p.id === currentLiveBowlerId}
@@ -1009,39 +1228,9 @@
               {/each}
             </div>
 
-            <button class="btn-drawer-toggle" onclick={() => showFullBowlingDrawer = true}>
+            <button class="btn-drawer-toggle" onclick={() => showScorecardDrawer = true}>
               View Full Scorecard
             </button>
-
-            {#if showFullBowlingDrawer}
-              <!-- svelte-ignore a11y_click_events_have_key_events -->
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="drawer-overlay" onclick={() => showFullBowlingDrawer = false}></div>
-              <div class="drawer bowling-drawer">
-                <div class="drawer-header">
-                   <h3>{currentBowlingTeam?.name} Scorecard</h3>
-                   <button class="btn-close" onclick={() => showFullBowlingDrawer = false}>×</button>
-                </div>
-                <div class="drawer-content scorecard-list">
-                  {#each currentBowlingTeam?.players.filter(p => getPlaying11(currentBowlingTeam!).includes(p.id)) || [] as p}
-                    {@const stats = getBowlerStats(p.id)}
-                    {#if p.role === 'bowler' || p.role === 'allrounder' || stats.oversBowled > 0}
-                    <div class="scorecard-item {p.id === currentLiveBowlerId ? 'active-bowl' : ''}" data-faction={p.faction}>
-                        <div class="top-row">
-                            <span class="player-name {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">
-                           <span class="faction-icon faction-{p.faction}">{p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}</span> {p.name}
-                        </span>
-                            <span class="player-score {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">{stats.wickets}-{stats.runs} <span class="overs">({stats.overs})</span></span>
-                        </div>
-                        {#if p.id === currentLiveBowlerId}
-                           <div class="status playing-bowl"><span class="pulse-dot bowl"></span> Bowling Now</div>
-                        {/if}
-                    </div>
-                    {/if}
-                  {/each}
-                </div>
-              </div>
-            {/if}
           {/if}
         </div>
       </div>
@@ -1179,7 +1368,7 @@
   .toss-actions { display: flex; gap: 16px; justify-content: center; }
 
   /* Buttons */
-  button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+  button { font-family: var(--font-sports); cursor: pointer; border: none; outline: none; }
   .btn-primary { background: var(--color-bowling); color: white; padding: 12px 24px; border-radius: 8px; font-weight: 600; transition: background 0.2s; text-decoration: none; display: inline-block; }
   .btn-primary:hover { background: var(--color-bowling-dark); }
   .btn-primary.large { padding: 14px 28px; font-size: 1rem; }
@@ -1198,15 +1387,14 @@
     display: flex;
     flex-direction: row;
     gap: 24px;
-    height: calc(100vh - 40px);
-    max-height: 900px;
+    min-height: calc(100vh - 40px);
     width: 100%;
     max-width: 1600px;
     margin: 0 auto;
   }
 
   @media (max-width: 1024px) {
-    .match-layout { flex-direction: column; height: auto; max-height: none; }
+    .match-layout { flex-direction: column; height: auto; }
   }
 
   .pane {
@@ -1230,6 +1418,8 @@
     border: none;
     box-shadow: none;
     gap: 20px;
+    display: flex;
+    flex-direction: column;
   }
 
   /* Pane Headers */
@@ -1289,7 +1479,7 @@
   .player-info .name { font-weight: 600; font-size: 1rem; }
   .player-info .role { font-size: 0.75rem; color: var(--text-muted); }
   
-  .stat-badge { background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; font-family: inherit; font-size: 0.85rem; font-weight: 600; }
+  .stat-badge { background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; font-family: var(--font-sports); font-size: 0.85rem; font-weight: 600; }
 
   .btn-confirm { background: var(--color-batting); color: white; padding: 14px; border-radius: 8px; font-weight: 700; margin-top: auto; }
   .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -1309,12 +1499,49 @@
   .scorecard-item.active { background: var(--color-batting-transparent); border-color: rgba(var(--accent-emerald-rgb), 0.3); }
   .scorecard-item.active-bowl { background: var(--color-bowling-transparent); border-color: rgba(var(--accent-sapphire-rgb), 0.3); }
 
-  .top-row { display: flex; justify-content: space-between; align-items: center; }
-  .player-name { font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); }
-  .player-name.highlight { color: var(--color-batting); }
+    .top-row { display: flex; justify-content: space-between; align-items: center; }
+    
+    .player-identity {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .avatar-wrapper {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bg-tertiary);
+      border: 2px solid var(--color-border);
+    }
+    
+    .player-avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
+    .faction-badge-mini {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 18px;
+      height: 18px;
+      background: var(--bg-primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      border: 1px solid var(--color-border);
+    }
+    
+    .player-name { font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); }  .player-name.highlight { color: var(--color-batting); }
   .player-name.highlight-bowl { color: var(--color-bowling); }
   
-  .player-score { font-family: inherit; font-size: 0.95rem; font-weight: 700; color: var(--text-secondary); }
+  .player-score { font-family: var(--font-sports); font-size: 0.95rem; font-weight: 700; color: var(--text-secondary); }
   .player-score.highlight { color: var(--text-primary); }
   .player-score.highlight-bowl { color: var(--text-primary); }
   .player-score .balls, .player-score .overs { font-size: 0.75rem; font-weight: 400; color: var(--text-muted); }
@@ -1343,7 +1570,6 @@
   .scoreboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .innings-label { font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
   .conditions-mini { display: flex; gap: 12px; font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--color-border); }
-  .conditions-mini .separator { color: var(--text-muted); }
 
   .action-panel {
     background: var(--color-bg-panel);
@@ -1362,8 +1588,8 @@
   .target-text { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 24px; }
   .target-text strong { color: var(--text-primary); font-size: 1.25rem; }
   .win-title { color: var(--color-batting); font-size: 2rem; margin-bottom: 16px; }
-  .final-score { font-family: inherit; font-size: 1.25rem; color: var(--text-secondary); margin-bottom: 24px; }
-  .final-score .vs { font-family: inherit; font-size: 0.9rem; color: var(--text-muted); margin: 0 10px; }
+  .final-score { font-family: var(--font-sports); font-size: 1.25rem; color: var(--text-secondary); margin-bottom: 24px; }
+  .final-score .vs { font-family: var(--font-sports); font-size: 0.9rem; color: var(--text-muted); margin: 0 10px; }
   
   .waiting-title { color: var(--color-accent); font-size: 1.25rem; margin-bottom: 8px; }
   .waiting-desc { color: var(--text-muted); }
@@ -1399,6 +1625,7 @@
     flex: 1;
     overflow: hidden;
     box-shadow: var(--shadow-md);
+    min-height: 450px;
   }
   
   .commentary-header {
@@ -1437,7 +1664,7 @@
   .reward-col { flex: 1; min-width: 200px; background: var(--color-bg-panel); padding: 16px; border-radius: 8px; border: 1px solid var(--color-border); }
   .reward-col h5 { margin-top: 0; margin-bottom: 12px; font-size: 1.1rem; color: var(--text-primary); border-bottom: 1px solid var(--color-border); padding-bottom: 8px; }
   .reward-col p { margin: 8px 0; font-size: 0.95rem; color: var(--text-secondary); display: flex; justify-content: space-between; }
-  .reward-col .money { color: var(--success); font-weight: bold; font-family: inherit; font-size: 1.1rem; }
+  .reward-col .money { color: var(--success); font-weight: bold; font-family: var(--font-sports); font-size: 1.1rem; }
   .potm-col { border-color: var(--accent-amethyst); background: rgba(var(--accent-amethyst-rgb), 0.05); }
   .potm-col h5 { color: var(--accent-amethyst); border-bottom-color: rgba(var(--accent-amethyst-rgb), 0.2); }
   .potm-name { font-weight: bold; color: var(--text-primary) !important; font-size: 1.1rem !important; }
@@ -1483,7 +1710,6 @@
     border-top-left-radius: 20px;
     border-top-right-radius: 20px;
   }
-  .drawer-header h3 { margin: 0; color: var(--text-primary); font-size: 1.25rem; font-weight: 700; }
   .btn-close {
     background: none;
     border: none;
@@ -1543,23 +1769,23 @@
     z-index: 1;
   }
 
-  .scorecard-item[data-faction="human"], .player-select-btn[data-faction="human"] { border-left: 3px solid var(--accent-human); background-image: var(--bg-human); }
-  .scorecard-item[data-faction="human"]::after, .player-select-btn[data-faction="human"]::after { color: var(--accent-human); }
+  .scorecard-item[data-faction="human"], .player-select-btn[data-faction="human"] { border-left: 3px solid var(--team-primary, var(--accent-human)); }
+  .scorecard-item[data-faction="human"]::after, .player-select-btn[data-faction="human"]::after { color: var(--team-primary, var(--accent-human)); }
 
-  .scorecard-item[data-faction="elf"], .player-select-btn[data-faction="elf"] { border-left: 3px solid var(--accent-elf); background-image: var(--bg-elf); }
-  .scorecard-item[data-faction="elf"]::after, .player-select-btn[data-faction="elf"]::after { color: var(--accent-elf); }
+  .scorecard-item[data-faction="elf"], .player-select-btn[data-faction="elf"] { border-left: 3px solid var(--team-primary, var(--accent-elf)); }
+  .scorecard-item[data-faction="elf"]::after, .player-select-btn[data-faction="elf"]::after { color: var(--team-primary, var(--accent-elf)); }
 
-  .scorecard-item[data-faction="orc"], .player-select-btn[data-faction="orc"] { border-left: 3px solid var(--accent-orc); background-image: var(--bg-orc); }
-  .scorecard-item[data-faction="orc"]::after, .player-select-btn[data-faction="orc"]::after { color: var(--accent-orc); }
+  .scorecard-item[data-faction="orc"], .player-select-btn[data-faction="orc"] { border-left: 3px solid var(--team-primary, var(--accent-orc)); }
+  .scorecard-item[data-faction="orc"]::after, .player-select-btn[data-faction="orc"]::after { color: var(--team-primary, var(--accent-orc)); }
 
-  .scorecard-item[data-faction="dwarf"], .player-select-btn[data-faction="dwarf"] { border-left: 3px solid var(--accent-dwarf); background-image: var(--bg-dwarf); }
-  .scorecard-item[data-faction="dwarf"]::after, .player-select-btn[data-faction="dwarf"]::after { color: var(--accent-dwarf); }
+  .scorecard-item[data-faction="dwarf"], .player-select-btn[data-faction="dwarf"] { border-left: 3px solid var(--team-primary, var(--accent-dwarf)); }
+  .scorecard-item[data-faction="dwarf"]::after, .player-select-btn[data-faction="dwarf"]::after { color: var(--team-primary, var(--accent-dwarf)); }
 
-  .scorecard-item[data-faction="goblin"], .player-select-btn[data-faction="goblin"] { border-left: 3px solid var(--accent-goblin); background-image: var(--bg-goblin); }
-  .scorecard-item[data-faction="goblin"]::after, .player-select-btn[data-faction="goblin"]::after { color: var(--accent-goblin); }
+  .scorecard-item[data-faction="goblin"], .player-select-btn[data-faction="goblin"] { border-left: 3px solid var(--team-primary, var(--accent-goblin)); }
+  .scorecard-item[data-faction="goblin"]::after, .player-select-btn[data-faction="goblin"]::after { color: var(--team-primary, var(--accent-goblin)); }
 
-  .scorecard-item[data-faction="nightelf"], .player-select-btn[data-faction="nightelf"] { border-left: 3px solid var(--accent-nightelf); background-image: var(--bg-nightelf); }
-  .scorecard-item[data-faction="nightelf"]::after, .player-select-btn[data-faction="nightelf"]::after { color: var(--accent-nightelf); }
+  .scorecard-item[data-faction="nightelf"], .player-select-btn[data-faction="nightelf"] { border-left: 3px solid var(--team-primary, var(--accent-nightelf)); }
+  .scorecard-item[data-faction="nightelf"]::after, .player-select-btn[data-faction="nightelf"]::after { color: var(--team-primary, var(--accent-nightelf)); }
 
   .faction-icon {
     display: inline-flex;

@@ -26,65 +26,75 @@
 
 <style>
   .ball-feed {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    height: 300px;
+    display: grid;
+    gap: 0.45rem;
+    max-height: 320px;
     overflow-y: auto;
-    padding: 8px;
+    padding: 0.4rem;
+    border-radius: 16px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
+      var(--bg-surface);
+    border: 1px solid rgba(148, 163, 184, 0.14);
   }
 
   .ball-event {
     display: grid;
-    grid-template-columns: 50px 40px 1fr;
-    gap: 8px;
-    padding: 8px;
-    border-radius: 4px;
-    font-size: 13px;
-    animation: slideIn 0.3s ease;
+    grid-template-columns: 56px 44px 1fr;
+    gap: 0.65rem;
+    align-items: center;
+    padding: 0.7rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.84rem;
+    animation: slideIn 180ms ease;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(148, 163, 184, 0.08);
   }
 
   .ball-event:nth-child(even) {
-    background: var(--bg-tertiary);
+    background: rgba(255, 255, 255, 0.02);
   }
 
   .ball-event.wicket {
-    background: rgba(218, 54, 51, 0.15);
-    border-left: 3px solid var(--danger);
-    color: var(--danger); /* Red text for wickets */
-    font-weight: bold;
+    border-color: rgba(var(--accent-ruby-rgb), 0.24);
+    background: rgba(var(--accent-ruby-rgb), 0.08);
+    color: var(--danger);
+    font-weight: 700;
   }
 
   .ball-event.four {
-    border-left: 3px solid var(--accent-dwarf);
-    background: rgba(210, 153, 34, 0.1);
-    color: var(--accent-dwarf); /* Gold text for fours */
-    font-weight: bold;
+    border-color: rgba(var(--accent-gold-rgb), 0.22);
+    background: rgba(var(--accent-gold-rgb), 0.08);
+    color: var(--warning);
+    font-weight: 700;
   }
 
   .ball-event.six {
-    border-left: 3px solid var(--success);
-    background: rgba(35, 134, 54, 0.1);
-    color: var(--success); /* Green text for sixes */
-    font-weight: bold;
+    border-color: rgba(var(--accent-emerald-rgb), 0.22);
+    background: rgba(var(--accent-emerald-rgb), 0.08);
+    color: var(--success);
+    font-weight: 700;
   }
 
   .runs.dot {
-    opacity: 0.6; /* Muted for dot balls */
+    opacity: 0.7;
     color: var(--text-muted);
   }
 
   .ball-number {
     color: var(--text-secondary);
-    font-weight: 600;
+    font-weight: 700;
+    font-family: "Space Grotesk", sans-serif;
   }
 
   .runs {
-    font-weight: 700;
-    text-align: center;
-    background: var(--bg-tertiary);
-    border-radius: 4px;
-    padding: 2px 4px;
+    display: inline-grid;
+    place-items: center;
+    min-width: 2rem;
+    font-weight: 800;
+    border-radius: 999px;
+    padding: 0.25rem 0.45rem;
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .commentary {
@@ -97,7 +107,7 @@
   @keyframes slideIn {
     from {
       opacity: 0;
-      transform: translateY(-10px);
+      transform: translateY(-6px);
     }
     to {
       opacity: 1;

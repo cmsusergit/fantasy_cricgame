@@ -148,7 +148,7 @@
                     {/if}
                  </div>
 
-                 <PlayerCard {player} hideAvailability={true} />
+                 <PlayerCard {player} hideAvailability={true} teamColorPrimary={userTeam?.colorPrimary} teamColorSecondary={userTeam?.colorSecondary} />
                  
                  <div class="retention-cost-preview">
                      {#if player.retiring}
@@ -220,31 +220,31 @@
   .retention-page {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 24px;
+    padding: 14px;
   }
 
   .page-header {
-    margin-bottom: 32px;
+    margin-bottom: 16px;
     text-align: center;
   }
 
   .page-header h1 {
-    font-size: 2.5rem;
+    font-size: 1rem;
     color: var(--text-primary);
     margin-bottom: 8px;
   }
 
   .subtitle {
     color: var(--text-secondary);
-    font-size: 1.1rem;
-    margin-bottom: 20px;
+    font-size: 1rem;
+    margin-bottom: 16px;
   }
 
   .mega-warning {
     background: rgba(245, 158, 11, 0.15);
     border: 1px solid var(--warning);
     color: var(--warning);
-    padding: 16px;
+    padding: 14px;
     border-radius: 8px;
     max-width: 800px;
     margin: 0 auto;
@@ -254,7 +254,7 @@
     background: rgba(59, 130, 246, 0.15);
     border: 1px solid var(--info);
     color: var(--info);
-    padding: 16px;
+    padding: 14px;
     border-radius: 8px;
     max-width: 800px;
     margin: 0 auto;
@@ -269,7 +269,7 @@
     top: 24px;
     right: 24px;
     z-index: 100;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: none;
     font-weight: 600;
     animation: slideIn 0.3s ease-out;
   }
@@ -278,7 +278,7 @@
 
   .retention-layout {
     display: flex;
-    gap: 32px;
+    gap: 10px;
     align-items: flex-start;
   }
 
@@ -288,11 +288,11 @@
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 24px;
+    padding: 14px;
   }
 
   .roster-panel h2 {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border-color);
   }
@@ -300,7 +300,7 @@
   .players-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
+    gap: 10px;
   }
 
   .player-wrapper {
@@ -318,12 +318,12 @@
 
   .player-wrapper:hover:not(.disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    box-shadow: none;
   }
 
   .player-wrapper.selected {
     border-color: var(--success);
-    box-shadow: 0 0 0 2px var(--success);
+    box-shadow: none;
   }
 
   .player-wrapper.disabled {
@@ -346,7 +346,7 @@
     border-radius: 20px;
     font-size: 0.85rem;
     font-weight: 700;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: none;
   }
 
   .selection-badge.retiring {
@@ -359,7 +359,7 @@
     border-top: none;
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
-    padding: 12px;
+    padding: 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -382,41 +382,41 @@
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    padding: 14px;
+    box-shadow: none;
   }
 
   .sticky-tracker h2 {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border-color);
-    font-size: 1.5rem;
+    font-size: 1rem;
   }
 
   .tracker-stats {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    margin-bottom: 32px;
+    gap: 10px;
+    margin-bottom: 16px;
   }
 
   .stat-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
-  .stat-row .value { font-weight: 800; font-family: monospace; font-size: 1.2rem; }
+  .stat-row .value { font-weight: 800; font-family: monospace; font-size: 1.1rem; }
   .value.starting { color: var(--text-primary); }
   .value.negative { color: var(--danger); }
-  .value.positive { color: var(--success); font-size: 1.5rem; }
+  .value.positive { color: var(--success); font-size: 1rem; }
 
   .retentions-list {
     flex-direction: column;
     align-items: stretch;
     background: rgba(0,0,0,0.1);
-    padding: 16px;
+    padding: 14px;
     border-radius: 8px;
     gap: 8px;
     border: 1px dashed var(--border-color);
@@ -447,7 +447,7 @@
     color: var(--text-muted);
     font-style: italic;
     text-align: center;
-    padding: 10px;
+    padding: 14px;
   }
 
   .total-deduction {
@@ -457,7 +457,7 @@
 
   .final-purse {
     margin-top: 8px;
-    padding: 16px;
+    padding: 14px;
     background: rgba(35, 134, 54, 0.1);
     border-radius: 8px;
     border: 1px solid rgba(35, 134, 54, 0.3);
@@ -466,19 +466,19 @@
   .action-container {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
 
   .btn-confirm {
     background: var(--success);
     color: white;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
-    padding: 16px;
+    padding: 14px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(35, 134, 54, 0.4);
+    box-shadow: none;
     transition: transform 0.2s, background 0.2s;
     width: 100%;
   }

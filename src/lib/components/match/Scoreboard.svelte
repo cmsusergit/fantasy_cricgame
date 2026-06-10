@@ -1,124 +1,264 @@
 <script lang="ts">
-  import type { innings, BallEvent } from '$lib/models/match';
-  
+  import type { innings, BallEvent, IntentType } from '$lib/models/match';
+  import { calculateCurrentRunRate, getOverBalls, calculateRequiredRunRate } from '$lib/core/matchEngine';
+  import type { BallType } from '$lib/models/match';
+
+  const weatherEmojis: Record<string, string> = { sunny: '☀️', cloudy: '⛅', rain: '🌧️', storm: '⛈️' };
+  const pitchEmojis: Record<string, string> = { flat: '🎯', balanced: '⚖️', turning: '🔄', seaming: '🌊', bouncing: '🏐' };
+
   interface Props {
+    ballType?: BallType;
+    currentBowlerType?: string;
+    avoidSingles?: boolean;
+    onBallTypeChange?: (ballType: BallType) => void;
+    onAvoidSinglesChange?: (avoidSingles: boolean) => void;
     inningsData: innings;
     battingTeamName: string;
     target?: number;
+    battingIntent?: IntentType;
+    bowlingIntent?: IntentType;
+    isUserBatting?: boolean;
+    isUserBowling?: boolean;
+    onBattingIntentChange?: (intent: IntentType) => void;
+    onBowlingIntentChange?: (intent: IntentType) => void;
+    weather: string;
+    pitch: string;
   }
   
-  let { inningsData, battingTeamName, target = undefined }: Props = $props();
-  
-  let totalOvers = $derived(Math.floor(inningsData.balls / 6));
-  let ballsInOver = $derived(inningsData.balls % 6);
-  let runRate = $derived(inningsData.balls > 0 ? ((inningsData.totalRuns / inningsData.balls) * 6).toFixed(2) : '0.00');
-  let reqRate = $derived(target !== undefined && inningsData.balls < 120 ? (((target - inningsData.totalRuns) / (120 - inningsData.balls)) * 6).toFixed(2) : null);
+  let { inningsData, battingTeamName, target = undefined, battingIntent = 'balanced', bowlingIntent = 'balanced', isUserBatting = false, isUserBowling = false, onBattingIntentChange, onBowlingIntentChange, ballType = 'normal', currentBowlerType = 'none', avoidSingles = false, onBallTypeChange, onAvoidSinglesChange, weather, pitch }: Props = $props();
 
-  let currentOverBalls = $derived.by(() => {
-    const balls = inningsData.ballsFaced;
-    if (balls.length === 0) return [];
-    
-    let currentOverIndex = inningsData.overs;
-    
-    if (ballsInOver === 0 && balls.length > 0) {
-      currentOverIndex = inningsData.overs - 1;
-    }
-    
-    return balls.filter(b => b.over === currentOverIndex);
-  });
-
-  function getBallLabel(ball: BallEvent): string {
-    if (ball.isWicket) return 'W';
-    if (ball.result === 'wide') return `${ball.runs}wd`;
-    if (ball.result === 'noball') return `${ball.runs}nb`;
-    return ball.runs.toString();
-  }
-
-  function getBallClass(ball: BallEvent): string {
-    if (ball.isWicket) return 'wicket';
-    if (ball.result === 'wide' || ball.result === 'noball') return 'extra';
-    if (ball.runs === 4) return 'four';
-    if (ball.runs === 6) return 'six';
-    if (ball.runs === 0) return 'dot';
-    return 'runs';
-  }
+  const intentValues: IntentType[] = ['very_aggressive', 'aggressive', 'balanced', 'defensive', 'very_defensive'];
+  const intentLabels = ['V.Agg', 'Agg', 'Bal', 'Def', 'V.Def'];
 </script>
 
 <div class="scoreboard">
-  <div class="team-name">{battingTeamName}</div>
-  
-  <div class="score-main">
-    <span class="runs">{inningsData.totalRuns}</span>
-    <span class="separator">/</span>
-    <span class="wickets">{inningsData.wickets}</span>
-    <span class="overs">({totalOvers}.{ballsInOver})</span>
-  </div>
-  
-  <div class="stats-row">
-    <div class="stat">
-      <span class="label">Run Rate</span>
-      <span class="value">{runRate}</span>
+  <div class="score-and-intents">
+    <div class="conditions-mini">
+        <span title="Weather">{weatherEmojis[weather]} {weather}</span>
+        <span class="separator">|</span>
+        <span title="Pitch">{pitchEmojis[pitch]} {pitch}</span>
     </div>
-    {#if target}
-      <div class="stat target">
-        <span class="label">Target</span>
-        <span class="value">{target}</span>
+    <div class="team-name-big">{battingTeamName}</div>
+    <div class="intent-column">
+      <span class="intent-title">Batting Intent</span>
+      <div class="intent-segments">
+        {#each intentValues as intent, i}
+          <button class="segment {battingIntent === intent ? 'active-bat' : ''}" disabled={!isUserBatting} onclick={() => onBattingIntentChange?.(intent)} title={!isUserBatting ? 'AI controlled' : ''}>
+            {intentLabels[i]}
+          </button>
+        {/each}
       </div>
-    {/if}
-    {#if reqRate}
-      <div class="stat required">
-        <span class="label">Req Rate</span>
-        <span class="value">{reqRate}</span>
+      {#if isUserBatting}
+        <label class="tactic-mini">
+          <input type="checkbox" checked={avoidSingles} onchange={(e) => onAvoidSinglesChange?.(e.currentTarget.checked)} />
+          <span style="font-size: 0.55rem; color: var(--text-secondary);">No Singles</span>
+        </label>
+      {/if}
+    </div>
+
+    <div class="score-main-wrap">
+      <div class="score-main">
+        <span class="runs">{inningsData.totalRuns}</span>
+        <span class="separator">/</span>
+        <span class="wickets">{inningsData.wickets}</span>
       </div>
-    {/if}
+      <div class="overs">({inningsData.overs}.{inningsData.balls % 6} Overs)</div>
+    </div>
+
+    <div class="intent-column">
+      <span class="intent-title">Bowling Intent</span>
+      <div class="intent-segments">
+        {#each intentValues as intent, i}
+          <button class="segment {bowlingIntent === intent ? 'active-bowl' : ''}" disabled={!isUserBowling} onclick={() => onBowlingIntentChange?.(intent)} title={!isUserBowling ? 'AI controlled' : ''}>
+            {intentLabels[i]}
+          </button>
+        {/each}
+      </div>
+      {#if isUserBowling && currentBowlerType !== 'none'}
+        <select class="tactic-mini-select" value={ballType} onchange={(e) => onBallTypeChange?.(e.currentTarget.value as BallType)}>
+            <option value="normal">Normal</option>
+            {#if currentBowlerType === 'fast' || currentBowlerType === 'pacer'}
+                <option value="bouncer">Bouncer</option>
+                <option value="yorker">Yorker</option>
+                <option value="slower">Slower</option>
+            {/if}
+            {#if currentBowlerType === 'swinger'}
+                <option value="inswinger">Inswing</option>
+                <option value="outswinger">Outswing</option>
+                <option value="yorker">Yorker</option>
+            {/if}
+            {#if currentBowlerType === 'spinner'}
+                <option value="off_spin">Off Spin</option>
+                <option value="leg_spin">Leg Spin</option>
+                <option value="googly">Googly</option>
+                <option value="doosra">Doosra</option>
+                <option value="arm_ball">Arm Ball</option>
+            {/if}
+        </select>
+      {/if}
+    </div>
   </div>
+  
+  {#if target}
+  <div class="stats-row">
+    <div class="stat target">
+      <span class="label">Target</span>
+      <span class="value">{target}</span>
+    </div>
+  </div>
+  {/if}
   
   {#if inningsData.extras > 0}
     <div class="extras">Extras: {inningsData.extras}</div>
-  {/if}
-
-  {#if currentOverBalls.length > 0}
-    <div class="over-timeline">
-      <span class="over-label">This Over:</span>
-      <div class="bubbles">
-        {#each currentOverBalls as ball}
-          <div class="bubble {getBallClass(ball)}">
-            {getBallLabel(ball)}
-          </div>
-        {/each}
-      </div>
-    </div>
   {/if}
 </div>
 
 <style>
   .scoreboard {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 16px;
-    text-align: center;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 0;
+    border-radius: 12px;
+    background: transparent;
   }
 
-  .team-name {
-    font-size: 14px;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 1px;
+  .conditions-mini {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 8px;
+    padding: 4px 8px;
+    grid-column: 1 / -1; /* Span across all columns */
     margin-bottom: 8px;
+  }
+  .conditions-mini .separator {
+    color: var(--text-muted);
+    opacity: 0.5;
+  }
+
+  .team-name-big {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    text-align: center;
+    margin-bottom: 8px; /* Added spacing */
+    grid-column: 1 / -1; /* Span across all columns */
+  }
+
+  .score-and-intents {
+    display: grid; /* Changed to grid */
+    grid-template-columns: 70px 1fr 70px; /* Layout for intents and score */
+    gap: 16px; /* Spacing between columns */
+    align-items: center;
+    background: var(--bg-surface); /* Added background */
+    border: 1px solid var(--border-color); /* Added border */
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  .intent-column {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%; /* Make it fill the grid column */
+  }
+
+  .intent-title {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: center;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+  }
+
+  .intent-segments {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    padding: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .segment {
+    background: transparent;
+    border: none;
+    padding: 6px 2px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .segment:disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+
+  .segment:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .segment.active-bat {
+    background: var(--success);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+    animation: pulse-bat 1.5s infinite;
+  }
+  
+  .segment.active-bat:disabled {
+    background: rgba(16, 185, 129, 0.6);
+  }
+
+  .segment.active-bowl {
+    background: var(--info);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+    animation: pulse-bowl 1.5s infinite;
+  }
+  
+    .segment.active-bowl:disabled {
+      background: rgba(59, 130, 246, 0.6);
+    }
+  
+    .score-main-wrap {    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
 
   .score-main {
-    font-size: 36px;
-    font-weight: 700;
     display: flex;
     align-items: baseline;
+    gap: 0.35rem;
     justify-content: center;
-    gap: 4px;
   }
 
   .runs {
+    font-size: clamp(3rem, 6vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1;
     color: var(--text-primary);
+  }
+
+  .separator,
+  .wickets {
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
+    font-weight: 700;
   }
 
   .separator {
@@ -130,39 +270,40 @@
   }
 
   .overs {
-    font-size: 18px;
-    color: var(--text-secondary);
-    margin-left: 8px;
+    font-size: 1rem;
+    color: var(--text-muted);
+    font-family: "Space Grotesk", sans-serif;
+    margin-top: 4px;
   }
 
   .stats-row {
-    display: flex;
-    justify-content: center;
-    gap: 24px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-color);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    gap: 0.6rem;
   }
 
   .stat {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    gap: 0.2rem;
     align-items: center;
+    padding: 0.65rem 0.75rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    text-align: center;
   }
 
   .stat .label {
-    font-size: 11px;
-    color: var(--text-secondary);
+    font-size: 0.68rem;
+    color: var(--text-muted);
     text-transform: uppercase;
+    letter-spacing: 0.12em;
   }
 
   .stat .value {
-    font-size: 18px;
-    font-weight: 600;
-  }
-
-  .stat.required .value {
-    color: var(--accent-nightelf);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
   }
 
   .stat.target .value {
@@ -170,51 +311,44 @@
   }
 
   .extras {
-    font-size: 12px;
+    font-size: 0.85rem;
     color: var(--text-secondary);
-    margin-top: 8px;
+    padding: 0.65rem 0.8rem;
+    border-radius: 10px;
+    background: rgba(var(--accent-sapphire-rgb), 0.08);
+    border: 1px solid rgba(var(--accent-sapphire-rgb), 0.14);
   }
 
-  .over-timeline {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px dashed var(--border-color);
+  .tactic-mini {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 2px;
+    margin-top: 4px;
+    cursor: pointer;
+  }
+  .tactic-mini input { width: 10px; height: 10px; margin:0; }
+  .tactic-mini-select {
+    margin-top: 4px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-primary);
+    font-size: 0.55rem;
+    padding: 2px;
+    border-radius: 4px;
+    width: 100%;
+    outline: none;
   }
 
-  .over-label {
-    font-size: 12px;
-    color: var(--text-secondary);
-    text-transform: uppercase;
+  @keyframes pulse-bat {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
   }
 
-  .bubbles {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    justify-content: center;
+  @keyframes pulse-bowl {
+    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
   }
-
-  .bubble {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 700;
-    color: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  }
-
-  .bubble.dot { background-color: #64748b; }
-  .bubble.runs { background-color: #3b82f6; }
-  .bubble.four { background-color: #10b981; }
-  .bubble.six { background-color: #8b5cf6; }
-  .bubble.wicket { background-color: #ef4444; }
-  .bubble.extra { background-color: #f59e0b; color: #1e293b; }
 </style>
