@@ -12,7 +12,7 @@
   import MatchControls, { type SimSpeed } from '$lib/components/match/MatchControls.svelte';
   import BallFeed from '$lib/components/match/BallFeed.svelte';
   import Scoreboard from '$lib/components/match/Scoreboard.svelte';
-  import ScorecardDrawer from '$lib/components/match/ScorecardDrawer.svelte';
+  import FullScorecard from '$lib/components/match/FullScorecard.svelte';
   import MatchSummary from '$lib/components/match/MatchSummary.svelte';
   import { goto } from '$app/navigation';
   
@@ -155,8 +155,7 @@
   let placeholderBatsman = $state<string | null>(null);
 
   let showFullBattingDrawer = $state(false);
-  let showScorecardDrawer = $state(false);
-
+  
   let tossWinner = $state<string | null>(null);
   let tossChoice = $state<'bat' | 'bowl' | null>(null);
   let isTossing = $state(false);
@@ -1183,11 +1182,17 @@
         {/if}
       </div>    </div>
       
-      <div class="bottom-bar">
-         <button class="btn-drawer-toggle" onclick={() => showScorecardDrawer = true}>
-            View Full Scorecard
-         </button>
-      </div>
+      
+
+      <FullScorecard 
+                   currentInningsData={currentInningsData}
+                   battingTeamPlayers={currentBattingTeam?.players || []}
+                   bowlingTeamPlayers={currentBowlingTeam?.players || []}
+                   battingTeamColorPrimary={currentBattingTeam?.colorPrimary}
+                   battingTeamColorSecondary={currentBattingTeam?.colorSecondary}
+                   bowlingTeamColorPrimary={currentBowlingTeam?.colorPrimary}
+                   bowlingTeamColorSecondary={currentBowlingTeam?.colorSecondary}
+         />
     </div>
     
     <div class="side-content">
@@ -1202,15 +1207,7 @@
     </div>
   </div>
   
-  <ScorecardDrawer bind:show={showScorecardDrawer}
-                   currentInningsData={currentInningsData}
-                   battingTeamPlayers={currentBattingTeam?.players || []}
-                   bowlingTeamPlayers={currentBowlingTeam?.players || []}
-                   battingTeamColorPrimary={currentBattingTeam?.colorPrimary}
-                   battingTeamColorSecondary={currentBattingTeam?.colorSecondary}
-                   bowlingTeamColorPrimary={currentBowlingTeam?.colorPrimary}
-                   bowlingTeamColorSecondary={currentBowlingTeam?.colorSecondary}
-   />
+  
   {/if}
   {#if currentSuggestion}
     <div class="floating-suggestion" class:expanded={showSuggestion}>
@@ -1231,7 +1228,7 @@
 
   .match-dashboard {
     display: grid;
-    grid-template-columns: 10fr 2fr; /* 10/12 for main, 2/12 for side */
+    grid-template-columns: 7fr 5fr; /* 10/12 for main, 2/12 for side */
     gap: 16px;
     height: 100%;
     width: 100%;
@@ -1240,7 +1237,7 @@
   
   @media (max-width: 1200px) {
     .match-dashboard {
-      grid-template-columns: 8fr 4fr;
+      grid-template-columns: 7fr 5fr;
     }
   }
   
