@@ -166,21 +166,21 @@
 
 <div class="squad-page">
   <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px;">
-    <div>
-      <h1>🛡️ Squad Selection</h1>
+    <div style="border-left: 4px solid {userTeam?.colorPrimary}; padding-left: 12px;">
+      <h1 style="color: {userTeam?.colorPrimary};">🛡️ Squad Selection</h1>
       <p class="subtitle" style="margin-bottom: 0;">Strategize and finalize your playing 11 for the upcoming match.</p>
     </div>
     <div style="text-align: right;">
       <span style="font-size: 0.9rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Roster Size</span>
-      <div style="font-size: 1rem; font-family: 'Cinzel', serif; font-weight: bold; color: {userTeam?.players.length === MAX_SQUAD_SIZE ? 'var(--warning)' : 'var(--text-primary)'};">
+      <div style="font-size: 1rem; font-family: 'Cinzel', serif; font-weight: bold; color: {userTeam?.colorPrimary};">
         {userTeam?.players.length || 0} <span style="font-size: 1rem; color: var(--text-muted);">/ {MAX_SQUAD_SIZE}</span>
       </div>
     </div>
   </div>
   
-  <div class="budget-display">
+  <div class="budget-display" style="border-left: 3px solid {userTeam?.colorPrimary};">
     <span class="label">Playing 11 Selected:</span>
-    <span class="amount" class:full={playing11.length === 11}>
+    <span class="amount" class:full={playing11.length === 11} style="color: {playing11.length === 11 ? 'var(--success)' : userTeam?.colorPrimary};">
       {playing11.length} <span style="font-size: 16px; color: var(--text-secondary);">/ 11</span>
     </span>
   </div>
@@ -198,7 +198,7 @@
       <option value="bowler">Bowler</option>
       <option value="wicketkeeper">Wicket Keeper</option>
     </select>
-    <button class="secondary" onclick={quickSelect} style="margin-left: auto;">
+    <button class="secondary" onclick={quickSelect} style="margin-left: auto; border-color: {userTeam?.colorPrimary}40; color: {userTeam?.colorPrimary};">
       Quick Fill
     </button>
   </div>
@@ -288,6 +288,7 @@
 
       <button 
         class="primary bid-btn" 
+        style="background: linear-gradient(135deg, {userTeam?.colorPrimary}, {userTeam?.colorSecondary});"
         disabled={playing11.length !== 11 || !captain || !wicketKeeper}
         onclick={saveSquad}
       >
@@ -414,9 +415,9 @@
   }
 
   .role-badge.wk {
-    background: rgba(var(--accent-sapphire-rgb), 0.94);
-    color: #071425;
-    border-color: rgba(var(--accent-sapphire-rgb), 0.34);
+    background: rgba(var(--team-primary-rgb, 30, 64, 175), 0.94);
+    color: #fff;
+    border-color: rgba(var(--team-primary-rgb, 30, 64, 175), 0.34);
   }
 
   .player-controls {
@@ -451,9 +452,9 @@
   }
   
   .control-label.active {
-    background: rgba(35, 134, 54, 0.1);
-    border-color: var(--success);
-    color: var(--success);
+    background: rgba(var(--team-primary-rgb, 30, 64, 175), 0.1);
+    border-color: var(--team-primary, var(--success));
+    color: var(--team-primary, var(--success));
   }
   
   .selection-summary {

@@ -8,15 +8,22 @@ import { TEAM_PERSONALITIES, createTeamTendency, PERSONALITY_NAMES } from '../co
 import { generateTournamentSchedule, type TournamentSchedule, type ScheduledMatch, type GameDay } from '../core/schedule';
 import { saveGame, loadGame, clearSave } from '../services/storage';
 
-const TEAM_COLORS = [
-  { primary: '#0969da', secondary: '#24292f' },
-  { primary: '#1a7f37', secondary: '#24292f' },
-  { primary: '#cf222e', secondary: '#24292f' },
-  { primary: '#9a6700', secondary: '#24292f' },
-  { primary: '#8250df', secondary: '#24292f' },
-  { primary: '#0598bc', secondary: '#24292f' },
-  { primary: '#bf3989', secondary: '#24292f' },
-  { primary: '#ff7b72', secondary: '#24292f' },
+interface TeamColorPalette {
+  primary: string;
+  secondary: string;
+  primaryRgb: string;
+  secondaryRgb: string;
+}
+
+const TEAM_COLORS: TeamColorPalette[] = [
+  { primary: '#1e40af', secondary: '#fbbf24', primaryRgb: '30, 64, 175', secondaryRgb: '251, 191, 36' },
+  { primary: '#dc2626', secondary: '#f59e0b', primaryRgb: '220, 38, 38', secondaryRgb: '245, 158, 11' },
+  { primary: '#059669', secondary: '#6366f1', primaryRgb: '5, 150, 105', secondaryRgb: '99, 102, 241' },
+  { primary: '#7c3aed', secondary: '#ec4899', primaryRgb: '124, 58, 237', secondaryRgb: '236, 72, 153' },
+  { primary: '#ea580c', secondary: '#1e293b', primaryRgb: '234, 88, 12', secondaryRgb: '30, 41, 59' },
+  { primary: '#0891b2', secondary: '#f97316', primaryRgb: '8, 145, 178', secondaryRgb: '249, 115, 22' },
+  { primary: '#be185d', secondary: '#14b8a6', primaryRgb: '190, 24, 93', secondaryRgb: '20, 184, 166' },
+  { primary: '#4f46e5', secondary: '#a855f7', primaryRgb: '79, 70, 229', secondaryRgb: '168, 85, 247' },
 ];
 
 function createPlayerStore() {

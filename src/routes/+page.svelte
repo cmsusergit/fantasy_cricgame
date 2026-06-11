@@ -352,16 +352,16 @@
   </header>
 
   {#if userTeam}
-    <section class="team-overview card">
+    <section class="team-overview card" style="border-top: 3px solid {userTeam.colorPrimary};">
       <div class="team-header">
         <div class="team-info" style="display: flex; gap: 10px; align-items: center;">
           {#if userTeam.logo}
-            <div style="font-size: 1.75rem; line-height: 1; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: var(--bg-tertiary); border-radius: 12px; border: 2px solid var(--border-color);" title="Coat of Arms">
+            <div style="font-size: 1.75rem; line-height: 1; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: var(--bg-tertiary); border-radius: 12px; border: 2px solid {userTeam.colorPrimary}40;" title="Coat of Arms">
               {userTeam.logo}
             </div>
           {/if}
           <div>
-            <h2 style="margin-bottom: 0;">{userTeam.name}</h2>
+            <h2 style="margin-bottom: 0; color: {userTeam.colorPrimary};">{userTeam.name}</h2>
             <span class="coach">{userTeam.coach}</span>
           </div>
         </div>

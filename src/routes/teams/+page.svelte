@@ -61,6 +61,11 @@
       if (!factionType) return 'Unknown';
       return FACTIONS[factionType as keyof typeof FACTIONS]?.name || 'Unknown';
   }
+
+  function hexToRgb(hex: string): string {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '148, 163, 184';
+  }
 </script>
 
 <svelte:head>
@@ -102,27 +107,27 @@
         </div>
       </div>
 
-      <div class="analysis-panel">
+      <div class="analysis-panel" style="--team-primary: {selectedTeam.colorPrimary}; --team-secondary: {selectedTeam.colorSecondary}; --team-primary-rgb: {hexToRgb(selectedTeam.colorPrimary)}; --team-secondary-rgb: {hexToRgb(selectedTeam.colorSecondary)};">
         <div class="strength-bars">
-          <h3>Squad Strength Assessment</h3>
+          <h3 style="color: {selectedTeam.colorPrimary};">Squad Strength Assessment</h3>
           <div class="stat-row">
             <span class="stat-label">Batting</span>
             <div class="stat-bar">
-              <div class="stat-bar-fill {teamStrength.batting >= 65 ? 'high' : teamStrength.batting >= 40 ? 'medium' : 'low'}" style="width: {teamStrength.batting}%"></div>
+              <div class="stat-bar-fill team-fill" style="width: {teamStrength.batting}%"></div>
             </div>
             <span class="stat-value">{teamStrength.batting}</span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Bowling</span>
             <div class="stat-bar">
-              <div class="stat-bar-fill {teamStrength.bowling >= 65 ? 'high' : teamStrength.bowling >= 40 ? 'medium' : 'low'}" style="width: {teamStrength.bowling}%"></div>
+              <div class="stat-bar-fill team-fill" style="width: {teamStrength.bowling}%"></div>
             </div>
             <span class="stat-value">{teamStrength.bowling}</span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Fielding</span>
             <div class="stat-bar">
-              <div class="stat-bar-fill {teamStrength.fielding >= 65 ? 'high' : teamStrength.fielding >= 40 ? 'medium' : 'low'}" style="width: {teamStrength.fielding}%"></div>
+              <div class="stat-bar-fill team-fill" style="width: {teamStrength.fielding}%"></div>
             </div>
             <span class="stat-value">{teamStrength.fielding}</span>
           </div>
@@ -206,6 +211,7 @@
   .team-selector-item.active {
     background: var(--bg-tertiary);
     border-color: var(--text-primary);
+    box-shadow: 0 0 8px rgba(var(--team-primary-rgb, 30, 64, 175), 0.15);
   }
   
   .team-name {
@@ -328,6 +334,9 @@
   .stat-bar-fill.high { background: var(--success); }
   .stat-bar-fill.medium { background: var(--warning); }
   .stat-bar-fill.low { background: var(--danger); }
+  .stat-bar-fill.team-fill {
+    background: linear-gradient(90deg, rgba(var(--team-primary-rgb, 30, 64, 175), 0.95), rgba(var(--team-secondary-rgb, 251, 191, 36), 0.85));
+  }
   
   .stat-value {
     width: 30px;
@@ -349,6 +358,7 @@
     padding: 8px 12px;
     background: var(--bg-tertiary);
     border-radius: 6px;
+    border-left: 3px solid var(--team-primary, var(--accent-sapphire));
   }
   
   .key-player-row .p-name {

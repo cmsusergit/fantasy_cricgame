@@ -1,12 +1,14 @@
 <script lang="ts">
   import type { innings, BallEvent, IntentType } from '$lib/models/match';
-  import { calculateCurrentRunRate, getOverBalls, calculateRequiredRunRate } from '$lib/core/matchEngine';
+  import { calculateCurrentRunRate, getOverBalls, calculateRequiredRunRate, getBallClass, getBallLabel } from '$lib/core/matchEngine';
   import type { BallType } from '$lib/models/match';
 
   const weatherEmojis: Record<string, string> = { sunny: '☀️', cloudy: '⛅', rain: '🌧️', storm: '⛈️' };
   const pitchEmojis: Record<string, string> = { flat: '🎯', balanced: '⚖️', turning: '🔄', seaming: '🌊', bouncing: '🏐' };
 
   interface Props {
+    runRate?: string | number;
+    currentOverBalls?: BallEvent[];
     ballType?: BallType;
     currentBowlerType?: string;
     avoidSingles?: boolean;
@@ -25,7 +27,7 @@
     pitch: string;
   }
   
-  let { inningsData, battingTeamName, target = undefined, battingIntent = 'balanced', bowlingIntent = 'balanced', isUserBatting = false, isUserBowling = false, onBattingIntentChange, onBowlingIntentChange, ballType = 'normal', currentBowlerType = 'none', avoidSingles = false, onBallTypeChange, onAvoidSinglesChange, weather, pitch }: Props = $props();
+  let { runRate = '0.00', currentOverBalls = [], inningsData, battingTeamName, target = undefined, battingIntent = 'balanced', bowlingIntent = 'balanced', isUserBatting = false, isUserBowling = false, onBattingIntentChange, onBowlingIntentChange, ballType = 'normal', currentBowlerType = 'none', avoidSingles = false, onBallTypeChange, onAvoidSinglesChange, weather, pitch }: Props = $props();
 
   const intentValues: IntentType[] = ['very_aggressive', 'aggressive', 'balanced', 'defensive', 'very_defensive'];
   const intentLabels = ['V.Agg', 'Agg', 'Bal', 'Def', 'V.Def'];
@@ -63,6 +65,22 @@
         <span class="wickets">{inningsData.wickets}</span>
       </div>
       <div class="overs">({inningsData.overs}.{inningsData.balls % 6} Overs)</div>
+      
+      <div class="middle-this-over">
+        <div class="run-rate-mini">
+          RR: <span>{runRate}</span>
+        </div>
+        {#if currentOverBalls.length > 0}
+        <div class="separator"></div>
+        <div class="bubbles">
+          {#each currentOverBalls as ball}
+            <div class="bubble {getBallClass(ball)}">
+              {getBallLabel(ball)}
+            </div>
+          {/each}
+        </div>
+        {/if}
+      </div>
     </div>
 
     <div class="intent-column">
@@ -338,6 +356,71 @@
     border-radius: 4px;
     width: 100%;
     outline: none;
+  }
+
+  /* middle-this-over styles */
+  .middle-this-over {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 4px 0 0 0;
+    background: transparent;
+    padding: 4px;
+    min-height: 28px;
+  }
+  .middle-this-over .run-rate-mini {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--text-secondary);
+  }
+  .middle-this-over .run-rate-mini span {
+    color: var(--text-primary);
+  }
+  .middle-this-over .separator {
+    width: 1px;
+    height: 16px;
+    background: var(--border-color);
+  }
+  .middle-this-over .bubbles {
+    display: flex;
+    gap: 4px;
+  }
+  .middle-this-over .bubble {
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+  }
+  .middle-this-over .bubble.dot {
+    opacity: 0.72;
+    color: var(--text-muted);
+  }
+  .middle-this-over .bubble.runs {
+    background: rgba(var(--accent-sapphire-rgb), 0.14);
+    color: var(--info);
+  }
+  .middle-this-over .bubble.four {
+    background: rgba(var(--accent-gold-rgb), 0.14);
+    color: var(--warning);
+  }
+  .middle-this-over .bubble.six {
+    background: rgba(var(--accent-emerald-rgb), 0.14);
+    color: var(--success);
+  }
+  .middle-this-over .bubble.wicket {
+    background: rgba(var(--accent-ruby-rgb), 0.14);
+    color: var(--danger);
+  }
+  .middle-this-over .bubble.extra {
+    background: rgba(var(--accent-amethyst-rgb), 0.14);
+    color: var(--accent-goblin);
   }
 
   @keyframes pulse-bat {

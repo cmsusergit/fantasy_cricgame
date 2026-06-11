@@ -70,9 +70,9 @@
   <p class="subtitle">8-Team Round Robin (Advance Days in Dashboard)</p>
   
   {#if userStandings}
-    <div class="user-standings">
-      <span class="position">#{standings.indexOf(userStandings) + 1}</span>
-      <span class="team-name">{userTeam?.name}</span>
+    <div class="user-standings" style="border-color: {userTeam?.colorPrimary}; background: linear-gradient(135deg, {userTeam?.colorPrimary}10, {userTeam?.colorSecondary}15);">
+      <span class="position" style="color: {userTeam?.colorPrimary};">#{standings.indexOf(userStandings) + 1}</span>
+      <span class="team-name" style="color: {userTeam?.colorPrimary};">{userTeam?.name}</span>
       <span class="stats">{userStandings.wins}W - {userStandings.losses}L</span>
     </div>
   {/if}
@@ -99,9 +99,15 @@
         </thead>
         <tbody>
           {#each standings as standing, i}
-            <tr class:user-team={standing.teamId === userTeam?.id}>
+            {@const team = teams.find(t => t.id === standing.teamId)}
+            <tr class:user-team={standing.teamId === userTeam?.id} style="border-left: 4px solid {team?.colorPrimary || 'transparent'};">
               <td>{i + 1}</td>
-              <td>{standing.teamName}</td>
+              <td>
+                <span style="display: inline-flex; align-items: center; gap: 8px;">
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: {team?.colorPrimary}; display: inline-block;"></span>
+                  {standing.teamName}
+                </span>
+              </td>
               <td>{standing.played}</td>
               <td>{standing.wins}</td>
               <td>{standing.losses}</td>
@@ -132,11 +138,13 @@
             <h3 class="day-header">Day {day}</h3>
             <div class="matches-grid">
               {#each dayMatches as match}
+                {@const team1 = teams.find(t => t.id === match.team1Id)}
+                {@const team2 = teams.find(t => t.id === match.team2Id)}
                 <div class="match-card {match.status === 'completed' ? 'completed' : ''}" class:user-match={match.team1Id === userTeam?.id || match.team2Id === userTeam?.id}>
                   <div class="match-teams">
-                    <span>{match.team1Name} <span class="home-tag">(Home)</span></span>
+                    <span style="border-left: 3px solid {team1?.colorPrimary}; padding-left: 6px;">{match.team1Name} <span class="home-tag">(Home)</span></span>
                     <span class="vs">vs</span>
-                    <span>{match.team2Name}</span>
+                    <span style="border-left: 3px solid {team2?.colorPrimary}; padding-left: 6px;">{match.team2Name}</span>
                   </div>
                   {#if match.status === 'completed' && match.result}
                     <span class="winner">
@@ -271,7 +279,7 @@
   }
   
   .user-team {
-    background: rgba(35, 134, 54, 0.1);
+    background: rgba(var(--team-primary-rgb, 30, 64, 175), 0.1);
   }
   
   .matches-section h2 {
@@ -394,7 +402,7 @@
   }
 
   .user-match {
-    border-color: var(--success) !important;
+    border-color: var(--team-primary, var(--success)) !important;
   }
 
   .leaderboard-grid {

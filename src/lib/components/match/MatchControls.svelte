@@ -12,8 +12,6 @@
     onSpeedChange: (speed: 'instant' | 'ball' | 'over') => void;
     onAutoPlayDelayChange: (delay: number) => void;
     currentInningsData: innings;
-    runRate: string | number;
-    currentOverBalls: BallEvent[];
     battingIntent: IntentType;
     bowlingIntent: IntentType;
     ballType: BallType;
@@ -22,69 +20,41 @@
     isUserBatting: boolean;
     isUserBowling: boolean;
     onBattingIntentChange: (intent: IntentType) => void;
-    onBowlingIntentChange: (intent: IntentType) => void;
-    onBallTypeChange?: (ballType: BallType) => void;
-    onAvoidSinglesChange: (avoidSingles: boolean) => void;
-    currentSuggestion?: string;
-  }
-  
-  export type SimSpeed = 'instant' | 'ball' | 'over';
-  
-  let { 
-    isPaused, 
-    onPause,
-    onPlaySingleBall,
-    onSimulateTarget,
-    speed = $bindable(),
-    autoPlayDelay,
-    onSpeedChange,
-    onAutoPlayDelayChange,
-    currentInningsData,
-    runRate,
-    currentOverBalls,
-    battingIntent, 
-    bowlingIntent, 
-    ballType, 
-    currentBowlerType, 
-    avoidSingles, 
-    isUserBatting, 
-    isUserBowling, 
-    onBattingIntentChange, 
-    onBowlingIntentChange, 
-    onBallTypeChange, 
-    onAvoidSinglesChange,
-    currentSuggestion = ""
-  }: Props = $props();
-
+        onBowlingIntentChange: (intent: IntentType) => void;
+        onBallTypeChange?: (ballType: BallType) => void;
+        onAvoidSinglesChange: (avoidSingles: boolean) => void;
+      }
+      
+      export type SimSpeed = 'instant' | 'ball' | 'over';
+      
+      let {
+        isPaused,
+        onPause,
+        onPlaySingleBall,
+        onSimulateTarget,
+        speed = $bindable(),
+        autoPlayDelay,
+        onSpeedChange,
+        onAutoPlayDelayChange,
+        currentInningsData,
+        battingIntent,
+        bowlingIntent,
+        ballType,
+        currentBowlerType,
+        avoidSingles,
+        isUserBatting,
+        isUserBowling,
+        onBattingIntentChange,
+        onBowlingIntentChange,
+        onBallTypeChange,
+        onAvoidSinglesChange
+      }: Props = $props();
   let targetOver = $state(15);
 </script>
 
 <div class="match-controls-slim">
-  {#if currentSuggestion}
-  <div class="ai-suggestion-box">
-    <p class="suggestion-text">{currentSuggestion}</p>
-  </div>
-  {/if}
-  
-    <div class="middle-this-over">
-        <div class="run-rate-mini">
-          RR: <span>{runRate}</span>
-        </div>
-        {#if currentOverBalls.length > 0}
-        <div class="separator"></div>
-        <div class="bubbles">
-          {#each currentOverBalls as ball}
-            <div class="bubble {getBallClass(ball)}">
-              {getBallLabel(ball)}
-            </div>
-          {/each}
-        </div>
-        {/if}
-      </div>
-
     <div class="speed-group">
-      <span class="speed-label">Speed:</span>
-      <button class="speed-btn {speed === 'ball' ? 'active' : ''}" onclick={() => onSpeedChange('ball')} title="Ball by Ball">Ball</button>
+      <span class="speed-label">Speed:</span>      <button class="speed-btn {speed === 'ball' ? 'active' : ''}" onclick={() => onSpeedChange('ball')} title="Ball by Ball">Ball</button>
       <button class="speed-btn {speed === 'over' ? 'active' : ''}" onclick={() => onSpeedChange('over')} title="Over by Over">Over</button>
       <button class="speed-btn {speed === 'instant' ? 'active' : ''}" onclick={() => onSpeedChange('instant')} title="Instant">Fast</button>
     </div>
@@ -176,88 +146,5 @@
     font-size: 0.7rem;
     padding: 3px;
     margin: 0 4px;
-  }
-  /* middle-this-over styles */
-  .middle-this-over {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin: 8px 0;
-    background: var(--bg-tertiary);
-    padding: 4px 12px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    min-height: 28px;
-  }
-  .middle-this-over .run-rate-mini {
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: var(--text-secondary);
-  }
-  .middle-this-over .run-rate-mini span {
-    color: var(--text-primary);
-  }
-  .middle-this-over .separator {
-    width: 1px;
-    height: 16px;
-    background: var(--border-color);
-  }
-  .middle-this-over .bubbles {
-    display: flex;
-    gap: 4px;
-  }
-  .middle-this-over .bubble {
-    width: 20px;
-    height: 20px;
-    border-radius: 999px;
-    display: grid;
-    place-items: center;
-    font-size: 0.65rem;
-    font-weight: 800;
-    color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(148, 163, 184, 0.14);
-  }
-  .middle-this-over .bubble.dot {
-    opacity: 0.72;
-    color: var(--text-muted);
-  }
-  .middle-this-over .bubble.runs {
-    background: rgba(var(--accent-sapphire-rgb), 0.14);
-    color: var(--info);
-  }
-  .middle-this-over .bubble.four {
-    background: rgba(var(--accent-gold-rgb), 0.14);
-    color: var(--warning);
-  }
-  .middle-this-over .bubble.six {
-    background: rgba(var(--accent-emerald-rgb), 0.14);
-    color: var(--success);
-  }
-  .middle-this-over .bubble.wicket {
-    background: rgba(var(--accent-ruby-rgb), 0.14);
-    color: var(--danger);
-  }
-  .middle-this-over .bubble.extra {
-    background: rgba(var(--accent-amethyst-rgb), 0.14);
-    color: var(--accent-goblin);
-  }
-
-  .ai-suggestion-box {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 8px 12px;
-    margin-bottom: 8px;
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    line-height: 1.4;
-    text-align: center;
-  }
-
-  .suggestion-text {
-    margin: 0;
-    color: var(--text-primary);
   }
 </style>

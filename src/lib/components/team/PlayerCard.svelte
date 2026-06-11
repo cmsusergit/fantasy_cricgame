@@ -34,6 +34,11 @@
     
     let isEditingName = $state(false);
     let editNameValue = $state(player.name);
+
+    function hexToRgb(hex: string): string {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '148, 163, 184';
+    }
   
     function startEdit(e: Event) {
       e.stopPropagation();
@@ -75,7 +80,7 @@
   class:selected 
   class:unavailable={!hideAvailability && !player.isAvailable} 
   data-faction={player.faction}
-  style={teamColorPrimary ? `--team-primary: ${teamColorPrimary}; --team-secondary: ${teamColorSecondary}; --card-bg: linear-gradient(180deg, ${teamColorSecondary}10, transparent 40%), var(--bg-surface);` : ''}
+  style={teamColorPrimary ? `--team-primary: ${teamColorPrimary}; --team-secondary: ${teamColorSecondary ?? '#6b7280'}; --team-primary-rgb: ${hexToRgb(teamColorPrimary)}; --team-secondary-rgb: ${hexToRgb(teamColorSecondary ?? '#6b7280')}; --card-bg: linear-gradient(180deg, ${(teamColorSecondary ?? '#6b7280')}10, transparent 40%), var(--bg-surface);` : ''}
   onclick={() => onSelect && (hideAvailability || player.isAvailable) && onSelect(player)}
   role={onSelect && (hideAvailability || player.isAvailable) ? "button" : undefined}
   tabindex={onSelect && (hideAvailability || player.isAvailable) ? 0 : undefined}
@@ -195,7 +200,7 @@
     border-radius: 12px;
     cursor: pointer;
     background: var(--card-bg,
-      linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)),
+      linear-gradient(180deg, rgba(var(--team-primary-rgb, 30, 64, 175), 0.03), rgba(255, 255, 255, 0)),
       var(--bg-surface)
     );
     border: 1px solid rgba(148, 163, 184, 0.16);
@@ -214,7 +219,7 @@
     width: 150px;
     height: 150px;
     border-radius: 999px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.08), transparent 68%);
+    background: radial-gradient(circle, rgba(var(--team-secondary-rgb, 255, 191, 36), 0.12), transparent 68%);
     pointer-events: none;
     opacity: 0.8;
   }
@@ -231,19 +236,20 @@
     text-transform: uppercase;
     opacity: 0.045;
     pointer-events: none;
+    color: var(--team-primary, var(--accent-sapphire));
   }
 
   .player-card:hover {
     transform: translateY(-3px);
-    border-color: rgba(var(--accent-sapphire-rgb), 0.34);
+    border-color: rgba(var(--team-primary-rgb, 59, 130, 246), 0.34);
     box-shadow: none;
   }
 
   .player-card.selected {
-    border-color: rgba(var(--accent-emerald-rgb), 0.42);
+    border-color: rgba(var(--team-primary-rgb, 30, 64, 175), 0.42);
     box-shadow: none;
     background:
-      linear-gradient(180deg, rgba(var(--accent-emerald-rgb), 0.08), rgba(255, 255, 255, 0)),
+      linear-gradient(180deg, rgba(var(--team-primary-rgb, 30, 64, 175), 0.08), rgba(255, 255, 255, 0)),
       var(--bg-surface);
   }
 
@@ -302,32 +308,32 @@
     height: 100%;
     border-radius: 999px;
     object-fit: cover;
-    border: 2px solid rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(var(--team-primary-rgb, 30, 64, 175), 0.3);
     background: var(--bg-secondary);
   }
 
   .player-card[data-faction="human"] .avatar-img {
-    box-shadow: none;
+    box-shadow: 0 0 6px rgba(var(--team-primary-rgb, 30, 64, 175), 0.2);
   }
 
   .player-card[data-faction="elf"] .avatar-img {
-    box-shadow: none;
+    box-shadow: 0 0 6px rgba(var(--team-primary-rgb, 30, 64, 175), 0.2);
   }
 
   .player-card[data-faction="orc"] .avatar-img {
-    box-shadow: none;
+    box-shadow: 0 0 6px rgba(var(--team-primary-rgb, 30, 64, 175), 0.2);
   }
 
   .player-card[data-faction="dwarf"] .avatar-img {
-    box-shadow: none;
+    box-shadow: 0 0 6px rgba(var(--team-primary-rgb, 30, 64, 175), 0.2);
   }
 
   .player-card[data-faction="goblin"] .avatar-img {
-    box-shadow: none;
+    box-shadow: 0 0 6px rgba(var(--team-primary-rgb, 30, 64, 175), 0.2);
   }
 
   .player-card[data-faction="nightelf"] .avatar-img {
-    box-shadow: none;
+    box-shadow: 0 0 6px rgba(var(--team-primary-rgb, 30, 64, 175), 0.2);
   }
 
   .faction-badge {
@@ -340,7 +346,7 @@
     height: 22px;
     border-radius: 999px;
     background: var(--bg-elevated);
-    border: 1px solid var(--surface-outline);
+    border: 1px solid rgba(var(--team-primary-rgb, 30, 64, 175), 0.25);
     font-size: 0.72rem;
     box-shadow: none;
   }
@@ -359,6 +365,7 @@
     min-width: 0;
     font-size: 1rem;
     font-weight: 700;
+    color: var(--team-primary, var(--text-primary));
   }
 
   .name-text {
@@ -460,8 +467,8 @@
   }
 
   .icon-btn.edit-btn:hover {
-    color: var(--info);
-    background: rgba(var(--accent-sapphire-rgb), 0.12);
+    color: rgba(var(--team-primary-rgb, 30, 64, 175), 0.9);
+    background: rgba(var(--team-primary-rgb, 30, 64, 175), 0.12);
   }
 
   .icon-btn.save-btn {
@@ -510,6 +517,19 @@
   .stat-bar-fill {
     height: 100%;
     border-radius: inherit;
+    background: linear-gradient(90deg, rgba(var(--team-primary-rgb, 30, 64, 175), 0.9), rgba(var(--team-secondary-rgb, 251, 191, 36), 0.8));
+  }
+
+  .stat-bar-fill.high {
+    background: linear-gradient(90deg, rgba(var(--team-primary-rgb, 30, 64, 175), 0.95), rgba(var(--team-secondary-rgb, 251, 191, 36), 0.85));
+  }
+
+  .stat-bar-fill.medium {
+    background: linear-gradient(90deg, rgba(var(--team-primary-rgb, 30, 64, 175), 0.7), rgba(var(--team-secondary-rgb, 251, 191, 36), 0.6));
+  }
+
+  .stat-bar-fill.low {
+    background: linear-gradient(90deg, rgba(var(--team-primary-rgb, 30, 64, 175), 0.5), rgba(var(--team-secondary-rgb, 251, 191, 36), 0.4));
   }
 
   .stat-value {
@@ -524,7 +544,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
     padding-top: 0.45rem;
-    border-top: 1px solid rgba(148, 163, 184, 0.14);
+    border-top: 1px solid rgba(var(--team-primary-rgb, 30, 64, 175), 0.18);
   }
 
   .mini-stat {
@@ -534,8 +554,8 @@
     gap: 0.5rem;
     padding: 0.5rem 0.65rem;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(148, 163, 184, 0.12);
+    background: rgba(var(--team-primary-rgb, 30, 64, 175), 0.04);
+    border: 1px solid rgba(var(--team-primary-rgb, 30, 64, 175), 0.14);
   }
 
   .price {
@@ -550,7 +570,7 @@
   }
 
   .select-btn.selected {
-    background: linear-gradient(180deg, rgba(var(--accent-ruby-rgb), 0.98), rgba(var(--accent-ruby-rgb), 0.78));
+    background: linear-gradient(180deg, rgba(var(--team-primary-rgb, 30, 64, 175), 0.98), rgba(var(--team-primary-rgb, 30, 64, 175), 0.78));
     color: #fff;
   }
 

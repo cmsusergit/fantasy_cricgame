@@ -83,6 +83,11 @@
   --radius-md: 10px;
   --radius-lg: 14px;
   --shell-width: 1480px;
+
+  --team-primary: var(--accent-sapphire);
+  --team-secondary: var(--accent-gold);
+  --team-primary-rgb: var(--accent-sapphire-rgb);
+  --team-secondary-rgb: var(--accent-gold-rgb);
 }
 
 [data-theme="light"] {
@@ -106,6 +111,9 @@
   --shadow-sm: none;
   --shadow-md: none;
   --shadow-lg: none;
+
+  --team-primary-rgb: var(--accent-sapphire-rgb);
+  --team-secondary-rgb: var(--accent-gold-rgb);
 }
 
 * {

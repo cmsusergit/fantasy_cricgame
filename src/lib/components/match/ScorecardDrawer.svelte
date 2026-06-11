@@ -8,6 +8,10 @@
   export let currentInningsData: innings;
   export let battingTeamPlayers: Player[];
   export let bowlingTeamPlayers: Player[];
+  export let battingTeamColorPrimary: string = '#3b82f6';
+  export let battingTeamColorSecondary: string = '#fbbf24';
+  export let bowlingTeamColorPrimary: string = '#3b82f6';
+  export let bowlingTeamColorSecondary: string = '#fbbf24';
 
   let activeTab: 'batting' | 'bowling' = 'batting';
 
@@ -148,13 +152,13 @@
 <div
   class="scorecard-drawer"
   class:show
-  style="transform: translateX({$drawerPosition}%);"
+  style="transform: translateX({$drawerPosition}%); --batting-primary: {battingTeamColorPrimary}; --bowling-primary: {bowlingTeamColorPrimary};"
   role="dialog"
   aria-modal="true"
   aria-labelledby="scorecard-drawer-title"
 >
   <div class="drawer-header">
-    <h2 id="scorecard-drawer-title">Full Scorecard</h2>
+    <h2 id="scorecard-drawer-title" style="color: {battingTeamColorPrimary};">Full Scorecard</h2>
     <button class="close-btn" onclick={() => (show = false)}>×</button>
   </div>
 
@@ -306,8 +310,8 @@
   }
 
   .tab-btn.active {
-    color: var(--color-accent);
-    border-bottom-color: var(--color-accent);
+    color: var(--batting-primary, var(--color-accent));
+    border-bottom-color: var(--batting-primary, var(--color-accent));
     font-weight: 600;
   }
 

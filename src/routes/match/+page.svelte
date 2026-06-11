@@ -174,6 +174,12 @@
       batsmanConcentration: {}, bowlerRhythm: {}
     };
   }
+
+  function hexToRgb(hex: string | undefined): string {
+    if (!hex) return '148, 163, 184';
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '148, 163, 184';
+  }
   
   function getRandomWeather() {
     const weights = [0.40, 0.30, 0.20, 0.10];
@@ -616,7 +622,7 @@
       phase = 'playing';
       autoResume = true;
       if (ballInterval) clearInterval(ballInterval);
-      playTargetedLoop();
+      ballInterval = setTimeout(playTargetedLoop, 50);
   }
 
   function playTargetedLoop() {
@@ -630,15 +636,7 @@
 
     if (isComplete) {
         simulationTarget = null;
-        return;
-    }
-    
-    if (phaseChanged || phase !== 'playing') {
-        if ((phase as string) === 'inningBreak') {
-            simulationTarget = null;
-            autoResume = false;
-        }
-        // Paused for user selection. Keep autoResume and simulationTarget intact (unless innings break).
+        autoResume = false;
         return;
     }
 
@@ -654,6 +652,18 @@
 
     if (targetMet) {
         simulationTarget = null;
+        autoResume = false;
+    }
+
+    if (phaseChanged || phase !== 'playing') {
+        if ((phase as string) === 'inningBreak') {
+            simulationTarget = null;
+            autoResume = false;
+        }
+        return;
+    }
+
+    if (targetMet) {
         phase = 'paused';
         return;
     }
@@ -711,6 +721,10 @@
   }
 
   function toggleBatsman(id: string) {
+    if (phase === 'selectNextBatsman') {
+        confirmNextBatsman(id);
+        return;
+    }
     if (selectedBatsmen.includes(id)) {
         selectedBatsmen = selectedBatsmen.filter(x => x !== id);
     } else if (selectedBatsmen.length < 2) {
@@ -755,8 +769,12 @@
         pendingBowlerSelection = false;
         phase = 'selectNextBowler';
     } else {
-        phase = 'paused';
-        if (autoResume) togglePause();
+        if (autoResume && simulationTarget) {
+            phase = 'playing';
+            ballInterval = setTimeout(playTargetedLoop, 50);
+        } else {
+            phase = 'paused';
+        }
     }
   }
 
@@ -805,8 +823,12 @@
     if (phase === 'selectOpeningBowler') {
         phase = 'ready';
     } else {
-        phase = 'paused';
-        if (autoResume) togglePause();
+        if (autoResume && simulationTarget) {
+            phase = 'playing';
+            ballInterval = setTimeout(playTargetedLoop, 50);
+        } else {
+            phase = 'paused';
+        }
     }
   }
 
@@ -889,9 +911,13 @@
     </div>
   {:else if phase === 'toss'}
     <div class="full-screen-message">
-      <div class="toss-card">
-        <div class="toss-header">🪙 Matchday Toss</div>
-        <div class="toss-teams">{matchTeam1?.name} <span class="vs">vs</span> {matchTeam2?.name}</div>
+      <div class="toss-card" style="border-top: 4px solid {matchTeam1?.colorPrimary}; background: linear-gradient(135deg, {matchTeam1?.colorPrimary}10, {matchTeam2?.colorPrimary}10, var(--bg-surface));">
+        <div class="toss-header" style="color: {matchTeam1?.colorPrimary};">🪙 Matchday Toss</div>
+        <div class="toss-teams">
+          <span style="color: {matchTeam1?.colorPrimary};">{matchTeam1?.name}</span>
+          <span class="vs">vs</span>
+          <span style="color: {matchTeam2?.colorPrimary};">{matchTeam2?.name}</span>
+        </div>
         
         <div class="conditions-panel">
           <div class="condition">
@@ -953,27 +979,30 @@
             <div class="selection-container">
                <div class="selection-prompt">{phase === 'selectOpeningBatsmen' ? 'Pick 2 Openers' : 'Pick Next Batsman'}</div>
                <div class="selection-list">
-                 {#each getAvailableBatsmen() as p}
-                 <button class="player-select-btn {selectedBatsmen.includes(p.id) ? 'selected' : ''}" 
-                         data-faction={p.faction} 
-                         style="--team-primary: {currentBattingTeam?.colorPrimary}; --team-secondary: {currentBattingTeam?.colorSecondary}; background-image: linear-gradient(135deg, {currentBattingTeam?.colorPrimary}15, {currentBattingTeam?.colorSecondary}30)"
-                         onclick={() => toggleBatsman(p.id)}
-                         disabled={!p.isAvailable || (p as any).activeInjury || p.fatigue > 90}>
-                        <div class="player-identity">
-                            <div class="avatar-wrapper">
-                                <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
-                                <div class="faction-badge-mini faction-{p.faction}">
-                                    {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
-                                </div>
-                            </div>
-                            <div class="player-info" style="text-align: left;">
-                               <span class="name">{p.name}</span>
-                               <span class="role">{p.role} • {p.battingType || 'RHB'} • {p.battingRole || 'Middle Order'}{p.bowlingType && p.bowlingType !== 'none' ? ` • ${p.bowlingType}` : ''}</span>
-                            </div>
-                        </div>
-                        <span class="stat-badge">Bat: {p.stats.batting}</span>
-                    </button>
-                 {/each}
+                  {#each getAvailableBatsmen() as p}
+                     {@const isSelected = selectedBatsmen.includes(p.id)}
+                     <button class="player-select-btn" class:selected={isSelected}
+                             data-faction={p.faction}
+                             style="--team-primary: {currentBattingTeam?.colorPrimary}; --team-secondary: {currentBattingTeam?.colorSecondary}; --team-primary-rgb: {hexToRgb(currentBattingTeam?.colorPrimary)}; --team-secondary-rgb: {hexToRgb(currentBattingTeam?.colorSecondary)}"
+                             onclick={() => toggleBatsman(p.id)}>
+                         {#if isSelected}
+                           <span class="select-badge">✓</span>
+                         {/if}
+                         <div class="player-identity">
+                             <div class="avatar-wrapper">
+                                 <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
+                                 <div class="faction-badge-mini faction-{p.faction}">
+                                     {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
+                                 </div>
+                             </div>
+                             <div class="player-info" style="text-align: left;">
+                                <span class="name">{p.name}</span>
+                                <span class="role">{p.role} • {p.battingType || 'RHB'} • {p.battingRole || 'Middle Order'}{p.bowlingType && p.bowlingType !== 'none' ? ` • ${p.bowlingType}` : ''}</span>
+                             </div>
+                         </div>
+                         <span class="stat-badge">Bat: {p.stats.batting}</span>
+                     </button>
+                   {/each}
                </div>
                {#if phase === 'selectOpeningBatsmen'}
                  <button class="btn-confirm" disabled={selectedBatsmen.length !== 2} onclick={confirmOpeningBatsmen}>Confirm Openers</button>
@@ -984,7 +1013,7 @@
               {#each currentBattingTeam?.players.filter(p => getPlaying11(currentBattingTeam!).includes(p.id)) || [] as p}
                 {@const stats = getBatsmanStats(p.id)}
                 {#if stats.isBatting}
-                <div class="scorecard-item {stats.isBatting ? 'active' : ''}" data-faction={p.faction} style="--team-primary: {currentBattingTeam?.colorPrimary}; --team-secondary: {currentBattingTeam?.colorSecondary}; background-image: linear-gradient(135deg, {currentBattingTeam?.colorPrimary}15, {currentBattingTeam?.colorSecondary}30)">
+                <div class="scorecard-item team-themed {stats.isBatting ? 'active' : ''}" data-faction={p.faction} style="--team-primary: {currentBattingTeam?.colorPrimary}; --team-secondary: {currentBattingTeam?.colorSecondary}; --team-primary-rgb: {hexToRgb(currentBattingTeam?.colorPrimary)}; --team-secondary-rgb: {hexToRgb(currentBattingTeam?.colorSecondary)}; --team-bg: linear-gradient(135deg, {currentBattingTeam?.colorPrimary}22, {currentBattingTeam?.colorPrimary}0a);">
                     <div class="top-row">
                         <div class="player-identity">
                             <div class="avatar-wrapper">
@@ -1021,9 +1050,14 @@
       <!-- CENTER PANE: Play Area -->
       <div class="pane center-pane">
         
-        <div class="scoreboard-panel">
-           <div class="scoreboard-header">
-             <span class="innings-label">{currentInnings === 1 ? '1st' : '2nd'} Innings</span>
+        <div class="scoreboard-panel" style="border-top: 3px solid {currentBattingTeam?.colorPrimary};">
+           <div class="scoreboard-header" style="border-bottom-color: {currentBattingTeam?.colorPrimary}20;">
+             <span class="innings-label" style="color: {currentBattingTeam?.colorPrimary};">{currentInnings === 1 ? '1st' : '2nd'} Innings</span>
+             <span class="match-teams-vs">
+               <span style="color: {matchTeam1?.colorPrimary};">{matchTeam1?.name}</span>
+               <span class="vs">vs</span>
+               <span style="color: {matchTeam2?.colorPrimary};">{matchTeam2?.name}</span>
+             </span>
            </div>
            <Scoreboard 
               inningsData={currentInningsData} 
@@ -1042,6 +1076,8 @@
               onAvoidSinglesChange={(v: boolean) => avoidSingles = v}
               weather={weather}
               pitch={pitch}
+              runRate={runRate}
+              currentOverBalls={currentOverBalls}
            />
         </div>
 
@@ -1142,9 +1178,6 @@
               onBallTypeChange={(b: BallType) => currentBallType = b}
               onAvoidSinglesChange={(v: boolean) => avoidSingles = v}
               currentInningsData={currentInningsData}
-              runRate={runRate}
-              currentOverBalls={currentOverBalls}
-              currentSuggestion={currentSuggestion}
               />
           </div>
           
@@ -1166,7 +1199,11 @@
                          currentInningsData={currentInningsData}
                          battingTeamPlayers={currentBattingTeam?.players || []}
                          bowlingTeamPlayers={currentBowlingTeam?.players || []}
-        />
+                         battingTeamColorPrimary={currentBattingTeam?.colorPrimary}
+                         battingTeamColorSecondary={currentBattingTeam?.colorSecondary}
+                         bowlingTeamColorPrimary={currentBowlingTeam?.colorPrimary}
+                         bowlingTeamColorSecondary={currentBowlingTeam?.colorSecondary}
+         />
       </div>
 
       <!-- RIGHT PANE: Bowling Team -->
@@ -1181,8 +1218,8 @@
             <div class="selection-container">
                <div class="selection-prompt">Select Bowler for the Over</div>
                <div class="selection-list">
-                 {#each getAvailableBowlers() as p}
-                    <button class="player-select-btn" data-faction={p.faction} onclick={() => confirmBowler(p.id)} style="--team-primary: {currentBowlingTeam?.colorPrimary}; --team-secondary: {currentBowlingTeam?.colorSecondary}; background-image: linear-gradient(135deg, {currentBowlingTeam?.colorPrimary}15, {currentBowlingTeam?.colorSecondary}30)">
+                  {#each getAvailableBowlers() as p}
+                      <button class="player-select-btn" data-faction={p.faction} onclick={() => confirmBowler(p.id)} style="--team-primary: {currentBowlingTeam?.colorPrimary}; --team-secondary: {currentBowlingTeam?.colorSecondary}; --team-primary-rgb: {hexToRgb(currentBowlingTeam?.colorPrimary)}; --team-secondary-rgb: {hexToRgb(currentBowlingTeam?.colorSecondary)}">
                         <div class="player-identity">
                             <div class="avatar-wrapper">
                                 <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
@@ -1204,8 +1241,7 @@
             <div class="scorecard-list">
               {#each currentBowlingTeam?.players.filter(p => getPlaying11(currentBowlingTeam!).includes(p.id)) || [] as p}
                 {@const stats = getBowlerStats(p.id)}
-                {#if p.id === currentLiveBowlerId}
-                <div class="scorecard-item {p.id === currentLiveBowlerId ? 'active-bowl' : ''}" data-faction={p.faction} style="--team-primary: {currentBowlingTeam?.colorPrimary}; --team-secondary: {currentBowlingTeam?.colorSecondary}; background-image: linear-gradient(135deg, {currentBowlingTeam?.colorPrimary}15, {currentBowlingTeam?.colorSecondary}30)">
+                <div class="scorecard-item team-themed {p.id === currentLiveBowlerId ? 'active-bowl' : ''}" data-faction={p.faction} style="--team-primary: {currentBowlingTeam?.colorPrimary}; --team-secondary: {currentBowlingTeam?.colorSecondary}; --team-primary-rgb: {hexToRgb(currentBowlingTeam?.colorPrimary)}; --team-secondary-rgb: {hexToRgb(currentBowlingTeam?.colorSecondary)}; --team-bg: linear-gradient(135deg, {currentBowlingTeam?.colorPrimary}22, {currentBowlingTeam?.colorPrimary}0a);">
                     <div class="top-row">
                         <div class="player-identity">
                             <div class="avatar-wrapper">
@@ -1222,9 +1258,10 @@
                     </div>
                     {#if p.id === currentLiveBowlerId}
                        <div class="status playing-bowl"><span class="pulse-dot bowl"></span> Bowling Now</div>
+                    {:else if stats.overs === '0'}
+                       <div class="status waiting">Yet to bowl</div>
                     {/if}
                 </div>
-                {/if}
               {/each}
             </div>
 
@@ -1235,6 +1272,19 @@
         </div>
       </div>
       
+    </div>
+  {/if}
+  {#if currentSuggestion}
+    <div class="floating-suggestion" class:expanded={showSuggestion}>
+      <button class="suggestion-toggle" onclick={() => showSuggestion = !showSuggestion} title="Assistant Suggestion">
+        💡
+      </button>
+      {#if showSuggestion}
+        <div class="suggestion-content">
+          <h4>Assistant Tip</h4>
+          <p>{currentSuggestion}</p>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -1333,9 +1383,6 @@
     font-size: 1.75rem;
     font-weight: 800;
     margin-bottom: 20px;
-    background: -webkit-linear-gradient(45deg, var(--accent-fire), var(--accent-gold));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
   }
 
   .toss-teams {
@@ -1462,26 +1509,62 @@
   .selection-list { display: flex; flex-direction: column; gap: 10px; }
   
   .player-select-btn {
-    background: var(--color-bg-panel-light);
-    border: 1px solid transparent;
+    background: var(--bg-surface);
+    border: 2px solid rgba(255,255,255,0.1);
     padding: 12px 16px;
-    border-radius: 8px;
+    border-radius: 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: all 0.2s;
+    transition: all 0.15s ease;
     color: var(--text-primary);
+    position: relative;
+    cursor: pointer;
   }
-  .player-select-btn:hover { background: var(--color-bg-panel); }
-  .player-select-btn.selected { background: var(--color-batting-dark); border-color: var(--color-batting); }
+  .player-select-btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+  .player-select-btn:hover:not(.selected):not(:disabled) {
+    border-color: var(--team-primary, #3b82f6);
+    background: rgba(var(--team-primary-rgb, 59, 130, 246), 0.1);
+  }
+  .player-select-btn.selected {
+    background: linear-gradient(135deg, var(--team-primary, #3b82f6), var(--team-secondary, #fbbf24)) !important;
+    border-color: var(--team-primary, #3b82f6) !important;
+    border-width: 3px !important;
+    color: #fff !important;
+  }
+  .player-select-btn.selected .name { color: #fff !important; font-weight: 700; }
+  .player-select-btn.selected .role { color: rgba(255,255,255,0.8) !important; }
+  .player-select-btn.selected .stat-badge { background: rgba(0,0,0,0.3) !important; color: #fff !important; font-weight: 700; }
+  .player-select-btn.selected .avatar-wrapper { border-color: #fff !important; }
+  .player-select-btn.selected .faction-badge-mini { background: rgba(0,0,0,0.3) !important; color: #fff !important; border-color: rgba(255,255,255,0.3) !important; }
+  
+  .select-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 22px;
+    height: 22px;
+    background: #22c55e;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 900;
+    z-index: 10;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    border: 2px solid var(--bg-surface, #1e293b);
+    line-height: 1;
+  }
   
   .player-info { display: flex; flex-direction: column; text-align: left; }
-  .player-info .name { font-weight: 600; font-size: 1rem; }
+  .player-info .name { font-weight: 600; font-size: 1rem; color: var(--team-primary, var(--text-primary)); }
   .player-info .role { font-size: 0.75rem; color: var(--text-muted); }
   
-  .stat-badge { background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; font-family: var(--font-sports); font-size: 0.85rem; font-weight: 600; }
+  .stat-badge { background: rgba(var(--team-primary-rgb, 148, 163, 184), 0.12); color: var(--team-primary, var(--text-primary)); padding: 4px 8px; border-radius: 4px; font-family: var(--font-sports); font-size: 0.85rem; font-weight: 600; }
 
-  .btn-confirm { background: var(--color-batting); color: white; padding: 14px; border-radius: 8px; font-weight: 700; margin-top: auto; }
+  .btn-confirm { background: linear-gradient(135deg, var(--team-primary, var(--color-batting)), var(--team-secondary, var(--color-batting-dark))); color: white; padding: 14px; border-radius: 8px; font-weight: 700; margin-top: auto; }
   .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
 
   /* Scorecards */
@@ -1495,9 +1578,33 @@
     flex-direction: column;
     gap: 6px;
   }
+
+  .scorecard-item.team-themed {
+    background: var(--team-bg, linear-gradient(135deg, rgba(var(--team-primary-rgb, 148, 163, 184), 0.12), rgba(var(--team-primary-rgb, 148, 163, 184), 0.04)));
+    border: 1px solid rgba(var(--team-primary-rgb, 148, 163, 184), 0.25);
+    border-left: 4px solid var(--team-primary, #3b82f6);
+  }
+
+  .scorecard-item.team-themed .player-name {
+    color: var(--team-primary, var(--text-primary));
+  }
+
+  .scorecard-item.team-themed .player-score {
+    color: var(--team-secondary, var(--text-secondary));
+  }
+
+  .scorecard-item.team-themed .avatar-wrapper {
+    border-color: var(--team-primary, var(--accent-sapphire));
+  }
+
+  .scorecard-item.team-themed .faction-badge-mini {
+    border-color: var(--team-primary, var(--accent-sapphire));
+    background: var(--team-primary, var(--bg-primary));
+    color: #fff;
+  }
   
-  .scorecard-item.active { background: var(--color-batting-transparent); border-color: rgba(var(--accent-emerald-rgb), 0.3); }
-  .scorecard-item.active-bowl { background: var(--color-bowling-transparent); border-color: rgba(var(--accent-sapphire-rgb), 0.3); }
+  .scorecard-item.active { border-color: rgba(var(--team-primary-rgb, 148, 163, 184), 0.45); box-shadow: 0 0 8px rgba(var(--team-primary-rgb, 148, 163, 184), 0.15); }
+  .scorecard-item.active-bowl { border-color: rgba(var(--team-primary-rgb, 148, 163, 184), 0.45); box-shadow: 0 0 8px rgba(var(--team-primary-rgb, 148, 163, 184), 0.15); }
 
     .top-row { display: flex; justify-content: space-between; align-items: center; }
     
@@ -1513,7 +1620,7 @@
       height: 36px;
       border-radius: 50%;
       background: var(--bg-tertiary);
-      border: 2px solid var(--color-border);
+      border: 2px solid rgba(var(--team-primary-rgb, 148, 163, 184), 0.3);
     }
     
     .player-avatar {
@@ -1535,22 +1642,23 @@
       align-items: center;
       justify-content: center;
       font-size: 10px;
-      border: 1px solid var(--color-border);
+      border: 1px solid rgba(var(--team-primary-rgb, 148, 163, 184), 0.25);
     }
     
-    .player-name { font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); }  .player-name.highlight { color: var(--color-batting); }
-  .player-name.highlight-bowl { color: var(--color-bowling); }
-  
+    .player-name { font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); }
+    .player-name.highlight { color: var(--team-primary, var(--accent-emerald)); }
+  .player-name.highlight-bowl { color: var(--team-primary, var(--accent-sapphire)); }
+
   .player-score { font-family: var(--font-sports); font-size: 0.95rem; font-weight: 700; color: var(--text-secondary); }
-  .player-score.highlight { color: var(--text-primary); }
-  .player-score.highlight-bowl { color: var(--text-primary); }
+  .player-score.highlight { color: var(--team-primary, var(--accent-emerald)); }
+  .player-score.highlight-bowl { color: var(--team-primary, var(--accent-sapphire)); }
   .player-score .balls, .player-score .overs { font-size: 0.75rem; font-weight: 400; color: var(--text-muted); }
 
   .status { font-size: 0.75rem; font-style: italic; }
   .status.out { color: var(--color-danger); }
   .status.waiting { color: var(--text-muted); }
-  .status.playing { color: var(--color-batting); font-weight: 600; font-style: normal; display: flex; align-items: center; gap: 6px; }
-  .status.playing-bowl { color: var(--color-bowling); font-weight: 600; font-style: normal; display: flex; align-items: center; gap: 6px; }
+  .status.playing { color: var(--team-primary, var(--accent-emerald)); font-weight: 600; font-style: normal; display: flex; align-items: center; gap: 6px; }
+  .status.playing-bowl { color: var(--team-primary, var(--accent-sapphire)); font-weight: 600; font-style: normal; display: flex; align-items: center; gap: 6px; }
 
   /* Center Pane Elements */
   .scoreboard-panel {
@@ -1568,7 +1676,9 @@
   }
 
   .scoreboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .innings-label { font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+  .innings-label { font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .match-teams-vs { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; }
+  .match-teams-vs .vs { color: var(--text-muted); font-size: 0.75rem; }
   .conditions-mini { display: flex; gap: 12px; font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--color-border); }
 
   .action-panel {
@@ -1745,12 +1855,17 @@
     color: var(--text-primary);
   }
 
-  .scorecard-item, .player-select-btn {
+  .scorecard-item {
     position: relative;
     overflow: hidden;
   }
-  
-  .scorecard-item::after, .player-select-btn::after {
+
+  .player-select-btn {
+    position: relative;
+    overflow: visible;
+  }
+
+  .scorecard-item::after {
     content: attr(data-faction);
     position: absolute;
     bottom: -8px;
@@ -1764,28 +1879,42 @@
     z-index: 0;
   }
 
+  .player-select-btn::after {
+    content: attr(data-faction);
+    position: absolute;
+    bottom: -8px;
+    right: -5px;
+    font-size: 40px;
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: -1;
+  }
+
   .scorecard-item > *, .player-select-btn > * {
     position: relative;
     z-index: 1;
   }
 
-  .scorecard-item[data-faction="human"], .player-select-btn[data-faction="human"] { border-left: 3px solid var(--team-primary, var(--accent-human)); }
-  .scorecard-item[data-faction="human"]::after, .player-select-btn[data-faction="human"]::after { color: var(--team-primary, var(--accent-human)); }
+  .scorecard-item[data-faction="human"] { border-left: 3px solid var(--team-primary, var(--accent-human)); }
+  .scorecard-item[data-faction="human"]::after { color: var(--team-primary, var(--accent-human)); }
 
-  .scorecard-item[data-faction="elf"], .player-select-btn[data-faction="elf"] { border-left: 3px solid var(--team-primary, var(--accent-elf)); }
-  .scorecard-item[data-faction="elf"]::after, .player-select-btn[data-faction="elf"]::after { color: var(--team-primary, var(--accent-elf)); }
+  .scorecard-item[data-faction="elf"] { border-left: 3px solid var(--team-primary, var(--accent-elf)); }
+  .scorecard-item[data-faction="elf"]::after { color: var(--team-primary, var(--accent-elf)); }
 
-  .scorecard-item[data-faction="orc"], .player-select-btn[data-faction="orc"] { border-left: 3px solid var(--team-primary, var(--accent-orc)); }
-  .scorecard-item[data-faction="orc"]::after, .player-select-btn[data-faction="orc"]::after { color: var(--team-primary, var(--accent-orc)); }
+  .scorecard-item[data-faction="orc"] { border-left: 3px solid var(--team-primary, var(--accent-orc)); }
+  .scorecard-item[data-faction="orc"]::after { color: var(--team-primary, var(--accent-orc)); }
 
-  .scorecard-item[data-faction="dwarf"], .player-select-btn[data-faction="dwarf"] { border-left: 3px solid var(--team-primary, var(--accent-dwarf)); }
-  .scorecard-item[data-faction="dwarf"]::after, .player-select-btn[data-faction="dwarf"]::after { color: var(--team-primary, var(--accent-dwarf)); }
+  .scorecard-item[data-faction="dwarf"] { border-left: 3px solid var(--team-primary, var(--accent-dwarf)); }
+  .scorecard-item[data-faction="dwarf"]::after { color: var(--team-primary, var(--accent-dwarf)); }
 
-  .scorecard-item[data-faction="goblin"], .player-select-btn[data-faction="goblin"] { border-left: 3px solid var(--team-primary, var(--accent-goblin)); }
-  .scorecard-item[data-faction="goblin"]::after, .player-select-btn[data-faction="goblin"]::after { color: var(--team-primary, var(--accent-goblin)); }
+  .scorecard-item[data-faction="goblin"] { border-left: 3px solid var(--team-primary, var(--accent-goblin)); }
+  .scorecard-item[data-faction="goblin"]::after { color: var(--team-primary, var(--accent-goblin)); }
 
-  .scorecard-item[data-faction="nightelf"], .player-select-btn[data-faction="nightelf"] { border-left: 3px solid var(--team-primary, var(--accent-nightelf)); }
-  .scorecard-item[data-faction="nightelf"]::after, .player-select-btn[data-faction="nightelf"]::after { color: var(--team-primary, var(--accent-nightelf)); }
+  .scorecard-item[data-faction="nightelf"] { border-left: 3px solid var(--team-primary, var(--accent-nightelf)); }
+  .scorecard-item[data-faction="nightelf"]::after { color: var(--team-primary, var(--accent-nightelf)); }
 
   .faction-icon {
     display: inline-flex;
@@ -1877,5 +2006,67 @@
 
   @keyframes subtextSlideIn {
     to { transform: translateY(0); opacity: 1; }
+  }
+
+  .floating-suggestion {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  .suggestion-toggle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    color: var(--bg-surface);
+    border: none;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: transform 0.2s, background 0.2s;
+  }
+
+  .suggestion-toggle:hover {
+    transform: scale(1.1);
+    background: var(--warning);
+  }
+
+  .suggestion-content {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    width: 250px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    animation: slideInUp 0.3s ease-out forwards;
+    transform-origin: bottom right;
+  }
+
+  .suggestion-content h4 {
+    margin: 0 0 8px 0;
+    color: var(--color-accent);
+    font-size: 1rem;
+    font-family: 'Cinzel', serif;
+  }
+
+  .suggestion-content p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  @keyframes slideInUp {
+    from { opacity: 0; transform: translateY(20px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
 </style>
