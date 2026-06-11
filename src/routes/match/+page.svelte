@@ -48,8 +48,6 @@
   let gameSpeed = $state<SimSpeed>('ball');
 
   let isComplete = $state(false);
-  let battingIntent: IntentType = $state('balanced');
-  let bowlingIntent: IntentType = $state('balanced');
   let currentBallType: BallType = $state('normal');
   let avoidSingles = $state(false);  
   let noMatchAvailable = $state(false);
@@ -491,11 +489,11 @@
     
     if (currentBattingTeam.id !== 'user_team' && currentBattingTeam.tendency) {
       const reqRR = target > 0 ? (target - currentInn.totalRuns) / ((totalOvers * 6 - currentInn.balls) / 6 || 1) : 0;
-      battingIntent = getAIIntent(currentBattingTeam.tendency, currentInn.overs, totalOvers, reqRR, totalOvers * 6 - currentInn.balls);
+      currentActiveBattingIntent = getAIIntent(currentBattingTeam.tendency, currentInn.overs, totalOvers, reqRR, totalOvers * 6 - currentInn.balls);
     }
     if (currentBowlingTeam.id !== 'user_team' && currentBowlingTeam.tendency) {
       const reqRR = target > 0 ? (target - currentInn.totalRuns) / ((totalOvers * 6 - currentInn.balls) / 6 || 1) : 0;
-      bowlingIntent = getAIIntent(currentBowlingTeam.tendency, currentInn.overs, totalOvers, reqRR, totalOvers * 6 - currentInn.balls);
+      currentActiveBowlingIntent = getAIIntent(currentBowlingTeam.tendency, currentInn.overs, totalOvers, reqRR, totalOvers * 6 - currentInn.balls);
     }
 
     const bowlingFieldingAvg = currentBowlingTeam.players.filter(p => getPlaying11(currentBowlingTeam).includes(p.id)).reduce((sum, p) => sum + (p.stats.fielding || 60), 0) / 11;
@@ -510,7 +508,7 @@
     let rhythm = currentInn.bowlerRhythm[bowlerId];
     let rhythmMult = 1.0 + (rhythm / 100) * 0.15;
 
-    const ballEvent = resolveBall(striker, bowler, currentInn.balls, totalOvers, battingIntent, weather as any, pitch as any, 0, false, bowlingIntent, avoidSingles, bowlingFieldingAvg, currentBallType, concMult, rhythmMult);
+    const ballEvent = resolveBall(striker, bowler, currentInn.balls, totalOvers, currentActiveBattingIntent, weather as any, pitch as any, 0, false, currentActiveBowlingIntent, avoidSingles, bowlingFieldingAvg, currentBallType, concMult, rhythmMult);
 
     if (ballEvent.result === 'dot') {
        conc = Math.max(0, conc - 5);
@@ -871,6 +869,37 @@
   
   let currentLiveBowlerId = $derived(getCurrentLiveBowler());
 
+
+  let batsmanIntents = $state<Record<string, IntentType>>({});
+  let bowlerIntents = $state<Record<string, IntentType>>({});
+  
+  const INTENT_LEVELS: IntentType[] = ['defensive', 'balanced', 'aggressive', 'very_aggressive'];
+  const INTENT_LABELS = {
+      'defensive': 'Defensive',
+      'balanced': 'Neutral',
+      'aggressive': 'Aggressive',
+      'very_aggressive': 'Ultra Aggressive'
+  };
+
+  function getIntentIndex(intent: IntentType) {
+      return INTENT_LEVELS.indexOf(intent) !== -1 ? INTENT_LEVELS.indexOf(intent) : 1;
+  }
+
+  function changeBatsmanIntent(id: string, delta: number) {
+      const current = getIntentIndex(batsmanIntents[id] || 'balanced');
+      const nextIndex = Math.max(0, Math.min(INTENT_LEVELS.length - 1, current + delta));
+      batsmanIntents[id] = INTENT_LEVELS[nextIndex];
+  }
+
+  function changeBowlerIntent(id: string, delta: number) {
+      const current = getIntentIndex(bowlerIntents[id] || 'balanced');
+      const nextIndex = Math.max(0, Math.min(INTENT_LEVELS.length - 1, current + delta));
+      bowlerIntents[id] = INTENT_LEVELS[nextIndex];
+  }
+  
+  let currentActiveBattingIntent = $derived(currentInningsData.currentBatsmen[0] ? (batsmanIntents[currentInningsData.currentBatsmen[0]] || 'balanced') : 'balanced');
+  let currentActiveBowlingIntent = $derived(currentLiveBowlerId ? (bowlerIntents[currentLiveBowlerId] || 'balanced') : 'balanced');
+
 </script>
 
 <svelte:head><title>Match - Fantasy Cricket</title></svelte:head>
@@ -964,315 +993,193 @@
       </div>
     </div>
   {:else}
-    <!-- Main Horizontal 3-Pane Match Layout -->
-    <div class="match-layout">
+    <!-- Main Vertical Match Layout -->
+    <div class="match-layout-vertical">
       
-      <!-- LEFT PANE: Batting Team -->
-      <div class="pane left-pane">
-        <div class="pane-header batting-header" style="border-bottom-color: {currentBattingTeam?.colorPrimary}; background: linear-gradient(90deg, {currentBattingTeam?.colorPrimary}1A, transparent);">
-          <h3 style="color: {currentBattingTeam?.colorPrimary}">{currentBattingTeam?.name}</h3>
-          <span class="role-badge">Batting</span>
-        </div>
-        
-        <div class="pane-content">
-          {#if currentBattingTeam?.id === 'user_team' && (phase === 'selectOpeningBatsmen' || phase === 'selectNextBatsman')}
-            <div class="selection-container">
-               <div class="selection-prompt">{phase === 'selectOpeningBatsmen' ? 'Pick 2 Openers' : 'Pick Next Batsman'}</div>
-               <div class="selection-list">
-                  {#each getAvailableBatsmen() as p}
-                     {@const isSelected = selectedBatsmen.includes(p.id)}
-                     <button class="player-select-btn" class:selected={isSelected}
-                             data-faction={p.faction}
-                             style="--team-primary: {currentBattingTeam?.colorPrimary}; --team-secondary: {currentBattingTeam?.colorSecondary}; --team-primary-rgb: {hexToRgb(currentBattingTeam?.colorPrimary)}; --team-secondary-rgb: {hexToRgb(currentBattingTeam?.colorSecondary)}"
-                             onclick={() => toggleBatsman(p.id)}>
-                         {#if isSelected}
-                           <span class="select-badge">✓</span>
-                         {/if}
-                         <div class="player-identity">
-                             <div class="avatar-wrapper">
-                                 <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
-                                 <div class="faction-badge-mini faction-{p.faction}">
-                                     {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
-                                 </div>
-                             </div>
-                             <div class="player-info" style="text-align: left;">
-                                <span class="name">{p.name}</span>
-                                <span class="role">{p.role} • {p.battingType || 'RHB'} • {p.battingRole || 'Middle Order'}{p.bowlingType && p.bowlingType !== 'none' ? ` • ${p.bowlingType}` : ''}</span>
-                             </div>
-                         </div>
-                         <span class="stat-badge">Bat: {p.stats.batting}</span>
-                     </button>
-                   {/each}
-               </div>
-               {#if phase === 'selectOpeningBatsmen'}
-                 <button class="btn-confirm" disabled={selectedBatsmen.length !== 2} onclick={confirmOpeningBatsmen}>Confirm Openers</button>
-               {/if}
-            </div>
-          {:else}
-            <div class="scorecard-list">
-              {#each currentBattingTeam?.players.filter(p => getPlaying11(currentBattingTeam!).includes(p.id)) || [] as p}
-                {@const stats = getBatsmanStats(p.id)}
-                {#if stats.isBatting}
-                <div class="scorecard-item team-themed {stats.isBatting ? 'active' : ''}" data-faction={p.faction} style="--team-primary: {currentBattingTeam?.colorPrimary}; --team-secondary: {currentBattingTeam?.colorSecondary}; --team-primary-rgb: {hexToRgb(currentBattingTeam?.colorPrimary)}; --team-secondary-rgb: {hexToRgb(currentBattingTeam?.colorSecondary)}; --team-bg: linear-gradient(135deg, {currentBattingTeam?.colorPrimary}22, {currentBattingTeam?.colorPrimary}0a);">
-                    <div class="top-row">
-                        <div class="player-identity">
-                            <div class="avatar-wrapper">
-                                <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
-                                <div class="faction-badge-mini faction-{p.faction}">
-                                    {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
-                                </div>
-                            </div>
-                            <span class="player-name {stats.isBatting ? 'highlight' : ''}">
-                              {p.name}
-                            </span>
-                        </div>
-                        <span class="player-score {stats.isBatting ? 'highlight' : ''}">{stats.runs} <span class="balls">({stats.balls})</span></span>
+      <!-- TOP PANE: Batting Team Controls -->
+      <div class="top-section">
+        {#if currentBattingTeam?.id === 'user_team' && (phase === 'selectOpeningBatsmen' || phase === 'selectNextBatsman')}
+          <!-- selection UI reused from before -->
+          <div class="selection-container batting-selection">
+             <div class="selection-prompt">{phase === 'selectOpeningBatsmen' ? 'Pick 2 Openers' : 'Pick Next Batsman'}</div>
+             <div class="selection-list horizontal-list">
+                {#each getAvailableBatsmen() as p}
+                   {@const isSelected = selectedBatsmen.includes(p.id)}
+                   <button class="player-select-btn mini" class:selected={isSelected} onclick={() => toggleBatsman(p.id)}>
+                       <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar-mini" />
+                       <div class="mini-info">
+                          <span class="name">{p.name}</span>
+                          <span class="stat-badge">Bat: {p.stats.batting}</span>
+                       </div>
+                   </button>
+                 {/each}
+             </div>
+             {#if phase === 'selectOpeningBatsmen'}
+               <button class="btn-confirm" disabled={selectedBatsmen.length !== 2} onclick={confirmOpeningBatsmen}>Confirm Openers</button>
+             {/if}
+          </div>
+        {:else}
+          <div class="active-batsmen-row">
+             {#each currentInningsData.currentBatsmen.filter(id => id) as batsmanId}
+               {@const p = currentBattingTeam?.players.find(x => x.id === batsmanId)}
+               {@const stats = getBatsmanStats(batsmanId)}
+               {@const intent = batsmanIntents[batsmanId] || 'balanced'}
+               {#if p}
+                 <div class="batsman-card intent-{intent}">
+                    <div class="b-avatar-col">
+                      <div class="avatar-ring">
+                        <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
+                        <div class="skill-badge {p.stats.batting >= 70 ? 'high' : p.stats.batting >= 40 ? 'med' : 'low'}">{p.stats.batting}</div>
+                      </div>
                     </div>
-                    {#if stats.isOut}
-                       <div class="status out">b. {stats.outType}</div>
-                    {:else if !stats.isBatting && stats.balls === 0}
-                       <div class="status waiting">Yet to bat</div>
-                    {:else if stats.isBatting}
-                       <div class="status playing"><span class="pulse-dot"></span> Batting</div>
-                    {/if}
-                </div>
-                {/if}
-              {/each}
-            </div>
-
-            <button class="btn-drawer-toggle" onclick={() => showScorecardDrawer = true}>
-              View Full Scorecard
-            </button>
-          {/if}
-        </div>
+                    <div class="b-info-col">
+                       <div class="b-name">{p.name}</div>
+                       <div class="b-style">{p.battingType || 'RHB'}</div>
+                       <div class="b-score">{stats.runs} <span class="b-balls">({stats.balls})</span></div>
+                       <div class="b-form-bar-container"><div class="b-form-bar" style="width: {p.morale}%"></div></div>
+                    </div>
+                    <div class="b-aggression-col">
+                       <button class="btn-agg" onclick={() => changeBatsmanIntent(batsmanId, 1)} disabled={!currentBattingTeam?.isUserTeam}>+</button>
+                       <div class="agg-slider-track vertical">
+                           <div class="agg-slider-fill intent-{intent}" style="height: {(getIntentIndex(intent) / 3) * 100}%"></div>
+                       </div>
+                       <button class="btn-agg" onclick={() => changeBatsmanIntent(batsmanId, -1)} disabled={!currentBattingTeam?.isUserTeam}>-</button>
+                       <div class="agg-label">{INTENT_LABELS[intent]}</div>
+                    </div>
+                 </div>
+               {/if}
+             {/each}
+          </div>
+        {/if}
       </div>
       
-      <!-- CENTER PANE: Play Area -->
-      <div class="pane center-pane">
-        
-        <div class="scoreboard-panel" style="border-top: 3px solid {currentBattingTeam?.colorPrimary};">
-           <div class="scoreboard-header" style="border-bottom-color: {currentBattingTeam?.colorPrimary}20;">
-             <span class="innings-label" style="color: {currentBattingTeam?.colorPrimary};">{currentInnings === 1 ? '1st' : '2nd'} Innings</span>
-             <span class="match-teams-vs">
-               <span style="color: {matchTeam1?.colorPrimary};">{matchTeam1?.name}</span>
-               <span class="vs">vs</span>
-               <span style="color: {matchTeam2?.colorPrimary};">{matchTeam2?.name}</span>
-             </span>
-           </div>
-           <Scoreboard 
-              inningsData={currentInningsData} 
-              battingTeamName={currentBattingTeam?.name || ''} 
-              target={currentInnings === 2 ? target : undefined} 
-              {battingIntent}
-              {bowlingIntent}
-              isUserBatting={currentBattingTeam?.id === 'user_team'}
-              isUserBowling={currentBowlingTeam?.id === 'user_team'}
-              onBattingIntentChange={(i: IntentType) => battingIntent = i}
-              onBowlingIntentChange={(i: IntentType) => bowlingIntent = i}
-              ballType={currentBallType}
-              currentBowlerType={currentLiveBowlerId ? (currentBowlingTeam?.players.find(x => x.id === currentLiveBowlerId)?.bowlingType || 'none') : 'none'}
-              {avoidSingles}
-              onBallTypeChange={(b: BallType) => currentBallType = b}
-              onAvoidSinglesChange={(v: boolean) => avoidSingles = v}
-              weather={weather}
-              pitch={pitch}
-              runRate={runRate}
-              currentOverBalls={currentOverBalls}
-           />
-        </div>
-
+      <!-- CENTER PANE: Match Context -->
+      <div class="center-section">
         {#if phase === 'ready'}
           <div class="action-panel centered">
             <h2 class="ready-title">Match Ready</h2>
             <button class="btn-start" onclick={startPlay}>▶ Start Match</button>
           </div>
         {:else if phase === 'inningBreak'}
-          <div class="action-panel centered" style="justify-content: flex-start; padding-top: 20px; overflow-y: auto; overflow-x: hidden;">
+          <div class="action-panel centered">
             <h2 class="break-title">Innings Break</h2>
             <p class="target-text">Target for {matchTeam1?.id === innings2.teamId ? matchTeam1?.name : matchTeam2?.name} is <strong>{target}</strong> runs.</p>
-            
-            <div style="width: 100%; max-width: 800px; margin: 0 auto;">
-                <MatchSummary inningsList={[innings1]} teams={[matchTeam1!, matchTeam2!]} matchComplete={false} />
-            </div>
-
-            <button class="btn-start" onclick={startSecondInnings} style="margin-top: 24px; margin-bottom: 24px;">▶ Start 2nd Innings</button>
+            <button class="btn-start" onclick={startSecondInnings}>▶ Start 2nd Innings</button>
           </div>
         {:else if phase === 'complete'}
-          <div class="action-panel centered" style="justify-content: flex-start; padding-top: 20px; overflow-y: auto; overflow-x: hidden;">
+          <div class="action-panel centered">
             <h3 class="win-title">{innings2.totalRuns >= target ? getTeamName(innings2.teamId) : getTeamName(innings1.teamId)} Wins!</h3>
             <p class="final-score">{innings1.totalRuns}/{innings1.wickets} <span class="vs">vs</span> {innings2.totalRuns}/{innings2.wickets}</p>
-            
-            {#if matchResultObj}
-            {@const userKey = matchTeam1?.isUserTeam ? 'team1' : 'team2'}
-            <div class="match-rewards-panel">
-                <h4>🏆 Match Rewards</h4>
-                <div class="rewards-grid">
-                    <div class="reward-col">
-                        <h5>Your Club Earnings</h5>
-                        <p>Match Fee & Bonus: <span class="money">+${matchResultObj.matchEarnings[userKey].toLocaleString()}</span></p>
-                        {#if matchResultObj.sponsorshipEarnings[userKey] > 0}
-                           <p>Sponsorship: <span class="money">+${matchResultObj.sponsorshipEarnings[userKey].toLocaleString()}</span></p>
-                        {/if}
-                        {#if matchResultObj.operatingEarnings[userKey] > 0}
-                           <p>Ticket Sales: <span class="money positive">+${matchResultObj.operatingEarnings[userKey].toLocaleString()}</span> (To Operating Budget)</p>
-                        {/if}
-                    </div>
-                    {#if matchResultObj.playerOfTheMatch}
-                    <div class="reward-col potm-col">
-                        <h5>⭐ Player of the Match</h5>
-                        <p class="potm-name">{matchResultObj.playerOfTheMatch.name} <span class="potm-team">({getTeamName(matchResultObj.playerOfTheMatch.teamId)})</span></p>
-                        <p class="potm-stats">{matchResultObj.playerOfTheMatch.stats}</p>
-                        <p>Bonus: <span class="money">+${matchResultObj.potmReward.toLocaleString()}</span></p>
-                    </div>
-                    {/if}
-                </div>
-            </div>
-            {/if}
-
-            <div style="width: 100%; max-width: 800px; margin: 0 auto;">
-                <MatchSummary inningsList={[innings1, innings2]} teams={[matchTeam1!, matchTeam2!]} matchComplete={true} />
-            </div>
-
-            <button class="btn-primary large" onclick={handleGoHome} style="margin-top: 24px; margin-bottom: 24px;">Continue to Dashboard</button>
+            <button class="btn-primary" onclick={handleGoHome}>Continue to Dashboard</button>
           </div>
         {:else if phase === 'selectOpeningBatsmen' || phase === 'selectNextBatsman' || phase === 'selectOpeningBowler' || phase === 'selectNextBowler'}
-          <div class="controls-panel" style="display: flex; align-items: center; justify-content: center; padding: 20px; gap: 12px; background: var(--bg-tertiary);">
-            <div class="spinner" style="margin: 0; width: 24px; height: 24px; border-width: 3px;"></div>
-            <h3 style="color: var(--color-accent); margin: 0; font-size: 1.1rem;">Waiting for Selection...</h3>
-            <span style="color: var(--text-muted); font-size: 0.9rem;">(Select from the side panel)</span>
-          </div>
-          
-          <div class="commentary-panel">
-             <div class="commentary-header">
-               <span>Live Commentary</span>
-               <button class="btn-secondary small" onclick={() => showScorecardDrawer = true}>View Scorecard</button>
-               {#if currentLiveBowlerId}
-                 {@const b = currentBowlingTeam?.players.find(x => x.id === currentLiveBowlerId)}
-                 <span class="live-bowler">Bowling: {b?.name}</span>
-               {/if}
-             </div>
-             <div class="commentary-content">
-                <BallFeed events={currentInningsData.ballsFaced} />
-             </div>
+          <div class="action-panel centered">
+            <h3 style="color: var(--color-accent);">Waiting for Selection...</h3>
           </div>
         {:else}
-          <div class="controls-panel">
-             <MatchControls
-              isPaused={phase !== 'playing'}
-              onPause={togglePause}
-              onPlaySingleBall={playSingleBallAction}
-              onSimulateTarget={handleSimulateTarget}
-              bind:speed={gameSpeed}
-              autoPlayDelay={autoPlayDelay}
-              onSpeedChange={(s) => gameSpeed = s}
-              onAutoPlayDelayChange={(d: number) => autoPlayDelay = d}
-              battingIntent={battingIntent}
-              bowlingIntent={bowlingIntent}
-              ballType={currentBallType}
-              currentBowlerType={currentLiveBowlerId ? (currentBowlingTeam?.players.find(x => x.id === currentLiveBowlerId)?.bowlingType || 'none') : 'none'}
-              avoidSingles={avoidSingles}
-              isUserBatting={currentBattingTeam?.id === 'user_team'}
-              isUserBowling={currentBowlingTeam?.id === 'user_team'}
-              onBattingIntentChange={(i: IntentType) => battingIntent = i}
-              onBowlingIntentChange={(i: IntentType) => bowlingIntent = i}
-              onBallTypeChange={(b: BallType) => currentBallType = b}
-              onAvoidSinglesChange={(v: boolean) => avoidSingles = v}
-              currentInningsData={currentInningsData}
-              />
-          </div>
-          
-          <div class="commentary-panel">
-             <div class="commentary-header">
-               <span>Live Commentary</span>
-               <button class="btn-secondary small" onclick={() => showScorecardDrawer = true}>View Scorecard</button>
-               {#if currentLiveBowlerId}
-                 {@const b = currentBowlingTeam?.players.find(x => x.id === currentLiveBowlerId)}
-                 <span class="live-bowler">Bowling: {b?.name}</span>
-               {/if}
+          <div class="scoreboard-main animated-score">
+             <div class="scoreboard-header">
+               <span>{currentBattingTeam?.name}</span> <span class="vs">vs</span> <span>{currentBowlingTeam?.name}</span>
              </div>
-             <div class="commentary-content">
-                <BallFeed events={currentInningsData.ballsFaced} />
+             <div class="score-display">
+                <div class="main-score">
+                  <span class="runs-val">{currentInningsData.totalRuns}</span>/<span class="wickets-val">{currentInningsData.wickets}</span>
+                  <span class="overs-val">({currentInningsData.overs}.{currentInningsData.balls % 6})</span>
+                </div>
+                <div class="rates">
+                    <span class="crr">CRR: {runRate}</span>
+                    {#if currentInnings === 2 && target}
+                       <span class="req">Target: {target}</span>
+                    {/if}
+                </div>
+                {#if currentInnings === 2 && target}
+                   <div class="chase-equation">Need {target - currentInningsData.totalRuns} from {120 - currentInningsData.balls} balls</div>
+                {/if}
+             </div>
+             
+             <div class="play-controls-row">
+                 <button class="btn-play-pause" onclick={togglePause}>
+                    {phase === 'paused' ? '▶ Play' : '⏸ Pause'}
+                 </button>
+                 <select class="speed-select" bind:value={gameSpeed}>
+                    <option value="ball">Normal Speed</option>
+                    <option value="fast">Fast</option>
+                    <option value="instant">Instant</option>
+                 </select>
+                 <button class="btn-action" onclick={playSingleBallAction} disabled={phase !== 'paused'}>Play 1 Ball</button>
+             </div>
+             
+             <!-- Recent Balls -->
+             <div class="recent-balls-mini">
+                 {#each currentInningsData.ballsFaced.slice(-6) as ball}
+                    <div class="bubble {ball.isWicket ? 'wicket' : ball.runs === 4 ? 'four' : ball.runs === 6 ? 'six' : ''}">
+                       {ball.isWicket ? 'W' : ball.runs}
+                    </div>
+                 {/each}
              </div>
           </div>
         {/if}
-        <ScorecardDrawer bind:show={showScorecardDrawer}
-                         currentInningsData={currentInningsData}
-                         battingTeamPlayers={currentBattingTeam?.players || []}
-                         bowlingTeamPlayers={currentBowlingTeam?.players || []}
-                         battingTeamColorPrimary={currentBattingTeam?.colorPrimary}
-                         battingTeamColorSecondary={currentBattingTeam?.colorSecondary}
-                         bowlingTeamColorPrimary={currentBowlingTeam?.colorPrimary}
-                         bowlingTeamColorSecondary={currentBowlingTeam?.colorSecondary}
-         />
       </div>
 
-      <!-- RIGHT PANE: Bowling Team -->
-      <div class="pane right-pane">
-        <div class="pane-header bowling-header" style="border-bottom-color: {currentBowlingTeam?.colorPrimary}; background: linear-gradient(90deg, {currentBowlingTeam?.colorPrimary}1A, transparent);">
-          <h3 style="color: {currentBowlingTeam?.colorPrimary}">{currentBowlingTeam?.name}</h3>
-          <span class="role-badge">Bowling</span>
-        </div>
-        
-        <div class="pane-content">
-          {#if currentBowlingTeam?.id === 'user_team' && (phase === 'selectOpeningBowler' || phase === 'selectNextBowler')}
-            <div class="selection-container">
-               <div class="selection-prompt">Select Bowler for the Over</div>
-               <div class="selection-list">
-                  {#each getAvailableBowlers() as p}
-                      <button class="player-select-btn" data-faction={p.faction} onclick={() => confirmBowler(p.id)} style="--team-primary: {currentBowlingTeam?.colorPrimary}; --team-secondary: {currentBowlingTeam?.colorSecondary}; --team-primary-rgb: {hexToRgb(currentBowlingTeam?.colorPrimary)}; --team-secondary-rgb: {hexToRgb(currentBowlingTeam?.colorSecondary)}">
-                        <div class="player-identity">
-                            <div class="avatar-wrapper">
-                                <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
-                                <div class="faction-badge-mini faction-{p.faction}">
-                                    {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
-                                </div>
-                            </div>
-                            <div class="player-info" style="text-align: left;">
-                               <span class="name">{p.name}</span>
-                               <span class="role">{p.role} • {p.battingType || 'RHB'} • {p.battingRole || 'Middle Order'}{p.bowlingType && p.bowlingType !== 'none' ? ` • ${p.bowlingType}` : ''}</span>
-                            </div>
-                        </div>
-                        <span class="stat-badge">Bowl: {p.stats.bowling}</span>
-                    </button>
-                 {/each}
-               </div>
-            </div>
-          {:else}
-            <div class="scorecard-list">
-              {#each currentBowlingTeam?.players.filter(p => getPlaying11(currentBowlingTeam!).includes(p.id)) || [] as p}
-                {@const stats = getBowlerStats(p.id)}
-                <div class="scorecard-item team-themed {p.id === currentLiveBowlerId ? 'active-bowl' : ''}" data-faction={p.faction} style="--team-primary: {currentBowlingTeam?.colorPrimary}; --team-secondary: {currentBowlingTeam?.colorSecondary}; --team-primary-rgb: {hexToRgb(currentBowlingTeam?.colorPrimary)}; --team-secondary-rgb: {hexToRgb(currentBowlingTeam?.colorSecondary)}; --team-bg: linear-gradient(135deg, {currentBowlingTeam?.colorPrimary}22, {currentBowlingTeam?.colorPrimary}0a);">
-                    <div class="top-row">
-                        <div class="player-identity">
-                            <div class="avatar-wrapper">
-                                <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
-                                <div class="faction-badge-mini faction-{p.faction}">
-                                    {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
-                                </div>
-                            </div>
-                            <span class="player-name {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">
-                              {p.name}
-                            </span>
-                        </div>
-                        <span class="player-score {p.id === currentLiveBowlerId ? 'highlight-bowl' : ''}">{stats.wickets}-{stats.runs} <span class="overs">({stats.overs})</span></span>
-                    </div>
-                    {#if p.id === currentLiveBowlerId}
-                       <div class="status playing-bowl"><span class="pulse-dot bowl"></span> Bowling Now</div>
-                    {:else if stats.overs === '0'}
-                       <div class="status waiting">Yet to bowl</div>
-                    {/if}
+      <!-- BOTTOM PANE: Bowling Controls -->
+      <div class="bottom-section">
+        {#if currentBowlingTeam?.id === 'user_team' && (phase === 'selectOpeningBowler' || phase === 'selectNextBowler')}
+           <div class="selection-container bowling-selection">
+              <div class="selection-prompt">Select Bowler</div>
+              <div class="selection-list horizontal-list">
+                 {#each getAvailableBowlers() as p}
+                     <button class="player-select-btn mini" onclick={() => confirmBowler(p.id)}>
+                         <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar-mini" />
+                         <div class="mini-info">
+                            <span class="name">{p.name}</span>
+                            <span class="stat-badge">Bowl: {p.stats.bowling}</span>
+                         </div>
+                     </button>
+                  {/each}
+              </div>
+           </div>
+        {:else}
+              {@const bowlerId = currentLiveBowlerId}
+              {@const p = currentBowlingTeam?.players.find(x => x.id === bowlerId)}
+              {@const stats = p ? getBowlerStats(p.id) : null}
+              {@const intent = bowlerId ? (bowlerIntents[bowlerId] || 'balanced') : 'balanced'}
+           <div class="active-bowler-row">
+              
+              {#if p && stats}
+                <div class="bowler-card intent-{intent}">
+                   <div class="bw-avatar-col pulse-anim-{Math.floor(p.morale / 20)}">
+                     <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
+                     <div class="skill-badge {p.stats.bowling >= 70 ? 'high' : p.stats.bowling >= 40 ? 'med' : 'low'}">{p.stats.bowling}</div>
+                   </div>
+                   <div class="bw-info-col">
+                      <div class="bw-name">{p.name}</div>
+                      <div class="bw-style">{p.bowlingType || 'Fast'}</div>
+                      <div class="bw-stats">{stats.wickets}-{stats.runs} ({stats.overs})</div>
+                      
+                      <div class="bw-meters">
+                          <div class="meter-row">
+                              <span class="meter-label">Stamina</span>
+                              <div class="b-meter-container"><div class="b-meter-fill stamina" style="width: {100 - p.fatigue}%"></div></div>
+                          </div>
+                          <div class="meter-row">
+                              <span class="meter-label">Confidence</span>
+                              <div class="b-meter-container"><div class="b-meter-fill confidence" style="width: {p.morale}%"></div></div>
+                          </div>
+                      </div>
+                   </div>
+                   <div class="bw-aggression-col horizontal">
+                      <div class="agg-label">{INTENT_LABELS[intent]}</div>
+                      <button class="btn-agg" onclick={() => changeBowlerIntent(p.id, -1)} disabled={!currentBowlingTeam?.isUserTeam}>-</button>
+                      <div class="agg-slider-track horizontal-track">
+                          <div class="agg-slider-fill intent-{intent}" style="width: {(getIntentIndex(intent) / 3) * 100}%"></div>
+                      </div>
+                      <button class="btn-agg" onclick={() => changeBowlerIntent(p.id, 1)} disabled={!currentBowlingTeam?.isUserTeam}>+</button>
+                   </div>
                 </div>
-              {/each}
-            </div>
-
-            <button class="btn-drawer-toggle" onclick={() => showScorecardDrawer = true}>
-              View Full Scorecard
-            </button>
-          {/if}
-        </div>
-      </div>
-      
-    </div>
+              {/if}
+           </div>
+        {/if}
+      </div>    </div>
   {/if}
   {#if currentSuggestion}
     <div class="floating-suggestion" class:expanded={showSuggestion}>
@@ -1290,6 +1197,307 @@
 </div>
 
 <style>
+
+  /* New Vertical Layout Styles */
+  .match-layout-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: 100%;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+  
+  .top-section, .bottom-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .center-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .active-batsmen-row {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    width: 100%;
+  }
+
+  .batsman-card, .bowler-card {
+    display: flex;
+    background: var(--bg-surface);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    gap: 16px;
+    min-width: 300px;
+    align-items: center;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  
+  .batsman-card.intent-defensive { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59,130,246,0.3); }
+  .batsman-card.intent-balanced { border-color: #fbbf24; box-shadow: 0 0 15px rgba(251,191,36,0.3); }
+  .batsman-card.intent-aggressive { border-color: #22c55e; box-shadow: 0 0 15px rgba(34,197,94,0.3); }
+  .batsman-card.intent-very_aggressive { border-color: #ef4444; box-shadow: 0 0 15px rgba(239,68,68,0.3); }
+  
+  .bowler-card.intent-defensive { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59,130,246,0.3); }
+  .bowler-card.intent-balanced { border-color: #fbbf24; box-shadow: 0 0 15px rgba(251,191,36,0.3); }
+  .bowler-card.intent-aggressive { border-color: #22c55e; box-shadow: 0 0 15px rgba(34,197,94,0.3); }
+  .bowler-card.intent-very_aggressive { border-color: #ef4444; box-shadow: 0 0 15px rgba(239,68,68,0.3); }
+
+  .b-avatar-col, .bw-avatar-col {
+    position: relative;
+    width: 64px;
+    height: 64px;
+  }
+
+  .avatar-ring {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid var(--text-muted);
+    overflow: hidden;
+  }
+
+  .player-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .skill-badge {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: white;
+    border: 2px solid var(--bg-surface);
+  }
+  .skill-badge.high { background: #22c55e; }
+  .skill-badge.med { background: #f97316; }
+  .skill-badge.low { background: #ef4444; }
+
+  .b-info-col, .bw-info-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .b-name, .bw-name { font-weight: bold; font-size: 1.1rem; color: var(--text-primary); }
+  .b-style, .bw-style { font-size: 0.8rem; color: var(--text-muted); }
+  .b-score { font-size: 1.2rem; font-weight: bold; color: var(--text-primary); }
+  .b-balls { font-size: 0.9rem; color: var(--text-muted); font-weight: normal; }
+
+  .b-form-bar-container, .b-meter-container {
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .b-form-bar { height: 100%; background: linear-gradient(90deg, #f59e0b, #22c55e); transition: width 0.3s ease; }
+  
+  .b-meter-fill.stamina { height: 100%; background: #3b82f6; transition: width 0.3s ease; }
+  .b-meter-fill.confidence { height: 100%; background: #a855f7; transition: width 0.3s ease; }
+
+  .meter-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+  }
+  .meter-label { width: 60px; color: var(--text-muted); }
+  .b-meter-container { flex: 1; }
+
+  .b-aggression-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .bw-aggression-col.horizontal {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-agg {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+  .btn-agg:hover:not(:disabled) { background: var(--color-accent); color: white; }
+  .btn-agg:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .agg-slider-track {
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .agg-slider-track.vertical { width: 8px; height: 60px; }
+  .agg-slider-track.horizontal-track { width: 100px; height: 8px; }
+
+  .agg-slider-fill {
+    position: absolute;
+    transition: all 0.3s ease;
+  }
+  .agg-slider-track.vertical .agg-slider-fill {
+    bottom: 0;
+    left: 0;
+    width: 100%;
+  }
+  .agg-slider-track.horizontal-track .agg-slider-fill {
+    top: 0;
+    left: 0;
+    height: 100%;
+  }
+
+  .agg-slider-fill.intent-defensive { background: #3b82f6; }
+  .agg-slider-fill.intent-balanced { background: #fbbf24; }
+  .agg-slider-fill.intent-aggressive { background: #22c55e; }
+  .agg-slider-fill.intent-very_aggressive { background: #ef4444; }
+
+  .agg-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: bold;
+    text-align: center;
+    width: max-content;
+  }
+
+  .scoreboard-main {
+    background: var(--bg-surface);
+    border-radius: 16px;
+    padding: 24px;
+    min-width: 400px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .scoreboard-header {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+
+  .score-display {
+    text-align: center;
+  }
+
+  .main-score {
+    font-size: 3rem;
+    font-weight: bold;
+    font-family: 'Cinzel', serif;
+    color: var(--text-primary);
+  }
+  
+  .main-score .wickets-val { color: var(--color-danger); }
+  .main-score .overs-val { font-size: 1.2rem; color: var(--text-muted); font-family: sans-serif; }
+
+  .rates {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+  }
+
+  .chase-equation {
+    margin-top: 8px;
+    font-weight: bold;
+    color: var(--warning);
+    font-size: 1.1rem;
+  }
+
+  .play-controls-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .btn-play-pause, .btn-action {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    background: var(--color-accent);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .btn-play-pause:hover, .btn-action:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+  .btn-action:disabled { background: var(--bg-tertiary); color: var(--text-muted); cursor: not-allowed; }
+
+  .speed-select {
+    padding: 8px;
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+  }
+
+  .recent-balls-mini {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  
+  .active-bowler-row {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  /* Pulse Animations */
+  @keyframes pulse1 { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+  @keyframes pulse2 { 0% { transform: scale(1); } 50% { transform: scale(1.04); } 100% { transform: scale(1); } }
+  @keyframes pulse3 { 0% { transform: scale(1); } 50% { transform: scale(1.06); } 100% { transform: scale(1); } }
+  @keyframes pulse4 { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+  @keyframes pulse5 { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+  .pulse-anim-1 { animation: pulse1 2s infinite; }
+  .pulse-anim-2 { animation: pulse2 2s infinite; }
+  .pulse-anim-3 { animation: pulse3 1.5s infinite; }
+  .pulse-anim-4 { animation: pulse4 1.5s infinite; }
+  .pulse-anim-5 { animation: pulse5 1s infinite; }
+  
+  /* Selection styling fix */
+  .horizontal-list { display: flex; gap: 12px; overflow-x: auto; padding: 8px; justify-content: center; }
+  .player-select-btn.mini { flex-direction: column; width: 120px; text-align: center; }
+  .player-avatar-mini { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; margin-bottom: 8px; }
+  .mini-info { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+
   /* Base Variables & Theming */
   :root {
     --color-bg-dark: var(--bg-primary);
