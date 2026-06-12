@@ -1022,7 +1022,12 @@
                        <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar-mini" />
                        <div class="mini-info">
                           <span class="name">{p.name}</span>
+                          <span class="role-desc">{p.role} • {p.battingType || 'RHB'}</span>
                           <span class="stat-badge">Bat: {p.stats.batting}</span>
+                          <div class="mini-meters">
+                              <div class="meter-bar stamina" style="width: {100 - p.fatigue}%" title="Stamina"></div>
+                              <div class="meter-bar morale" style="width: {p.morale}%" title="Morale"></div>
+                          </div>
                        </div>
                    </button>
                  {/each}
@@ -1050,9 +1055,18 @@
                     </div>
                     <div class="b-info-col">
                        <div class="b-name">{p.name} {#if i === 0}<span class="striker-icon" title="On Strike">🏏</span>{/if}</div>
-                       <div class="b-style">{p.battingType || 'RHB'}</div>
+                       <div class="b-style">{p.battingType || 'RHB'} • {p.battingRole || 'Batsman'}</div>
                        <div class="b-score">{stats.runs} <span class="b-balls">({stats.balls})</span></div>
-                       <div class="b-form-bar-container"><div class="b-form-bar" style="width: {p.morale}%"></div></div>
+                       <div class="bw-meters">
+                           <div class="meter-row">
+                               <span class="meter-label">Stamina</span>
+                               <div class="b-meter-container"><div class="b-meter-fill stamina" style="width: {100 - p.fatigue}%"></div></div>
+                           </div>
+                           <div class="meter-row">
+                               <span class="meter-label">Confidence</span>
+                               <div class="b-meter-container"><div class="b-meter-fill confidence" style="width: {p.morale}%"></div></div>
+                           </div>
+                       </div>
                     </div>
                     <div class="b-aggression-col">
                        <button class="btn-agg" onclick={() => changeBatsmanIntent(batsmanId, 1)} disabled={!currentBattingTeam?.isUserTeam}>+</button>
@@ -1155,7 +1169,12 @@
                          <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar-mini" />
                          <div class="mini-info">
                             <span class="name">{p.name}</span>
+                            <span class="role-desc">{p.role} • {p.bowlingType || 'Fast'}</span>
                             <span class="stat-badge">Bowl: {p.stats.bowling}</span>
+                            <div class="mini-meters">
+                                <div class="meter-bar stamina" style="width: {100 - p.fatigue}%" title="Stamina"></div>
+                                <div class="meter-bar morale" style="width: {p.morale}%" title="Morale"></div>
+                            </div>
                          </div>
                      </button>
                   {/each}
@@ -1181,7 +1200,7 @@
                    </div>
                    <div class="bw-info-col">
                       <div class="bw-name">{p.name}</div>
-                      <div class="bw-style">{p.bowlingType || 'Fast'}</div>
+                      <div class="bw-style">{p.bowlingType || 'Fast'} • {p.role}</div>
                       <div class="bw-stats">{stats.wickets}-{stats.runs} ({stats.overs})</div>
                       
                       <div class="bw-meters">
@@ -1663,7 +1682,7 @@
   /* Selection styling fix */
   .horizontal-list { 
     display: grid; 
-    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); 
+    grid-template-columns: repeat(4, 1fr); 
     gap: 12px; 
     padding: 16px; 
     width: 100%;
@@ -2520,6 +2539,30 @@
     background: #ef4444; /* Red for wicket */
     color: white;
     border-color: #dc2626;
+  }
+
+
+  .role-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+  .mini-meters {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 2px;
+    margin-top: 6px;
+  }
+  .meter-bar {
+    height: 4px;
+    border-radius: 2px;
+  }
+  .meter-bar.stamina {
+    background: #3b82f6;
+  }
+  .meter-bar.morale {
+    background: #a855f7;
   }
 
 </style>
