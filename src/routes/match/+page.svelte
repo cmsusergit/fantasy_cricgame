@@ -1521,20 +1521,21 @@
   .scoreboard-main {
     background: var(--bg-surface);
     border-radius: 16px;
-    padding: 24px;
+    padding: 16px;
     width: 100%;
     box-sizing: border-box;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 8px;
   }
 
   .scoreboard-header {
     font-family: 'Cinzel', serif;
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: bold;
+    color: var(--text-muted);
   }
 
   .score-display {
@@ -1542,44 +1543,47 @@
   }
 
   .main-score {
-    font-size: 3rem;
+    font-size: 2.2rem;
     font-weight: bold;
     font-family: 'Cinzel', serif;
     color: var(--text-primary);
+    line-height: 1.1;
   }
   
   .main-score .wickets-val { color: var(--color-danger); }
-  .main-score .overs-val { font-size: 1.2rem; color: var(--text-muted); font-family: sans-serif; }
+  .main-score .overs-val { font-size: 1rem; color: var(--text-muted); font-family: sans-serif; }
 
   .rates {
     display: flex;
-    gap: 16px;
+    gap: 12px;
     justify-content: center;
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
   }
 
   .chase-equation {
-    margin-top: 8px;
+    margin-top: 4px;
     font-weight: bold;
     color: var(--warning);
-    font-size: 1.1rem;
+    font-size: 0.95rem;
   }
 
   .play-controls-row {
     display: flex;
-    gap: 12px;
+    gap: 8px;
     align-items: center;
+    margin-top: 4px;
   }
 
   .btn-play-pause, .btn-action {
-    padding: 8px 16px;
-    border-radius: 8px;
+    padding: 6px 12px;
+    border-radius: 6px;
     border: none;
     background: var(--color-accent);
     color: white;
     font-weight: bold;
     cursor: pointer;
+    font-size: 0.9rem;
   }
   .btn-play-pause:hover, .btn-action:hover:not(:disabled) {
     opacity: 0.9;
@@ -1587,17 +1591,18 @@
   .btn-action:disabled { background: var(--bg-tertiary); color: var(--text-muted); cursor: not-allowed; }
 
   .speed-select {
-    padding: 8px;
-    border-radius: 8px;
+    padding: 6px;
+    border-radius: 6px;
     background: var(--bg-tertiary);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
+    font-size: 0.9rem;
   }
 
   .recent-balls-mini {
     display: flex;
-    gap: 8px;
-    margin-top: 12px;
+    gap: 6px;
+    margin-top: 4px;
   }
   
   .active-bowler-row {
