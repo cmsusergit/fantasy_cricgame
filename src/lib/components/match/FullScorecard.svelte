@@ -144,17 +144,8 @@
     
   </div>
 
-  <div class="tab-controls">
-    <button class="tab-btn" class:active={activeTab === 'batting'} onclick={() => (activeTab = 'batting')}
-      >Batting</button
-    >
-    <button class="tab-btn" class:active={activeTab === 'bowling'} onclick={() => (activeTab = 'bowling')}
-      >Bowling</button
-    >
-  </div>
-
   <div class="drawer-content">
-    {#if activeTab === 'batting'}
+    <div class="scorecard-grid">
       <div class="scorecard-table">
         <h3>Batting Scorecard</h3>
         <table>
@@ -193,7 +184,6 @@
           </tbody>
         </table>
       </div>
-    {:else}
       <div class="scorecard-table">
         <h3>Bowling Scorecard</h3>
         <table>
@@ -224,11 +214,24 @@
           </tbody>
         </table>
       </div>
-    {/if}
+    </div>
   </div>
 </div>
 
 <style>
+  .scorecard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 16px;
+  }
+
+  @media (max-width: 900px) {
+    .scorecard-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .full-scorecard {
     width: 100%;
     background: var(--bg-surface);

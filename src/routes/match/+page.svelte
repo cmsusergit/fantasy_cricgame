@@ -1184,15 +1184,7 @@
       
       
 
-      <FullScorecard 
-                   currentInningsData={currentInningsData}
-                   battingTeamPlayers={currentBattingTeam?.players || []}
-                   bowlingTeamPlayers={currentBowlingTeam?.players || []}
-                   battingTeamColorPrimary={currentBattingTeam?.colorPrimary}
-                   battingTeamColorSecondary={currentBattingTeam?.colorSecondary}
-                   bowlingTeamColorPrimary={currentBowlingTeam?.colorPrimary}
-                   bowlingTeamColorSecondary={currentBowlingTeam?.colorSecondary}
-         />
+      
     </div>
     
     <div class="side-content">
@@ -1205,6 +1197,18 @@
          </div>
       </div>
     </div>
+  </div>
+
+  <div class="full-width-scorecard-container">
+    <FullScorecard 
+                   currentInningsData={currentInningsData}
+                   battingTeamPlayers={currentBattingTeam?.players || []}
+                   bowlingTeamPlayers={currentBowlingTeam?.players || []}
+                   battingTeamColorPrimary={currentBattingTeam?.colorPrimary}
+                   battingTeamColorSecondary={currentBattingTeam?.colorSecondary}
+                   bowlingTeamColorPrimary={currentBowlingTeam?.colorPrimary}
+                   bowlingTeamColorSecondary={currentBowlingTeam?.colorSecondary}
+         />
   </div>
   
   
