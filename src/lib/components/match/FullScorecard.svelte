@@ -5,13 +5,25 @@
   import type { Player } from '$lib/models/player';
 
   
-  export let currentInningsData: innings;
-  export let battingTeamPlayers: Player[];
-  export let bowlingTeamPlayers: Player[];
-  export let battingTeamColorPrimary: string = '#3b82f6';
-  export let battingTeamColorSecondary: string = '#fbbf24';
-  export let bowlingTeamColorPrimary: string = '#3b82f6';
-  export let bowlingTeamColorSecondary: string = '#fbbf24';
+    export let innings1: innings;
+  export let innings2: innings | null = null;
+  export let team1: any;
+  export let team2: any;
+  export let currentInnings: number;
+
+  let activeInnings: 1 | 2 = 1;
+
+  // React to currentInnings changing
+  $: {
+     activeInnings = currentInnings as 1 | 2;
+  }
+
+  $: displayInnings = activeInnings === 1 ? innings1 : innings2;
+  $: displayBattingTeam = activeInnings === 1 ? (innings1.teamId === team1.id ? team1 : team2) : (innings2?.teamId === team1.id ? team1 : team2);
+  $: displayBowlingTeam = activeInnings === 1 ? (innings1.teamId === team1.id ? team2 : team1) : (innings2?.teamId === team1.id ? team2 : team1);
+
+  $: battingTeamColorPrimary = displayBattingTeam?.colorPrimary || '#3b82f6';
+
 
   let activeTab: 'batting' | 'bowling' = 'batting';
 
@@ -44,7 +56,7 @@
     const bowlerStats: Record<string, BowlerScorecard> = {};
 
     // Initialize stats for all players in the batting team
-    battingTeamPlayers.forEach(player => {
+    displayBattingTeam?.players.forEach(player => {
       batsmanStats[player.id] = {
         playerId: player.id,
         runs: 0,
@@ -57,7 +69,7 @@
     });
 
     // Initialize stats for all players in the bowling team
-    bowlingTeamPlayers.forEach(player => {
+    displayBowlingTeam?.players.forEach(player => {
       bowlerStats[player.id] = {
         playerId: player.id,
         overs: 0,
@@ -122,9 +134,9 @@
     };
   }
 
-  function formatDismissal(stats: BatsmanScorecard, bowlingTeamPlayers: Player[]) {
+  function formatDismissal(stats: BatsmanScorecard, displayBowlingTeamPlayers: Player[]) {
     if (!stats.isOut) return 'not out';
-    const bowler = bowlingTeamPlayers.find(p => p.id === stats.outBowlerId)?.name || 'Unknown';
+    const bowler = displayBowlingTeamPlayers.find(p => p.id === stats.outBowlerId)?.name || 'Unknown';
     switch (stats.outType) {
       case 'bowled': return `b ${bowler}`;
       case 'caught': return `c & b ${bowler}`; // Assuming 'c & b' for caught and bowled for simplicity as fielder not tracked
@@ -135,14 +147,24 @@
     }
   }
 
-  $: scorecard = currentInningsData ? calculateScorecardStats(currentInningsData, [...battingTeamPlayers, ...bowlingTeamPlayers]) : { batsmanScorecards: [], bowlerScorecards: [] };
+  $: scorecard = displayInnings ? calculateScorecardStats(displayInnings, [...(displayBattingTeam?.players || []), ...(displayBowlingTeam?.players || [])]) : { batsmanScorecards: [], bowlerScorecards: [] };
 </script>
 
 <div class="full-scorecard" style="--batting-primary: {battingTeamColorPrimary}; --bowling-primary: {bowlingTeamColorPrimary};">
-  <div class="drawer-header">
+    <div class="drawer-header">
     <h2 id="full-scorecard-title" style="color: {battingTeamColorPrimary};">Full Scorecard</h2>
-    
   </div>
+
+  {#if innings2 && innings2.ballsFaced && innings2.ballsFaced.length > 0 || currentInnings === 2}
+    <div class="innings-tabs">
+      <button class="innings-tab-btn" class:active={activeInnings === 1} onclick={() => activeInnings = 1}>
+        1st Innings ({innings1.teamId === team1.id ? team1.name : team2.name})
+      </button>
+      <button class="innings-tab-btn" class:active={activeInnings === 2} onclick={() => activeInnings = 2}>
+        2nd Innings ({innings2?.teamId === team1.id ? team1.name : team2.name})
+      </button>
+    </div>
+  {/if}
 
   <div class="drawer-content">
     <div class="scorecard-grid">
@@ -162,7 +184,7 @@
           </thead>
           <tbody>
             {#each scorecard.batsmanScorecards as stats}
-              {@const player = battingTeamPlayers.find(p => p.id === stats.playerId)}
+              {@const player = displayBattingTeam?.players.find(p => p.id === stats.playerId)}
               {#if player}
                 <tr>
                   <td class="batsman-name">{player.name}</td>
@@ -173,7 +195,7 @@
                   <td>{stats.strikeRate.toFixed(1)}</td>
                   <td>
                     {#if stats.isOut}
-                      {formatDismissal(stats, bowlingTeamPlayers)}
+                      {formatDismissal(stats, displayBowlingTeam?.players || [])}
                     {:else}
                       not out
                     {/if}
@@ -199,7 +221,7 @@
           </thead>
           <tbody>
             {#each scorecard.bowlerScorecards as stats}
-              {@const player = bowlingTeamPlayers.find(p => p.id === stats.playerId)}
+              {@const player = displayBowlingTeam?.players.find(p => p.id === stats.playerId)}
               {#if player && stats.balls > 0}
                 <tr>
                   <td class="bowler-name">{player.name}</td>
@@ -334,5 +356,30 @@
 
   tbody tr:hover {
     background: var(--bg-tertiary);
+  }
+
+  .innings-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(0,0,0,0.05);
+  }
+  .innings-tab-btn {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .innings-tab-btn:hover {
+    color: var(--text-primary);
+  }
+  .innings-tab-btn.active {
+    color: var(--batting-primary);
+    border-bottom-color: var(--batting-primary);
   }
 </style>

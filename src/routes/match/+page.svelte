@@ -1201,13 +1201,11 @@
 
   <div class="full-width-scorecard-container">
     <FullScorecard 
-                   currentInningsData={currentInningsData}
-                   battingTeamPlayers={currentBattingTeam?.players || []}
-                   bowlingTeamPlayers={currentBowlingTeam?.players || []}
-                   battingTeamColorPrimary={currentBattingTeam?.colorPrimary}
-                   battingTeamColorSecondary={currentBattingTeam?.colorSecondary}
-                   bowlingTeamColorPrimary={currentBowlingTeam?.colorPrimary}
-                   bowlingTeamColorSecondary={currentBowlingTeam?.colorSecondary}
+                   innings1={innings1}
+                   innings2={innings2}
+                   team1={matchTeam1}
+                   team2={matchTeam2}
+                   currentInnings={currentInnings}
          />
   </div>
   
