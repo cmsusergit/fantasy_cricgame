@@ -1905,13 +1905,11 @@
     flex: 1;
   }
 
-  /* Selection Lists */
-  .selection-container { display: flex; flex-direction: column; gap: 12px; height: 100%; }
-  .selection-prompt { font-size: 0.9rem; color: var(--color-accent); font-weight: 600; text-align: center; margin-bottom: 8px; }
-  .selection-list { display: flex; flex-direction: column; gap: 10px; }
-  
-  .player-select-btn {
-    background: var(--bg-surface);
+    /* Selection Lists */
+    .selection-container { display: flex; flex-direction: column; gap: 12px; height: 100%; }
+    .selection-prompt { font-size: 0.9rem; color: var(--color-accent); font-weight: 600; text-align: center; margin-bottom: 8px; }
+    
+    .player-select-btn {    background: var(--bg-surface);
     border: 2px solid rgba(255,255,255,0.1);
     padding: 12px 16px;
     border-radius: 10px;
