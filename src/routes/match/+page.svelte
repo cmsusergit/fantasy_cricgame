@@ -1630,8 +1630,15 @@
   .pulse-anim-5 { animation: pulse5 1s infinite; }
   
   /* Selection styling fix */
-  .horizontal-list { display: flex; gap: 12px; overflow-x: auto; padding: 8px; justify-content: center; }
-  .player-select-btn.mini { flex-direction: column; width: 120px; text-align: center; }
+  .horizontal-list { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); 
+    gap: 12px; 
+    padding: 16px; 
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .player-select-btn.mini { flex-direction: column; width: 100%; text-align: center; }
   .player-avatar-mini { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; margin-bottom: 8px; }
   .mini-info { display: flex; flex-direction: column; gap: 4px; align-items: center; }
 
