@@ -23,6 +23,7 @@
   $: displayBowlingTeam = activeInnings === 1 ? (innings1.teamId === team1.id ? team2 : team1) : (innings2?.teamId === team1.id ? team2 : team1);
 
   $: battingTeamColorPrimary = displayBattingTeam?.colorPrimary || '#3b82f6';
+  $: bowlingTeamColorPrimary = displayBowlingTeam?.colorPrimary || '#fbbf24';
 
 
   let activeTab: 'batting' | 'bowling' = 'batting';

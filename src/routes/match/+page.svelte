@@ -250,7 +250,12 @@
   }
 
   onMount(() => {
-    const unsubTeam = teamStore.subscribe(t => teams = t);
+    const unsubTeam = teamStore.subscribe(t => {
+      teams = t;
+      if (schedule && phase === 'loading') {
+        initMatchState(schedule);
+      }
+    });
     const unsubSchedule = scheduleStore.subscribe(s => {
       schedule = s;
       initMatchState(s);
