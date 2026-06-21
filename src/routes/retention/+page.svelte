@@ -111,7 +111,7 @@
 <div class="retention-page">
   <header class="page-header">
     <h1>{isMega ? 'Mega Auction' : 'Mini Auction'} Retention Board</h1>
-    <p class="subtitle">Select the players you want to keep for Season {season + 1}. Unselected players will be released into the global auction pool.</p>
+    <p class="subtitle">Select the players you want to keep. Unselected players will be released into the global auction pool.</p>
     {#if isMega}
         <div class="mega-warning">
             ⚠️ <strong>Mega Auction Rules Apply!</strong> You can retain a maximum of {MEGA_AUCTION_MAX_RETENTIONS} players. Retention costs are strictly tiered: 

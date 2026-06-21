@@ -5,7 +5,9 @@
   import type { Player } from '$lib/models/player';
   import PlayerCard from '$lib/components/team/PlayerCard.svelte';
   import { MAX_SQUAD_SIZE } from '$lib/core/retentionSystem';
+  import { getCrowdFavourites } from '$lib/core/fanSystem';
   import { dndzone, type DndEvent } from 'svelte-dnd-action';
+  import { getAvatarUrl } from '$lib/models/faction';
 
   let teams: any[] = $state([]);
   let userTeam = $derived(teams.find((t: any) => t.isUserTeam));
@@ -18,7 +20,19 @@
   let filterRole: string = $state('all');
   let searchQuery: string = $state('');
 
+  let viewMode = $state<'grid' | 'table'>('grid');
+
+  function getBarColor(val: number): string {
+    if (val >= 70) return '#22c55e'; // Green
+    if (val >= 35) return '#fbbf24'; // Yellow
+    return '#ef4444'; // Red
+  }
+
   let dndPlayers: Player[] = $state([]);
+
+  let crowdFavouriteIds = $derived(new Set(
+    (userTeam ? getCrowdFavourites(userTeam, 3) : []).map(p => p.id)
+  ));
 
   onMount(() => {
     let currentPhase;
@@ -44,6 +58,34 @@
     return unsub;
   });
 
+  function formatPlayerType(p: Player): string {
+    let roleStr = '';
+    if (p.role === 'batsman') roleStr = 'Batsman';
+    else if (p.role === 'bowler') roleStr = 'Bowler';
+    else if (p.role === 'allrounder') roleStr = 'All-Rounder';
+    else if (p.role === 'wicketkeeper') roleStr = 'Wicket Keeper';
+    else roleStr = p.role;
+
+    const details: string[] = [];
+    if (p.battingRole && p.battingRole !== 'Tail Ender') {
+      details.push(p.battingRole);
+    }
+    if (p.battingType) {
+      details.push(p.battingType);
+    }
+    if (p.role === 'bowler' || p.role === 'allrounder') {
+      if (p.bowlingType && p.bowlingType !== 'none') {
+        const capitalizedBowling = p.bowlingType.charAt(0).toUpperCase() + p.bowlingType.slice(1);
+        details.push(capitalizedBowling);
+      }
+    }
+    
+    if (details.length > 0) {
+      return `${roleStr} (${details.join(', ')})`;
+    }
+    return roleStr;
+  }
+
   // Filter and search logic applied to dndPlayers
   let displayedPlayers = $derived((() => {
     if (!userTeam) return [];
@@ -53,6 +95,9 @@
       (searchQuery === '' || p.name.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   })());
+
+  let tablePlaying11 = $derived(displayedPlayers.filter(p => playing11.includes(p.id)));
+  let tableReserves = $derived(displayedPlayers.filter(p => !playing11.includes(p.id)));
 
   function handleDndConsider(e: CustomEvent<DndEvent<Player>>) {
     dndPlayers = e.detail.items;
@@ -172,7 +217,7 @@
     </div>
     <div style="text-align: right;">
       <span style="font-size: 0.9rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Roster Size</span>
-      <div style="font-size: 1rem; font-family: 'Cinzel', serif; font-weight: bold; color: {userTeam?.colorPrimary};">
+      <div style="font-size: 1rem; font-family: var(--font-fantasy); font-weight: bold; color: {userTeam?.colorPrimary};">
         {userTeam?.players.length || 0} <span style="font-size: 1rem; color: var(--text-muted);">/ {MAX_SQUAD_SIZE}</span>
       </div>
     </div>
@@ -198,71 +243,278 @@
       <option value="bowler">Bowler</option>
       <option value="wicketkeeper">Wicket Keeper</option>
     </select>
+    
+    <div style="display: flex; gap: 4px; border: 1px solid var(--border-color); border-radius: 6px; padding: 2px; background: rgba(0,0,0,0.1); margin-left: 12px;">
+      <button 
+        type="button"
+        class="toggle-view-btn" 
+        style="padding: 6px 12px; font-size: 0.8rem; font-family: var(--font-fantasy); font-weight: bold; border-radius: 4px; border: none; cursor: pointer; transition: all 0.2s; background: {viewMode === 'grid' ? (userTeam?.colorPrimary || 'var(--color-accent)') : 'transparent'}; color: {viewMode === 'grid' ? '#fff' : 'var(--text-secondary)'}"
+        onclick={() => viewMode = 'grid'}>
+        📇 Grid
+      </button>
+      <button 
+        type="button"
+        class="toggle-view-btn" 
+        style="padding: 6px 12px; font-size: 0.8rem; font-family: var(--font-fantasy); font-weight: bold; border-radius: 4px; border: none; cursor: pointer; transition: all 0.2s; background: {viewMode === 'table' ? (userTeam?.colorPrimary || 'var(--color-accent)') : 'transparent'}; color: {viewMode === 'table' ? '#fff' : 'var(--text-secondary)'}"
+        onclick={() => viewMode = 'table'}>
+        📊 Table
+      </button>
+    </div>
+
     <button class="secondary" onclick={quickSelect} style="margin-left: auto; border-color: {userTeam?.colorPrimary}40; color: {userTeam?.colorPrimary};">
       Quick Fill
     </button>
   </div>
 
   {#if userTeam && userTeam.players.length > 0}
-    <div class="players-grid" use:dndzone={{ items: displayedPlayers }} onconsider={handleDndConsider} onfinalize={handleDndFinalize}>
-      {#each displayedPlayers as player (player.id)}
-        {@const isSelected = playing11.includes(player.id)}
-        {@const isCaptain = captain === player.id}
-        {@const isWk = wicketKeeper === player.id}
+    {#if viewMode === 'grid'}
+      <div class="players-grid" use:dndzone={{ items: displayedPlayers }} onconsider={handleDndConsider} onfinalize={handleDndFinalize}>
+        {#each displayedPlayers as player (player.id)}
+          {@const isSelected = playing11.includes(player.id)}
+          {@const isCaptain = captain === player.id}
+          {@const isWk = wicketKeeper === player.id}
+          
+          <div class="player-wrapper">
+            {#if isCaptain || isWk}
+              <div class="role-badges" aria-hidden="true">
+                {#if isCaptain}
+                  <div class="role-badge captain" title="Captain">C</div>
+                {/if}
+                {#if isWk}
+                  <div class="role-badge wk" title="Wicket Keeper">WK</div>
+                {/if}
+              </div>
+            {/if}
+            {#if crowdFavouriteIds.has(player.id)}
+              <div class="cf-badge" title="Crowd Favourite">⭐</div>
+            {/if}
+            <PlayerCard 
+              {player} 
+              selected={isSelected}
+              hideAvailability={true}
+              actionText="Add to 11"
+              selectedActionText="Remove from 11"
+              onSelect={() => togglePlayerSelection(player)}
+              allowRename={true}
+              onRename={(newName) => teamStore.renamePlayer('user_team', player.id, newName)}
+              teamColorPrimary={userTeam?.colorPrimary}
+              teamColorSecondary={userTeam?.colorSecondary}
+            >
+              <div class="player-controls" style="margin-top: 8px;">
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                <label class="control-label {isCaptain ? 'active' : ''} {!isSelected ? 'disabled' : ''}" onclick={(e) => e.stopPropagation()}>
+                  <input 
+                    type="radio" 
+                    name="captain"
+                    checked={isCaptain}
+                    onchange={() => captain = player.id}
+                    disabled={!isSelected}
+                  />
+                  Captain
+                </label>
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                <label class="control-label {isWk ? 'active' : ''} {!isSelected ? 'disabled' : ''}" onclick={(e) => e.stopPropagation()}>
+                  <input 
+                    type="radio" 
+                    name="wicketKeeper"
+                    checked={isWk}
+                    onchange={() => wicketKeeper = player.id}
+                    disabled={!isSelected}
+                  />
+                  WK
+                </label>
+              </div>
+            </PlayerCard>
+          </div>
+        {/each}
+      </div>
+    {:else}
+      <!-- Selected Playing 11 Section -->
+      <div class="squad-section-table" style="margin-bottom: 24px;">
+        <h2 style="font-family: var(--font-fantasy); font-size: 1.2rem; color: var(--color-accent); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          🏏 Selected Playing 11 <span style="font-size: 0.9rem; font-weight: normal; color: var(--text-muted);">({tablePlaying11.length} selected)</span>
+        </h2>
         
-        <div class="player-wrapper">
-          {#if isCaptain || isWk}
-            <div class="role-badges" aria-hidden="true">
-              {#if isCaptain}
-                <div class="role-badge captain" title="Captain">C</div>
-              {/if}
-              {#if isWk}
-                <div class="role-badge wk" title="Wicket Keeper">WK</div>
-              {/if}
-            </div>
-          {/if}
-          <PlayerCard 
-            {player} 
-            selected={isSelected}
-            hideAvailability={true}
-            actionText="Add to 11"
-            selectedActionText="Remove from 11"
-            onSelect={() => togglePlayerSelection(player)}
-            allowRename={true}
-            onRename={(newName) => teamStore.renamePlayer('user_team', player.id, newName)}
-            teamColorPrimary={userTeam?.colorPrimary}
-            teamColorSecondary={userTeam?.colorSecondary}
-          >
-            <div class="player-controls" style="margin-top: 8px;">
-              <!-- svelte-ignore a11y_click_events_have_key_events -->
-              <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-              <label class="control-label {isCaptain ? 'active' : ''} {!isSelected ? 'disabled' : ''}" onclick={(e) => e.stopPropagation()}>
-                <input 
-                  type="radio" 
-                  name="captain"
-                  checked={isCaptain}
-                  onchange={() => captain = player.id}
-                  disabled={!isSelected}
-                />
-                Captain
-              </label>
-              <!-- svelte-ignore a11y_click_events_have_key_events -->
-              <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-              <label class="control-label {isWk ? 'active' : ''} {!isSelected ? 'disabled' : ''}" onclick={(e) => e.stopPropagation()}>
-                <input 
-                  type="radio" 
-                  name="wicketKeeper"
-                  checked={isWk}
-                  onchange={() => wicketKeeper = player.id}
-                  disabled={!isSelected}
-                />
-                WK
-              </label>
-            </div>
-          </PlayerCard>
-        </div>
-      {/each}
-    </div>
+        {#if tablePlaying11.length === 0}
+          <div style="padding: 16px; text-align: center; color: var(--text-muted); background: rgba(0, 0, 0, 0.05); border: 1px dashed var(--border-color); border-radius: 8px;">
+            No players selected in Playing 11.
+          </div>
+        {:else}
+          <div class="selection-table-container">
+            <table class="selection-table">
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Faction</th>
+                  <th>Role</th>
+                  <th>Rating</th>
+                  <th style="width: 100px;">Stamina</th>
+                  <th style="width: 100px;">Confidence</th>
+                  <th style="text-align: center;">Captain</th>
+                  <th style="text-align: center;">WK</th>
+                  <th style="text-align: center;">Select</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each tablePlaying11 as p (p.id)}
+                  {@const isCaptain = captain === p.id}
+                  {@const isWk = wicketKeeper === p.id}
+                  {@const isSelected = true}
+                  <tr class:selected={isSelected}>
+                    <td>
+                      <div class="player-cell" style="display: flex; align-items: center; gap: 8px;">
+                        <div style="position: relative;">
+                          <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar-mini" />
+                          {#if crowdFavouriteIds.has(p.id)}
+                            <span style="position: absolute; top: -4px; left: -4px; font-size: 0.8rem; filter: drop-shadow(0 0 2px gold);">⭐</span>
+                          {/if}
+                        </div>
+                        <span class="player-name" style="font-family: var(--font-fantasy);">{p.name}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="faction-icon faction-{p.faction}">
+                        {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
+                      </span>
+                    </td>
+                    <td style="font-size: 0.8rem;">{formatPlayerType(p)}</td>
+                    <td class="rating-val" style="font-family: var(--font-sports); font-size: 0.9rem;">
+                      B: {p.stats.batting} | O: {p.stats.bowling}
+                    </td>
+                    <td>
+                      <div class="bar-container">
+                        <div class="bar stamina" style="width: {100 - p.fatigue}%; background-color: {getBarColor(100 - p.fatigue)};"></div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="bar-container">
+                        <div class="bar confidence" style="width: {p.morale}%; background-color: {getBarColor(p.morale)};"></div>
+                      </div>
+                    </td>
+                    <td style="text-align: center;">
+                      <input 
+                        type="radio" 
+                        name="captain-radio"
+                        checked={isCaptain}
+                        onchange={() => captain = p.id}
+                        style="cursor: pointer;"
+                      />
+                    </td>
+                    <td style="text-align: center;">
+                      <input 
+                        type="radio" 
+                        name="wk-radio"
+                        checked={isWk}
+                        onchange={() => wicketKeeper = p.id}
+                        style="cursor: pointer;"
+                      />
+                    </td>
+                    <td style="text-align: center;">
+                      <button class="btn-select" style="background: var(--color-danger); color: white; border-color: var(--color-danger);" onclick={() => togglePlayerSelection(p)}>
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+      </div>
+
+      <!-- Reserves Section -->
+      <div class="squad-section-table">
+        <h2 style="font-family: var(--font-fantasy); font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          🛡️ Reserve Players <span style="font-size: 0.9rem; font-weight: normal; color: var(--text-muted);">({tableReserves.length} reserve)</span>
+        </h2>
+        
+        {#if tableReserves.length === 0}
+          <div style="padding: 16px; text-align: center; color: var(--text-muted); background: rgba(0, 0, 0, 0.05); border: 1px dashed var(--border-color); border-radius: 8px;">
+            No reserves matching the filters.
+          </div>
+        {:else}
+          <div class="selection-table-container">
+            <table class="selection-table">
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Faction</th>
+                  <th>Role</th>
+                  <th>Rating</th>
+                  <th style="width: 100px;">Stamina</th>
+                  <th style="width: 100px;">Confidence</th>
+                  <th style="text-align: center;">Captain</th>
+                  <th style="text-align: center;">WK</th>
+                  <th style="text-align: center;">Select</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each tableReserves as p (p.id)}
+                  {@const isCaptain = captain === p.id}
+                  {@const isWk = wicketKeeper === p.id}
+                  {@const isSelected = false}
+                  <tr>
+                    <td>
+                      <div class="player-cell" style="display: flex; align-items: center; gap: 8px;">
+                        <div style="position: relative;">
+                          <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar-mini" />
+                          {#if crowdFavouriteIds.has(p.id)}
+                            <span style="position: absolute; top: -4px; left: -4px; font-size: 0.8rem; filter: drop-shadow(0 0 2px gold);">⭐</span>
+                          {/if}
+                        </div>
+                        <span class="player-name" style="font-family: var(--font-fantasy);">{p.name}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="faction-icon faction-{p.faction}">
+                        {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
+                      </span>
+                    </td>
+                    <td style="font-size: 0.8rem;">{formatPlayerType(p)}</td>
+                    <td class="rating-val" style="font-family: var(--font-sports); font-size: 0.9rem;">
+                      B: {p.stats.batting} | O: {p.stats.bowling}
+                    </td>
+                    <td>
+                      <div class="bar-container">
+                        <div class="bar stamina" style="width: {100 - p.fatigue}%; background-color: {getBarColor(100 - p.fatigue)};"></div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="bar-container">
+                        <div class="bar confidence" style="width: {p.morale}%; background-color: {getBarColor(p.morale)};"></div>
+                      </div>
+                    </td>
+                    <td style="text-align: center;">
+                      <input 
+                        type="radio" 
+                        name="captain-radio"
+                        disabled
+                        style="opacity: 0.5; cursor: not-allowed;"
+                      />
+                    </td>
+                    <td style="text-align: center;">
+                      <input 
+                        type="radio" 
+                        name="wk-radio"
+                        disabled
+                        style="opacity: 0.5; cursor: not-allowed;"
+                      />
+                    </td>
+                    <td style="text-align: center;">
+                      <button class="btn-select" style="background: var(--color-accent); color: white; border-color: var(--color-accent);" disabled={playing11.length >= 11} onclick={() => togglePlayerSelection(p)}>
+                        Add
+                      </button>
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+      </div>
+    {/if}
   {:else if userTeam}
     <div class="empty-state">
       <div class="empty-icon">📉</div>
@@ -420,6 +672,16 @@
     border-color: rgba(var(--team-primary-rgb, 30, 64, 175), 0.34);
   }
 
+  .cf-badge {
+    position: absolute;
+    top: 0.65rem;
+    left: 0.75rem;
+    font-size: 1rem;
+    z-index: 2;
+    pointer-events: none;
+    filter: drop-shadow(0 0 3px rgba(255, 200, 0, 0.5));
+  }
+
   .player-controls {
     display: flex;
     gap: 8px;
@@ -548,5 +810,135 @@
       margin-top: 12px;
       max-width: 100%;
     }
+  }
+
+  /* Premium Table Selection Layout */
+  .selection-table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin: 12px 0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.1);
+  }
+  
+  :global([data-theme="light"]) .selection-table-container {
+    background: rgba(15, 23, 42, 0.01);
+  }
+  
+  .selection-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    text-align: left;
+  }
+  
+  .selection-table th {
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    font-weight: 700;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+  }
+  
+  :global([data-theme="light"]) .selection-table th {
+    background: rgba(15, 23, 42, 0.03);
+  }
+  
+  .selection-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
+  }
+  
+  :global([data-theme="light"]) .selection-table td {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+  }
+  
+  .selection-table tbody tr {
+    transition: background 0.15s ease;
+  }
+  
+  .selection-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+  
+  :global([data-theme="light"]) .selection-table tbody tr:hover {
+    background: rgba(15, 23, 42, 0.02);
+  }
+  
+  .selection-table tbody tr.selected {
+    background: rgba(234, 179, 8, 0.1) !important;
+  }
+  
+  :global([data-theme="light"]) .selection-table tbody tr.selected {
+    background: rgba(234, 179, 8, 0.05) !important;
+  }
+  
+  .selection-table td .player-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .selection-table .player-avatar-mini {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    object-fit: cover;
+  }
+  
+  .selection-table .player-name {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  
+  .selection-table .rating-val {
+    font-family: var(--font-sports);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-accent);
+  }
+  
+  .selection-table .bar-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 100px;
+  }
+  
+  .selection-table .bar-container .bar {
+    height: 6px;
+    border-radius: 3px;
+    flex-grow: 1;
+    background: var(--bg-tertiary);
+  }
+  
+  .btn-select {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  
+  .btn-select:hover:not(:disabled) {
+    background: var(--color-accent);
+    color: white;
+    border-color: var(--color-accent);
+  }
+
+  .btn-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 </style>

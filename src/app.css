@@ -1,10 +1,10 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Philosopher:ital,wght@0,400;0,700;1,400;1,700&family=Rajdhani:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Philosopher:ital,wght@0,400;0,700;1,400;1,700&family=Rajdhani:wght@500;600;700&display=swap");
 @import "tailwindcss";
 
 :root {
   color-scheme: dark;
 
-  --font-fantasy: "Philosopher", sans-serif;
+  --font-fantasy: "Cinzel", "Philosopher", serif;
   --font-sports: "Rajdhani", sans-serif;
   --font-body: "Inter", sans-serif;
   --font-ui: "Inter", sans-serif;
@@ -88,18 +88,19 @@
   --team-secondary: var(--accent-gold);
   --team-primary-rgb: var(--accent-sapphire-rgb);
   --team-secondary-rgb: var(--accent-gold-rgb);
+  --on-primary: #06111d;
 }
 
 [data-theme="light"] {
   color-scheme: light;
 
-  --bg-primary: #f5f7fb;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #e8eef9;
-  --bg-surface: rgba(255, 255, 255, 0.85);
-  --bg-elevated: rgba(255, 255, 255, 0.96);
+  --bg-primary: #f5f2eb;
+  --bg-secondary: #faf9f6;
+  --bg-tertiary: #e7e2d4;
+  --bg-surface: rgba(250, 249, 246, 0.85);
+  --bg-elevated: rgba(250, 249, 246, 0.96);
   --bg-overlay: rgba(15, 23, 42, 0.55);
-  --bg-primary-gradient-start: #ebf0fb;
+  --bg-primary-gradient-start: #eae4d3;
 
   --text-primary: #0f172a;
   --text-secondary: #334155;
@@ -114,6 +115,7 @@
 
   --team-primary-rgb: var(--accent-sapphire-rgb);
   --team-secondary-rgb: var(--accent-gold-rgb);
+  --on-primary: #06111d;
 }
 
 * {
@@ -131,9 +133,9 @@ body {
   font-family: var(--font-ui);
   font-size: 14px;
   background:
-    radial-gradient(circle at top left, rgba(var(--accent-sapphire-rgb), 0.18), transparent 28%),
-    radial-gradient(circle at 80% 0%, rgba(var(--accent-emerald-rgb), 0.14), transparent 24%),
-    radial-gradient(circle at 50% 120%, rgba(var(--accent-gold-rgb), 0.12), transparent 30%),
+    radial-gradient(circle at top left, rgba(139, 92, 246, 0.16), transparent 35%),
+    radial-gradient(circle at 80% 0%, rgba(20, 184, 166, 0.12), transparent 28%),
+    radial-gradient(circle at 50% 120%, rgba(245, 158, 11, 0.1), transparent 30%),
     linear-gradient(180deg, var(--bg-primary-gradient-start) 0%, var(--bg-primary) 100%);
   color: var(--text-primary);
   line-height: 1.5;
@@ -147,13 +149,26 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.15) 100%);
-  opacity: 0.3;
+  background-image: 
+    radial-gradient(1.5px 1.5px at 20px 30px, rgba(255, 255, 255, 0.85), rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 60px 70px, rgba(255, 255, 255, 0.7), rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 100px 150px, rgba(255, 255, 255, 0.6), rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 140px 100px, rgba(255, 255, 255, 0.8), rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 180px 40px, rgba(255, 255, 255, 0.5), rgba(0,0,0,0));
+  background-size: 200px 200px;
+  mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.25) 100%);
+  opacity: 0.18;
   z-index: 0;
+}
+
+[data-theme="light"] body::before {
+  background-image: 
+    radial-gradient(1.5px 1.5px at 20px 30px, rgba(15, 23, 42, 0.4), rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 60px 70px, rgba(15, 23, 42, 0.3), rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 100px 150px, rgba(15, 23, 42, 0.25), rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 140px 100px, rgba(15, 23, 42, 0.35), rgba(0,0,0,0));
+  background-size: 200px 200px;
+  opacity: 0.12;
 }
 
 #svelte {
@@ -733,6 +748,10 @@ table tbody tr:hover {
   color: var(--text-primary);
 }
 
+[data-theme="light"] :is(.shell-button, .theme-toggle, .reset-button) {
+  background: rgba(15, 23, 42, 0.04);
+}
+
 .shell-button:hover,
 .theme-toggle:hover,
 .reset-button:hover {
@@ -855,7 +874,7 @@ main {
 }
 
 /* Route-level Stitch overrides */
-.page-shell main :is(
+.page-shell-wrapper main :is(
   .dashboard,
   .match-page-wrapper,
   .squad-page,
@@ -873,7 +892,7 @@ main {
   margin: 0 auto;
 }
 
-.page-shell main :is(
+.page-shell-wrapper main :is(
   .hero,
   .header,
   .page-header,
@@ -923,34 +942,34 @@ main {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)),
     var(--bg-surface) !important;
-  border: 1px solid rgba(148, 163, 184, 0.16) !important;
+  border: 1px solid var(--border-color) !important;
   border-radius: 12px !important;
   box-shadow: none;
   backdrop-filter: blur(16px);
 }
 
-.page-shell main :is(.dashboard .stat-card, .dashboard .sponsor-card, .dashboard .match-card, .dashboard .compact-player-card, .budget-page .card, .budget-page .summary-cards > .card, .budget-page .income-section, .budget-page .expenditure-section, .budget-page .sponsor-card, .tournament-page .tabs button, .guide-page .topic-btn, .match-page-wrapper .full-screen-message, .match-page-wrapper .toss-card, .auction-page .player-showcase) {
+.page-shell-wrapper main :is(.dashboard .stat-card, .dashboard .sponsor-card, .dashboard .match-card, .dashboard .compact-player-card, .budget-page .card, .budget-page .summary-cards > .card, .budget-page .income-section, .budget-page .expenditure-section, .budget-page .sponsor-card, .tournament-page .tabs button, .guide-page .topic-btn, .match-page-wrapper .full-screen-message, .match-page-wrapper .toss-card, .auction-page .player-showcase) {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)),
     var(--bg-surface) !important;
-  border: 1px solid rgba(148, 163, 184, 0.16) !important;
+  border: 1px solid var(--border-color) !important;
   border-radius: 10px !important;
   box-shadow: none;
   backdrop-filter: blur(16px);
 }
 
-.page-shell main :is(.tournament-page .tabs button, .guide-page .topic-btn) {
+.page-shell-wrapper main :is(.tournament-page .tabs button, .guide-page .topic-btn) {
   color: var(--text-secondary) !important;
   padding: 0.75rem 1rem !important;
 }
 
-.page-shell main :is(.tournament-page .tabs button.active, .guide-page .topic-btn.active) {
+.page-shell-wrapper main :is(.tournament-page .tabs button.active, .guide-page .topic-btn.active) {
   background: rgba(78, 222, 163, 0.12) !important;
   color: var(--text-primary) !important;
   border-color: rgba(78, 222, 163, 0.32) !important;
 }
 
-.page-shell main :is(
+.page-shell-wrapper main :is(
   .team-overview,
   .next-match-widget,
   .sponsorship-section,
@@ -990,7 +1009,7 @@ main {
   padding: 1rem !important;
 }
 
-.page-shell main :is(
+.page-shell-wrapper main :is(
   .hero h1,
   .header h1,
   .page-header h1,
@@ -1010,7 +1029,7 @@ main {
   letter-spacing: -0.02em;
 }
 
-.page-shell main :is(
+.page-shell-wrapper main :is(
   .primary,
   .secondary,
   .danger,
@@ -1033,34 +1052,34 @@ main {
   .shell-button
 ) {
   border-radius: 10px !important;
-  border: 1px solid rgba(148, 163, 184, 0.18) !important;
+  border: 1px solid var(--border-color) !important;
   padding: 0.75rem 1rem !important;
   font-weight: 700 !important;
   letter-spacing: 0.02em;
   transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease, color 160ms ease;
 }
 
-.page-shell main :is(.primary, .btn-primary, .btn-confirm, .btn-bid, .btn-scout, .accept-btn, .train-btn, .btn-start-match, .advance-btn) {
+.page-shell-wrapper main :is(.primary, .btn-primary, .btn-confirm, .btn-bid, .btn-scout, .accept-btn, .train-btn, .btn-start-match, .advance-btn) {
   background: linear-gradient(135deg, rgba(78, 222, 163, 0.95), rgba(16, 185, 129, 0.86)) !important;
   color: var(--on-primary) !important;
   box-shadow: none;
 }
 
-.page-shell main :is(.secondary, .btn-secondary, .btn-cancel, .btn-auto-sim, .btn-pass, .view-all) {
+.page-shell-wrapper main :is(.secondary, .btn-secondary, .btn-cancel, .btn-auto-sim, .btn-pass, .view-all) {
   background: rgba(148, 163, 184, 0.08) !important;
   color: var(--text-primary) !important;
 }
 
-.page-shell main :is(.danger, .btn-danger, .btn-end) {
+.page-shell-wrapper main :is(.danger, .btn-danger, .btn-end) {
   background: linear-gradient(135deg, rgba(244, 63, 94, 0.92), rgba(185, 28, 28, 0.86)) !important;
   color: white !important;
 }
 
-.page-shell main :is(.primary, .secondary, .danger, .btn-primary, .btn-secondary, .btn-danger, .btn-confirm, .btn-bid, .btn-scout, .accept-btn, .train-btn, .close-guide-btn, .btn-start-match, .btn-auto-sim, .advance-btn, .view-all, .btn-pass, .btn-end, .shell-button):hover {
+.page-shell-wrapper main :is(.primary, .secondary, .danger, .btn-primary, .btn-secondary, .btn-danger, .btn-confirm, .btn-bid, .btn-scout, .accept-btn, .train-btn, .close-guide-btn, .btn-start-match, .btn-auto-sim, .advance-btn, .view-all, .btn-pass, .btn-end, .shell-button):hover {
   transform: translateY(-1px);
 }
 
-  .page-shell main :is(
+  .page-shell-wrapper main :is(
   .filters input,
   .filters select,
   .schedule-filters select,
@@ -1072,13 +1091,13 @@ main {
 ) {
   background: var(--bg-secondary) !important;
   color: var(--text-primary) !important;
-  border: 1px solid rgba(148, 163, 184, 0.18) !important;
+  border: 1px solid var(--border-color) !important;
   border-radius: 10px !important;
   padding: 0.75rem 1rem !important;
   outline: none !important;
 }
 
-.page-shell main :is(
+.page-shell-wrapper main :is(
   .modal-overlay,
   .modal-backdrop
 ) {
@@ -1086,30 +1105,30 @@ main {
   backdrop-filter: blur(16px);
 }
 
-.page-shell main :is(.modal-content, .modal-card) {
+.page-shell-wrapper main :is(.modal-content, .modal-card) {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)),
     var(--bg-elevated) !important;
-  border: 1px solid rgba(148, 163, 184, 0.16) !important;
+  border: 1px solid var(--border-color) !important;
   border-radius: 14px !important;
   box-shadow: none;
 }
 
-.page-shell main :is(.modal-content h2, .modal-content h3, .modal-card h2, .modal-card h3) {
+.page-shell-wrapper main :is(.modal-content h2, .modal-content h3, .modal-card h2, .modal-card h3) {
   font-family: var(--font-fantasy);
 }
 
 @media (max-width: 1024px) {
-  .page-shell main :is(.ops-strip, .summary-cards, .details-grid, .grid-layout, .training-layout, .leaderboard-grid, .faction-grid) {
+  .page-shell-wrapper main :is(.ops-strip, .summary-cards, .details-grid, .grid-layout, .training-layout, .leaderboard-grid, .faction-grid) {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
 @media (max-width: 760px) {
-  .page-shell main :is(.ops-strip, .summary-cards, .details-grid, .grid-layout, .training-layout, .leaderboard-grid, .faction-grid, .stats-grid, .players-grid) {
+  .page-shell-wrapper main :is(.ops-strip, .summary-cards, .details-grid, .grid-layout, .training-layout, .leaderboard-grid, .faction-grid, .stats-grid, .players-grid) {
     grid-template-columns: 1fr !important;
   }
-  .page-shell main :is(.team-header, .auction-page .header, .budget-page .header, .club-page .header, .guide-page .header) {
+  .page-shell-wrapper main :is(.team-header, .auction-page .header, .budget-page .header, .club-page .header, .guide-page .header) {
     flex-direction: column !important;
     align-items: flex-start !important;
     gap: 0.75rem !important;

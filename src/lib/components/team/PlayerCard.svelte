@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Player } from '$lib/models/player';
   import { FACTIONS, getAvatarUrl } from '$lib/models/faction';
+  import { teamStore } from '$lib/stores/gameState';
   
   interface Props {
     player: Player;
@@ -31,6 +32,17 @@
       teamColorPrimary,
       teamColorSecondary
     }: Props = $props();
+    
+    let teams = $state<any[]>([]);
+    $effect(() => {
+      return teamStore.subscribe(t => {
+        teams = t;
+      });
+    });
+    
+    let userTeam = $derived(teams.find((t: any) => t.isUserTeam));
+    let isUserPlayer = $derived(userTeam?.players?.some((p: any) => p.id === player.id));
+    let canUpgradeAny = $derived(isUserPlayer && player.xp >= 100 && userTeam?.budget >= 5000 && Object.values(player.stats).some(v => typeof v === 'number' && v < 100));
     
     let isEditingName = $state(false);
     let editNameValue = $state(player.name);
@@ -119,6 +131,9 @@
         {#if activeInjury}
           <span class="status-pill injury">Injury: {activeInjury.type}</span>
         {/if}
+        <span class="status-pill xp" class:can-upgrade={canUpgradeAny} title={canUpgradeAny ? 'Can afford an upgrade!' : `${player.xp || 0} XP`}>
+          ✨ {player.xp || 0}
+        </span>
       </div>
     </div>
   </div>
@@ -434,6 +449,24 @@
     border-color: rgba(var(--accent-ruby-rgb), 0.24);
   }
 
+  .status-pill.xp {
+    background: rgba(var(--accent-amethyst-rgb), 0.12);
+    color: var(--accent-amethyst);
+    border-color: rgba(var(--accent-amethyst-rgb), 0.24);
+  }
+
+  .status-pill.xp.can-upgrade {
+    background: rgba(var(--accent-gold-rgb), 0.2);
+    color: var(--warning);
+    border-color: rgba(var(--accent-gold-rgb), 0.4);
+    animation: xp-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes xp-pulse {
+    0%, 100% { box-shadow: 0 0 4px rgba(var(--accent-gold-rgb), 0.3); }
+    50% { box-shadow: 0 0 12px rgba(var(--accent-gold-rgb), 0.6); }
+  }
+
   .edit-name-container {
     display: flex;
     gap: 0.4rem;
@@ -582,5 +615,15 @@
     .mini-grid {
       grid-template-columns: 1fr;
     }
+  }
+
+  :global([data-theme="light"]) .player-card {
+    border-color: rgba(15, 23, 42, 0.08);
+  }
+  :global([data-theme="light"]) .icon-btn {
+    background: rgba(15, 23, 42, 0.03);
+  }
+  :global([data-theme="light"]) .stat-bar {
+    background: rgba(15, 23, 42, 0.05);
   }
 </style>

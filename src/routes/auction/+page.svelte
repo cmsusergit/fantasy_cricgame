@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
-  import { teamStore, playerStore, gamePhase } from '$lib/stores/gameState';
+  import { teamStore, playerStore, gamePhase, startNewSeason } from '$lib/stores/gameState';
   import { auctionStore } from '$lib/stores/auctionState';
   import PlayerCard from '$lib/components/team/PlayerCard.svelte';
   import type { Team } from '$lib/models/team';
@@ -46,7 +46,7 @@
   function skipToTournament() {
       // Emergency escape hatch to end auction and fill rosters automatically
       auctionStore.stopTimer();
-      gamePhase.set('tournament');
+      startNewSeason();
       goto('/');
   }
 
@@ -120,6 +120,36 @@
             {#if state.currentBidderId === userTeam?.id}
                <p class="info-msg">You have the highest bid.</p>
             {/if}
+         </div>
+         
+         <!-- Squad Tracker & Auction Progress Panel -->
+         <div class="squad-tracker card-premium" style="margin-top: 16px; padding: 16px; border: 1px solid var(--border-color); border-radius: 0; background: var(--bg-surface);">
+            <h3 style="margin-top: 0; font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--color-accent); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; display: flex; justify-content: space-between;">
+              <span>📋 Your Roster Status</span>
+              <span style="font-family: var(--font-sports); font-size: 1rem; color: var(--text-secondary);">{userTeam?.players.length || 0} Players</span>
+            </h3>
+            <div class="tracker-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; text-align: center;">
+              <div class="tracker-item" style="background: var(--bg-primary); padding: 8px; border: 1px solid var(--border-color);">
+                <div class="count" style="font-size: 1.35rem; font-weight: bold; color: var(--color-accent); font-family: var(--font-sports);">{userTeam?.players.filter(p => p.role === 'batsman').length || 0}</div>
+                <div class="label" style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px;">Batsmen</div>
+              </div>
+              <div class="tracker-item" style="background: var(--bg-primary); padding: 8px; border: 1px solid var(--border-color);">
+                <div class="count" style="font-size: 1.35rem; font-weight: bold; color: var(--color-success); font-family: var(--font-sports);">{userTeam?.players.filter(p => p.role === 'bowler').length || 0}</div>
+                <div class="label" style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px;">Bowlers</div>
+              </div>
+              <div class="tracker-item" style="background: var(--bg-primary); padding: 8px; border: 1px solid var(--border-color);">
+                <div class="count" style="font-size: 1.35rem; font-weight: bold; color: var(--color-info); font-family: var(--font-sports);">{userTeam?.players.filter(p => p.role === 'allrounder').length || 0}</div>
+                <div class="label" style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px;">All-Rnd</div>
+              </div>
+              <div class="tracker-item" style="background: var(--bg-primary); padding: 8px; border: 1px solid var(--border-color);">
+                <div class="count" style="font-size: 1.35rem; font-weight: bold; color: var(--color-warning); font-family: var(--font-sports);">{userTeam?.players.filter(p => p.role === 'wicketkeeper').length || 0}</div>
+                <div class="label" style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px;">WK</div>
+              </div>
+            </div>
+            <div class="auction-status" style="margin-top: 12px; padding-top: 8px; border-top: 1px dashed var(--border-color); display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+              <span>Progress: {state.currentPlayerIndex + 1} / {state.availablePlayers.length} Lots</span>
+              <span>Remaining: {state.availablePlayers.length - state.currentPlayerIndex - 1}</span>
+            </div>
          </div>
 
          <div class="auction-log">

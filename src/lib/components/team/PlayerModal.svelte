@@ -2,6 +2,7 @@
   import type { Player } from '$lib/models/player';
   import { FACTIONS, getAvatarUrl } from '$lib/models/faction';
   import { getEffectiveStats } from '$lib/models/player';
+  import { teamStore, upgradePlayerStat } from '$lib/stores/gameState';
   
   interface Props {
     player: Player;
@@ -11,6 +12,16 @@
   }
   
   let { player, onClose, allowRename = false, onRename }: Props = $props();
+
+  let teams = $state<any[]>([]);
+  $effect(() => {
+    return teamStore.subscribe(t => {
+      teams = t;
+    });
+  });
+  
+  let userTeam = $derived(teams.find((t: any) => t.isUserTeam));
+  let isUserPlayer = $derived(userTeam?.players?.some((p: any) => p.id === player.id));
 
   let isEditingName = $state(false);
   let editNameValue = $state(player.name);
@@ -43,6 +54,25 @@
     if (value >= 70) return 'high';
     if (value >= 45) return 'medium';
     return 'low';
+  }
+
+  function getUpgradeCost(currentLevel: number): { xp: number, credits: number } {
+    if (currentLevel <= 50) return { xp: 100, credits: 5000 };
+    if (currentLevel <= 75) return { xp: 250, credits: 15000 };
+    if (currentLevel <= 90) return { xp: 500, credits: 50000 };
+    return { xp: 1000, credits: 150000 };
+  }
+
+  function canUpgrade(stat: number): boolean {
+    if (!isUserPlayer || stat >= 100) return false;
+    const cost = getUpgradeCost(stat);
+    return (player.xp >= cost.xp) && (userTeam?.budget >= cost.credits);
+  }
+
+  function handleUpgrade(statName: keyof import('$lib/models/player').PlayerStats, currentLevel: number) {
+    if (!canUpgrade(currentLevel)) return;
+    const cost = getUpgradeCost(currentLevel);
+    upgradePlayerStat(player.id, userTeam.id, statName, cost.xp, cost.credits);
   }
 </script>
 
@@ -117,28 +147,34 @@
     </div>
     
     <div class="stats-section">
-      <h3>Base Stats</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <h3 style="margin-bottom: 0;">Base Stats & Training</h3>
+        <div class="xp-badge" style="background: var(--bg-surface); padding: 0.25rem 0.75rem; border-radius: 12px; font-weight: bold; color: var(--color-accent); font-size: 0.9rem;">
+          ✨ {player.xp || 0} XP
+        </div>
+      </div>
       <div class="stats-grid">
-        <div class="stat-item">
-          <span class="stat-label">Batting</span>
-          <span class="stat-value">{player.stats.batting}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Bowling</span>
-          <span class="stat-value">{player.stats.bowling}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Power</span>
-          <span class="stat-value">{player.stats.power}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Technique</span>
-          <span class="stat-value">{player.stats.technique}</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Fielding</span>
-          <span class="stat-value">{player.stats.fielding || 60}</span>
-        </div>
+        {#each ['batting', 'bowling', 'power', 'technique', 'fielding'] as statName}
+          {@const statValue = player.stats[statName as keyof typeof player.stats] || (statName === 'fielding' ? 60 : 0)}
+          {@const cost = getUpgradeCost(statValue)}
+          <div class="stat-item upgradeable" style="display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0;">
+            <div>
+              <span class="stat-label" style="text-transform: capitalize;">{statName}</span>
+              <span class="stat-value">{statValue}</span>
+            </div>
+            {#if isUserPlayer && statValue < 100}
+              <button 
+                class="upgrade-btn" 
+                disabled={!canUpgrade(statValue)}
+                onclick={() => handleUpgrade(statName as any, statValue)}
+                title="Cost: {cost.xp} XP + ${cost.credits.toLocaleString()}"
+                style="background: {canUpgrade(statValue) ? 'var(--color-success)' : 'var(--bg-surface)'}; border: none; color: white; border-radius: 4px; padding: 2px 8px; cursor: {canUpgrade(statValue) ? 'pointer' : 'not-allowed'}; opacity: {canUpgrade(statValue) ? 1 : 0.5}; font-size: 0.8rem; font-weight: bold;"
+              >
+                +
+              </button>
+            {/if}
+          </div>
+        {/each}
       </div>
     </div>
     
@@ -579,5 +615,18 @@
     .career-stats {
       grid-template-columns: 1fr;
     }
+  }
+
+  :global([data-theme="light"]) .badge,
+  :global([data-theme="light"]) .stat-card,
+  :global([data-theme="light"]) .contract-item,
+  :global([data-theme="light"]) .special-trait-item {
+    background: rgba(15, 23, 42, 0.03);
+  }
+  :global([data-theme="light"]) .match-history-table th {
+    background: rgba(15, 23, 42, 0.04);
+  }
+  :global([data-theme="light"]) .stat-progress {
+    background: rgba(15, 23, 42, 0.05);
   }
 </style>

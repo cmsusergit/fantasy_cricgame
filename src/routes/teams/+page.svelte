@@ -5,6 +5,7 @@
   import { calculateTeamStrength, PERSONALITY_DESCRIPTIONS } from '$lib/core/teamBuilder';
   import PlayerCard from '$lib/components/team/PlayerCard.svelte';
   import { FACTIONS } from '$lib/models/faction';
+  import { getCrowdFavourites } from '$lib/core/fanSystem';
 
   let teams = $state<Team[]>([]);
   let selectedTeamId = $state<string>('');
@@ -34,6 +35,10 @@
     }
     return players;
   })());
+
+  let crowdFavouriteIds = $derived(new Set(
+    (selectedTeam ? getCrowdFavourites(selectedTeam, 3) : []).map(p => p.id)
+  ));
 
   let topPlayers = $derived((() => {
       if (!selectedTeam) return [];
@@ -160,7 +165,12 @@
         
         <div class="players-grid">
           {#each displayedPlayers as player}
-             <PlayerCard {player} hideAvailability={true} teamColorPrimary={selectedTeam.colorPrimary} teamColorSecondary={selectedTeam.colorSecondary} />
+            <div class="player-wrapper">
+              {#if crowdFavouriteIds.has(player.id)}
+                <div class="cf-badge" title="Crowd Favourite">⭐</div>
+              {/if}
+              <PlayerCard {player} hideAvailability={true} teamColorPrimary={selectedTeam.colorPrimary} teamColorSecondary={selectedTeam.colorSecondary} />
+            </div>
           {/each}
         </div>
       </div>
@@ -393,6 +403,20 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 10px;
+  }
+
+  .player-wrapper {
+    position: relative;
+  }
+
+  .cf-badge {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    font-size: 1rem;
+    z-index: 2;
+    pointer-events: none;
+    filter: drop-shadow(0 0 3px rgba(255, 200, 0, 0.5));
   }
 
   @media (max-width: 768px) {

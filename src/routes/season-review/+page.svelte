@@ -63,7 +63,7 @@
     </div>
   {:else if awards}
     <header class="review-header">
-      <h1>Season {$currentSeason} Completed!</h1>
+      <h1>Season Completed!</h1>
       <p class="subtitle">Here is the review of the season</p>
     </header>
 

@@ -8,6 +8,8 @@ export function simulateMatch(team1: Team, team2: Team, totalOvers: number = 20)
   winner: string;
   team1Score: number;
   team2Score: number;
+  innings1: innings;
+  innings2: innings;
 } {
   const innings1 = simulateInnings(team1, team2, totalOvers);
   const target = innings1.totalRuns + 1;
@@ -18,7 +20,9 @@ export function simulateMatch(team1: Team, team2: Team, totalOvers: number = 20)
   return {
     winner,
     team1Score: innings1.totalRuns,
-    team2Score: innings2.totalRuns
+    team2Score: innings2.totalRuns,
+    innings1,
+    innings2
   };
 }
 
@@ -79,16 +83,21 @@ export function simulateInnings(
       const bowler = bowlers.find(p => p.id === currentBowlerId)!;
         const intent: IntentType = over < 6 ? 'aggressive' : over >= 15 ? 'very_aggressive' : 'balanced';
         const bowlingFieldingAvg = bowlingTeam.players.slice(0, 11).reduce((sum, p) => sum + (p.stats.fielding || 60), 0) / 11;
-        const ballEvent = resolveBall(striker, bowler, over, totalOvers, intent, 'sunny', 'balanced', 0, false, 'balanced', false, bowlingFieldingAvg);
+        const bowlingTeamIds = bowlingTeam.players.slice(0, 11).map(p => p.id);
+        const ballEvent = resolveBall(striker, bowler, over, totalOvers, intent, 'sunny', 'balanced', 0, false, 'balanced', false, bowlingFieldingAvg, 'normal', 1.0, 1.0, bowlingTeamIds);
       
-      const updates = updateFatigueAndMorale(striker, bowler, ballEvent.result);
+      const updates = updateFatigueAndMorale(striker, bowler, ballEvent.result, intent, 'balanced');
       striker.fatigue += updates.batterFatigue;
       striker.morale += updates.batterMorale;
       bowler.fatigue += updates.bowlerFatigue;
       bowler.morale += updates.bowlerMorale;
       
       innings.totalRuns += ballEvent.runs;
-      innings.balls++;
+      if (ballEvent.result === 'wide' || ballEvent.result === 'noball') {
+        innings.extras += ballEvent.runs;
+      } else {
+        innings.balls++;
+      }
       innings.ballsFaced.push(ballEvent);
       
       if (ballEvent.isWicket) {

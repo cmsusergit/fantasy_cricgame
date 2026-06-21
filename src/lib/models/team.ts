@@ -20,8 +20,7 @@ export interface Team {
   name: string;
   coach: string;
   logo?: string;
-  budget: number; // Transfer Budget
-  operatingBudget: number;
+  budget: number;
   players: Player[];
   staff: StaffMember[];
   facilities: TeamFacilities;

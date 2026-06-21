@@ -8,7 +8,7 @@
   let teams = $state<any[]>([]);
   let userTeam = $derived(teams.find((t: any) => t.isUserTeam));
   
-  let operatingBudget = $derived(userTeam?.operatingBudget || 0);
+  let clubBudget = $derived(userTeam?.budget || 0);
   let facilities = $derived(userTeam?.facilities || { stadiumLevel: 1, trainingLevel: 1, medicalLevel: 1 });
   let staff = $derived(userTeam?.staff || []);
   
@@ -37,7 +37,7 @@
       return;
     }
     const cost = FACILITY_UPGRADE_COSTS[facility][currentLevel];
-    if (operatingBudget >= cost) {
+    if (clubBudget >= cost) {
       teamStore.upgradeFacility(userTeam.id, facility, cost);
       await saveCurrentGame(userTeam.budget);
       showMessage(`${facility.charAt(0).toUpperCase() + facility.slice(1)} upgraded to Level ${currentLevel + 1}!`);
@@ -48,7 +48,7 @@
 
   async function handleHire(member: StaffMember) {
     if (!userTeam) return;
-    if (operatingBudget >= member.hiringCost) {
+    if (clubBudget >= member.hiringCost) {
       teamStore.hireStaff(userTeam.id, member, member.hiringCost);
       staffMarket = staffMarket.filter(s => s.id !== member.id);
       await saveCurrentGame(userTeam.budget);
@@ -60,8 +60,8 @@
 
   async function handleFire(member: StaffMember) {
     if (!userTeam) return;
-    const severance = member.salary * 0.25; // 25% severance
-    if (operatingBudget >= severance) {
+    const severance = member.salary * 0.25;
+    if (clubBudget >= severance) {
       teamStore.fireStaff(userTeam.id, member.id, severance);
       await saveCurrentGame(userTeam.budget);
       showMessage(`${member.name} fired. Paid $${severance.toLocaleString()} severance.`);
@@ -86,10 +86,7 @@
       <span class="budget-label">Transfer Budget</span>
       <span class="budget-value transfer">${userTeam?.budget.toLocaleString()}</span>
     </div>
-    <div class="budget-item">
-      <span class="budget-label">Operating Budget</span>
-      <span class="budget-value operating">${operatingBudget.toLocaleString()}</span>
-    </div>
+
   </div>
 
   {#if message}

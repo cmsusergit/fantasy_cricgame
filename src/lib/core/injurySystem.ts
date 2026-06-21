@@ -21,14 +21,15 @@ export const INJURY_TYPES: Record<InjuryType, { statPenalty: number; recoveryDay
 
 export const BODY_PARTS: BodyPart[] = ['batting_arm', 'bowling_arm', 'leg', 'back', 'shoulder'];
 
-export function rollForInjury(): Injury | null {
+export function rollForInjury(fatigue: number = 0): Injury | null {
   const roll = Math.random();
+  const injuryChance = 0.05 + Math.min(1, fatigue / 100) * 0.45; // 5% base, up to 50% at fatigue 100
   
-  if (roll > 0.95) {
+  if (roll < injuryChance * (1 / 6)) {
     return createInjury('severe');
-  } else if (roll > 0.85) {
+  } else if (roll < injuryChance * (3 / 6)) {
     return createInjury('moderate');
-  } else if (roll > 0.70) {
+  } else if (roll < injuryChance) {
     return createInjury('minor');
   }
   
@@ -78,8 +79,18 @@ export function applyInjuryToPlayer(player: any, injury: Injury): any {
 export function recoverFromInjury(player: any): any {
   if (!player.activeInjury) return player;
   
+  const injury = player.activeInjury;
+  let affectedStat: string = 'batting';
+  if (injury.bodyPart === 'bowling_arm') affectedStat = 'bowling';
+  else if (injury.bodyPart === 'leg') affectedStat = 'power';
+  else if (injury.bodyPart === 'back') affectedStat = 'technique';
+  
   return {
     ...player,
+    stats: {
+      ...player.stats,
+      [affectedStat]: Math.min(100, (player.stats[affectedStat] || 0) + injury.statPenalty)
+    },
     isInjured: false,
     activeInjury: null
   };

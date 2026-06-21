@@ -52,12 +52,18 @@
 
   let topRunScorers = $derived((() => {
     const allPlayers = teams.flatMap(t => t.players.map(p => ({...p, teamName: t.name})));
-    return allPlayers.sort((a, b) => (b.tournamentStats?.runs || 0) - (a.tournamentStats?.runs || 0)).slice(0, 10);
+    return allPlayers
+      .filter(p => (p.tournamentStats?.runs || 0) > 0)
+      .sort((a, b) => (b.tournamentStats?.runs || 0) - (a.tournamentStats?.runs || 0))
+      .slice(0, 10);
   })());
 
   let topWicketTakers = $derived((() => {
     const allPlayers = teams.flatMap(t => t.players.map(p => ({...p, teamName: t.name})));
-    return allPlayers.sort((a, b) => (b.tournamentStats?.wickets || 0) - (a.tournamentStats?.wickets || 0)).slice(0, 10);
+    return allPlayers
+      .filter(p => (p.tournamentStats?.wickets || 0) > 0)
+      .sort((a, b) => (b.tournamentStats?.wickets || 0) - (a.tournamentStats?.wickets || 0))
+      .slice(0, 10);
   })());
 </script>
 
@@ -167,34 +173,42 @@
       <div class="leaderboard-grid">
         <div class="leaderboard-card">
           <h2>🏏 Top Run Scorers</h2>
-          <table>
-            <thead><tr><th>Player</th><th>Team</th><th>Runs</th></tr></thead>
-            <tbody>
-              {#each topRunScorers as p, i}
-                <tr>
-                  <td><strong>{i+1}.</strong> {p.name}</td>
-                  <td style="font-size: 0.8em; color: var(--text-secondary);">{p.teamName}</td>
-                  <td><strong>{p.tournamentStats?.runs || 0}</strong></td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
+          {#if topRunScorers.length > 0}
+            <table>
+              <thead><tr><th>Player</th><th>Team</th><th>Runs</th></tr></thead>
+              <tbody>
+                {#each topRunScorers as p, i}
+                  <tr>
+                    <td><strong>{i+1}.</strong> {p.name}</td>
+                    <td style="font-size: 0.8em; color: var(--text-secondary);">{p.teamName}</td>
+                    <td><strong>{p.tournamentStats?.runs || 0}</strong></td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          {:else}
+            <p class="empty-leaders">No matches played yet. Advance days from the dashboard to generate stats.</p>
+          {/if}
         </div>
 
         <div class="leaderboard-card">
           <h2>🎯 Top Wicket Takers</h2>
-          <table>
-            <thead><tr><th>Player</th><th>Team</th><th>Wickets</th></tr></thead>
-            <tbody>
-              {#each topWicketTakers as p, i}
-                <tr>
-                  <td><strong>{i+1}.</strong> {p.name}</td>
-                  <td style="font-size: 0.8em; color: var(--text-secondary);">{p.teamName}</td>
-                  <td><strong>{p.tournamentStats?.wickets || 0}</strong></td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
+          {#if topWicketTakers.length > 0}
+            <table>
+              <thead><tr><th>Player</th><th>Team</th><th>Wickets</th></tr></thead>
+              <tbody>
+                {#each topWicketTakers as p, i}
+                  <tr>
+                    <td><strong>{i+1}.</strong> {p.name}</td>
+                    <td style="font-size: 0.8em; color: var(--text-secondary);">{p.teamName}</td>
+                    <td><strong>{p.tournamentStats?.wickets || 0}</strong></td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          {:else}
+            <p class="empty-leaders">No matches played yet. Advance days from the dashboard to generate stats.</p>
+          {/if}
         </div>
       </div>
     </div>
@@ -423,6 +437,13 @@
     font-size: 15px;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 8px;
+  }
+
+  .empty-leaders {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
   }
 
   @media (max-width: 768px) {

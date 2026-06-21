@@ -26,6 +26,7 @@ export interface BallEvent {
   isWicket: boolean;
   commentary: string;
   wicketType?: string;
+  fielderId?: string;
   isFreeHit?: boolean;
   isPowerplay?: boolean;
 }

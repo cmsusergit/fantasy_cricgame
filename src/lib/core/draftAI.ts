@@ -53,15 +53,15 @@ function calculatePrice(role: PlayerRole, stats: PlayerStats): number {
   return Math.floor((avgStat * 1000 + randomInt(-2000, 5000)) * roleBonus);
 }
 
-export function generatePlayer(role: PlayerRole, isYouth: boolean = false): Player {
-  const faction = randomElement([
+export function generatePlayer(role: PlayerRole, isYouth: boolean = false, forcedFaction?: FactionType): Player {
+  const faction = forcedFaction || (randomElement([
     'human', 'human', 'human',
     'elf', 'elf',
     'orc', 'orc',
     'dwarf',
     'goblin', 'goblin',
     'nightelf'
-  ]) as FactionType;
+  ]) as FactionType);
 
   // Balanced base stats for 180-200 run target in the 20-100 scale. Youth players have much lower starting stats.
   const baseStats = {
@@ -71,8 +71,8 @@ export function generatePlayer(role: PlayerRole, isYouth: boolean = false): Play
     wicketkeeper: { batting: isYouth ? 25 : 50, bowling: 10, power: isYouth ? 20 : 40, technique: isYouth ? 35 : 70, fielding: isYouth ? 50 : 80 }
   }[role];
 
-  // 15% chance of being WK, 10% chance of captain potential
-  const isWK = role === 'batsman' && Math.random() < 0.15;
+  // If role is wicketkeeper, it must be WK. Otherwise, 15% chance of batsman being WK.
+  const isWK = role === 'wicketkeeper' || (role === 'batsman' && Math.random() < 0.15);
   const isCaptain = !isYouth && Math.random() < 0.10; // Youth can't be captains
 
   let bowlingType: any = 'none';
@@ -130,6 +130,7 @@ export function generatePlayer(role: PlayerRole, isYouth: boolean = false): Play
     matches: isYouth ? 0 : randomInt(0, 50),
     runsScored: isYouth ? 0 : randomInt(0, 500),
     wickets: (role === 'bowler' && !isYouth) ? randomInt(0, 30) : 0,
+    catches: 0,
     age: age,
     marketValue: price,
     potential: isYouth ? generateStatValue(85, 12) : generateStatValue(80, 10),
@@ -137,8 +138,11 @@ export function generatePlayer(role: PlayerRole, isYouth: boolean = false): Play
     portraitId: randomInt(1, 1000),
     tournamentStats: {
       runs: 0,
-      wickets: 0
-    }
+      wickets: 0,
+      catches: 0
+    },
+    xp: 0,
+    lifetimeXp: 0
   };
 }
 
@@ -203,4 +207,77 @@ export function sortPlayersByRole(players: Player[]): Record<PlayerRole, Player[
 
 export function filterAffordablePlayers(players: Player[], budget: number): Player[] {
   return players.filter(p => p.isAvailable && p.price <= budget);
+}
+
+export function generateBalancedSquad(faction: FactionType): Player[] {
+  const squad: Player[] = [];
+  const factions: FactionType[] = ['human', 'elf', 'orc', 'dwarf', 'goblin', 'nightelf'];
+  
+  const getMixedFaction = (primary: FactionType): FactionType => {
+    // 60% chance of matching team's primary faction, 40% chance of a random faction
+    return Math.random() < 0.6 ? primary : randomElement(factions);
+  };
+
+  // 5 Batsmen
+  // 3 Top Order (2 RHB, 1 LHB), 1 Middle Order (RHB), 1 Finisher (RHB/LHB)
+  const batsRoleDetails = [
+    { role: 'Top Order' as const, hand: 'RHB' as const },
+    { role: 'Top Order' as const, hand: 'RHB' as const },
+    { role: 'Top Order' as const, hand: 'LHB' as const },
+    { role: 'Middle Order' as const, hand: 'RHB' as const },
+    { role: 'Finisher' as const, hand: Math.random() > 0.5 ? 'RHB' as const : 'LHB' as const }
+  ];
+  
+  for (const detail of batsRoleDetails) {
+    const p = generatePlayer('batsman', false, getMixedFaction(faction));
+    p.battingRole = detail.role;
+    p.battingType = detail.hand;
+    squad.push(p);
+  }
+  
+  // 2 Wicketkeepers
+  // 1 Top Order (LHB/RHB), 1 Middle Order (RHB)
+  const wkRoleDetails = [
+    { role: 'Top Order' as const, hand: Math.random() > 0.5 ? 'RHB' as const : 'LHB' as const },
+    { role: 'Middle Order' as const, hand: 'RHB' as const }
+  ];
+  for (const detail of wkRoleDetails) {
+    const p = generatePlayer('wicketkeeper', false, getMixedFaction(faction));
+    p.battingRole = detail.role;
+    p.battingType = detail.hand;
+    squad.push(p);
+  }
+  
+  // 3 All-rounders
+  // Mix of pacers/spinners and batting orders
+  const arBowlingTypes = ['spinner' as const, 'pacer' as const, Math.random() > 0.5 ? 'swinger' as const : 'fast' as const];
+  const arBattingRoles = ['Middle Order' as const, 'Middle Order' as const, 'Finisher' as const];
+  
+  for (let i = 0; i < 3; i++) {
+    const p = generatePlayer('allrounder', false, getMixedFaction(faction));
+    p.bowlingType = arBowlingTypes[i];
+    p.battingRole = arBattingRoles[i];
+    p.battingType = Math.random() > 0.3 ? 'RHB' as const : 'LHB' as const;
+    squad.push(p);
+  }
+  
+  // 5 Bowlers
+  // 2 Spinners, 3 Pacers/Fast/Swinger
+  const bowlTypes = [
+    'spinner' as const,
+    'spinner' as const,
+    'pacer' as const,
+    'fast' as const,
+    'swinger' as const
+  ];
+  
+  for (let i = 0; i < 5; i++) {
+    const p = generatePlayer('bowler', false, getMixedFaction(faction));
+    p.bowlingType = bowlTypes[i];
+    p.battingRole = 'Tail Ender' as const;
+    p.battingType = Math.random() > 0.2 ? 'RHB' as const : 'LHB' as const;
+    squad.push(p);
+  }
+  
+  return squad;
 }

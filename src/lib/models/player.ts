@@ -42,6 +42,7 @@ export interface Player {
   matches: number;    // career matches
   runsScored: number; // career runs
   wickets: number;   // career wickets
+  catches: number;   // career catches
   
   // Phase 1: Season Transition & Economy
   age: number;
@@ -53,9 +54,12 @@ export interface Player {
   tournamentStats?: {
     runs: number;
     wickets: number;
+    catches: number;
   };
   activeInjury?: Injury | null;
   isInjured?: boolean;
+  xp: number;
+  lifetimeXp?: number;
 }
 
 // Base stats for 180-200 average runs on the 20-100 scale

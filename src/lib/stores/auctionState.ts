@@ -1,6 +1,6 @@
 import { writable, get } from 'svelte/store';
 import type { Player } from '../models/player';
-import { teamStore, playerStore, gamePhase } from './gameState';
+import { teamStore, playerStore, gamePhase, startNewSeason } from './gameState';
 import { MAX_SQUAD_SIZE } from '../core/retentionSystem';
 
 export interface LogEntry {
@@ -226,7 +226,7 @@ function createAuctionStore() {
                 engine.resolveCurrentPlayer(true);
                 state = get(engine);
             }
-            gamePhase.set('tournament');
+            startNewSeason();
         },
 
         resolveCurrentPlayer: (instant = false) => {
@@ -285,7 +285,7 @@ function createAuctionStore() {
             } else if (!get(engine).isActive && !instant) {
                 // Transition to tournament
                 setTimeout(() => {
-                    gamePhase.set('tournament');
+                    startNewSeason();
                 }, 3000);
             }
         },

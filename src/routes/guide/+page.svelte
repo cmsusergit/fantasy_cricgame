@@ -65,24 +65,18 @@
 
       {:else if activeTopic === 'economy'}
         <h2>The Economy</h2>
-        <p>Your club's finances are split into two distinct budgets to prevent you from bankrupting the club on player salaries.</p>
+        <p>Your club operates with a single unified budget. Manage it wisely to build a championship-winning franchise.</p>
 
-        <h3>💰 Transfer Budget</h3>
-        <p>This is your primary war chest. It is strictly used for:</p>
+        <h3>💰 Budget</h3>
+        <p>Your budget is used for all club activities:</p>
         <ul>
           <li>Bidding on players in the live auction.</li>
-          <li>Paying player salaries.</li>
-          <li>Sending scouts to find youth players.</li>
-        </ul>
-        <p>You can earn more Transfer Budget through Match Fees, Win Bonuses, and Sponsorships.</p>
-
-        <h3>🏢 Operating Budget</h3>
-        <p>This budget manages your club's infrastructure and personnel. It is used for:</p>
-        <ul>
-          <li>Hiring Head Coaches, Physios, and Consultants.</li>
+          <li>Paying player salaries and staff wages.</li>
           <li>Upgrading your Stadium, Training Grounds, and Medical Center.</li>
+          <li>Sending scouts to find youth players.</li>
+          <li>Hiring Head Coaches, Physios, and Consultants.</li>
         </ul>
-        <p>Operating Budget is primarily earned through <strong>Ticket Sales</strong> when you host a home match. The higher your Stadium Level, the more you earn!</p>
+        <p>You earn budget through Match Fees, Win Bonuses, Sponsorships, and <strong>Ticket Sales</strong> when you host a home match. The higher your Stadium Level, the more ticket revenue you earn!</p>
 
       {:else if activeTopic === 'intent'}
         <h2>Match Tactics & Intent</h2>

@@ -1,4 +1,8 @@
 import type { Team } from '../models/team';
+import type { innings } from '../models/match';
+import { simulateMatch } from './tournamentSim';
+
+export let aiMatchInnings: Record<string, { innings1: innings; innings2: innings }> = {};
 
 export type MatchStatus = 'scheduled' | 'in_progress' | 'completed' | 'rained_out';
 export type DayType = 'matchday' | 'rest' | 'training' | 'auction';
@@ -40,8 +44,6 @@ export function generateTournamentSchedule(teams: Team[], startDay: number = 1):
   const matches: ScheduledMatch[] = [];
   
   const teamCount = teams.length;
-  // Double round robin matches
-  const totalMatches = teamCount * (teamCount - 1);
   const totalDays = 90; // Extended to accommodate more matches
   
   const round1: [string, string][] = [];
@@ -57,11 +59,143 @@ export function generateTournamentSchedule(teams: Team[], startDay: number = 1):
       }
     }
   }
+
+  let finalSchedule: [string, string][] = [];
+  let success = false;
   
-  round1.sort(() => Math.random() - 0.5);
-  round2.sort(() => Math.random() - 0.5);
-  const schedule: [string, string][] = [...round1, ...round2];
+  for (let attempt = 0; attempt < 2000; attempt++) {
+    const pool1 = [...round1];
+    const pool2 = [...round2];
+    // Shuffle pools
+    pool1.sort(() => Math.random() - 0.5);
+    pool2.sort(() => Math.random() - 0.5);
+    
+    const tempSchedule: [string, string][] = [];
+    const teamsPlayedOnDay: Record<number, Set<string>> = {};
+    let localSuccess = true;
+    
+    let pool = pool1; // start with round1
+    
+    for (let d = 0; d < totalDays; d++) {
+      const dayNum = startDay + d;
+      const dayOfWeek = d % 7;
+      
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      const isRestDay = d === 0 || d === totalDays - 1;
+      const isAuctionDay = d === 1;
+      const isTrainingDay = d === 2;
+      
+      let matchesThisDay = 0;
+      if (!isRestDay && !isAuctionDay && !isTrainingDay) {
+        if (isWeekend) {
+          matchesThisDay = 2;
+        } else {
+          matchesThisDay = 1;
+        }
+      }
+      
+      teamsPlayedOnDay[dayNum] = new Set<string>();
+      
+      for (let m = 0; m < matchesThisDay; m++) {
+        // If pool1 is empty, switch to pool2
+        if (pool.length === 0 && pool === pool1) {
+          pool = pool2;
+        }
+        if (pool.length === 0) break;
+        
+        // Find match in pool
+        let foundIdx = -1;
+        for (let i = 0; i < pool.length; i++) {
+          const [t1, t2] = pool[i];
+          const playedToday = teamsPlayedOnDay[dayNum].has(t1) || teamsPlayedOnDay[dayNum].has(t2);
+          const yesterday = dayNum - 1;
+          const playedYesterday = teamsPlayedOnDay[yesterday] && (teamsPlayedOnDay[yesterday].has(t1) || teamsPlayedOnDay[yesterday].has(t2));
+          
+          if (!playedToday && !playedYesterday) {
+            foundIdx = i;
+            break;
+          }
+        }
+        
+        if (foundIdx === -1) {
+          localSuccess = false;
+          break;
+        }
+        
+        const pairing = pool.splice(foundIdx, 1)[0];
+        tempSchedule.push(pairing);
+        teamsPlayedOnDay[dayNum].add(pairing[0]);
+        teamsPlayedOnDay[dayNum].add(pairing[1]);
+      }
+      
+      if (!localSuccess) break;
+    }
+    
+    if (localSuccess && pool1.length === 0 && pool2.length === 0) {
+      finalSchedule = tempSchedule;
+      success = true;
+      break;
+    }
+  }
   
+  // Back up fallback if randomized search doesn't find a solution (highly unlikely, but safe coding practices)
+  if (!success) {
+    const pool1 = [...round1];
+    const pool2 = [...round2];
+    pool1.sort(() => Math.random() - 0.5);
+    pool2.sort(() => Math.random() - 0.5);
+    let pool = pool1;
+    const tempSchedule: [string, string][] = [];
+    const teamsPlayedOnDay: Record<number, Set<string>> = {};
+    
+    for (let d = 0; d < totalDays; d++) {
+      const dayNum = startDay + d;
+      const dayOfWeek = d % 7;
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      const isRestDay = d === 0 || d === totalDays - 1;
+      const isAuctionDay = d === 1;
+      const isTrainingDay = d === 2;
+      
+      let matchesThisDay = 0;
+      if (!isRestDay && !isAuctionDay && !isTrainingDay) {
+        if (isWeekend) matchesThisDay = 2;
+        else matchesThisDay = 1;
+      }
+      
+      teamsPlayedOnDay[dayNum] = new Set<string>();
+      
+      for (let m = 0; m < matchesThisDay; m++) {
+        if (pool.length === 0 && pool === pool1) pool = pool2;
+        if (pool.length === 0) break;
+        
+        let foundIdx = -1;
+        for (let i = 0; i < pool.length; i++) {
+          const [t1, t2] = pool[i];
+          const playedToday = teamsPlayedOnDay[dayNum].has(t1) || teamsPlayedOnDay[dayNum].has(t2);
+          const yesterday = dayNum - 1;
+          const playedYesterday = teamsPlayedOnDay[yesterday] && (teamsPlayedOnDay[yesterday].has(t1) || teamsPlayedOnDay[yesterday].has(t2));
+          
+          if (!playedToday && (!playedYesterday || pool.length < 8)) {
+            foundIdx = i;
+            break;
+          }
+        }
+        
+        if (foundIdx === -1) {
+          foundIdx = pool.findIndex(([t1, t2]) => !teamsPlayedOnDay[dayNum].has(t1) && !teamsPlayedOnDay[dayNum].has(t2));
+          if (foundIdx === -1) foundIdx = 0;
+        }
+        
+        const pairing = pool.splice(foundIdx, 1)[0];
+        tempSchedule.push(pairing);
+        teamsPlayedOnDay[dayNum].add(pairing[0]);
+        teamsPlayedOnDay[dayNum].add(pairing[1]);
+      }
+    }
+    finalSchedule = tempSchedule;
+  }
+  
+  // Construct return structure
   let matchIndex = 0;
   
   for (let d = 0; d < totalDays; d++) {
@@ -121,9 +255,9 @@ export function generateTournamentSchedule(teams: Team[], startDay: number = 1):
     
     if (dayType === 'matchday' && matchesThisDay > 0) {
       for (let m = 0; m < matchesThisDay; m++) {
-        if (matchIndex >= schedule.length) break;
+        if (matchIndex >= finalSchedule.length) break;
         
-        const [t1Id, t2Id] = schedule[matchIndex];
+        const [t1Id, t2Id] = finalSchedule[matchIndex];
         const team1 = teams.find(t => t.id === t1Id) || teams[0];
         const team2 = teams.find(t => t.id === t2Id) || teams[1];
         
@@ -143,7 +277,6 @@ export function generateTournamentSchedule(teams: Team[], startDay: number = 1):
       }
     }
   }
-  
   return {
     days,
     matches,
@@ -233,7 +366,7 @@ export function simulateAllMatchesForDay(
   day: number,
   teams: Team[]
 ): TournamentSchedule {
-  const matchesForDay = schedule.matches.filter(m => m.day === day && m.status === 'scheduled');
+  aiMatchInnings = {};
   
   const updatedMatches = schedule.matches.map(match => {
     if (match.day !== day || match.status !== 'scheduled') return match;
@@ -247,19 +380,17 @@ export function simulateAllMatchesForDay(
     
     if (!team1 || !team2) return match;
     
-    const team1Score = Math.floor(150 + Math.random() * 60);
-    const team2Score = Math.floor(150 + Math.random() * 60);
+    const simResult = simulateMatch(team1, team2, 20);
     
-    const result = simulateAIMatch(team1Score, team2Score);
-    const winnerId = result.winner === 'team1' ? match.team1Id : result.winner === 'team2' ? match.team2Id : match.team1Id;
+    aiMatchInnings[match.id] = { innings1: simResult.innings1, innings2: simResult.innings2 };
     
     return {
       ...match,
       status: 'completed' as MatchStatus,
       result: {
-        winner: winnerId,
-        team1Score,
-        team2Score
+        winner: simResult.winner,
+        team1Score: simResult.team1Score,
+        team2Score: simResult.team2Score
       }
     };
   });

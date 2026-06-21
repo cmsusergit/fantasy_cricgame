@@ -1,5 +1,6 @@
 import type { Player } from '../models/player';
 import type { Team } from '../models/team';
+import { FACILITY_MAINTENANCE_COSTS } from '../models/staff';
 import { calculateStandings } from './tournamentSim';
 import { teamStore, playerStore, scheduleStore, currentSeason, gamePhase } from '../stores/gameState';
 
@@ -31,8 +32,13 @@ export function processSeasonEnd(teams: Team[], players: Player[], userTeamId: s
       const prize = prizePool[idx] || 10000;
       
       const playerSalaries = t.players.reduce((sum, p) => sum + p.price * 0.05, 0);
-      const staffSalaries = 250000;
-      const totalSalaries = playerSalaries + staffSalaries;
+      const staffSalaries = t.staff?.reduce((sum, s) => sum + s.salary, 0) || 0;
+      const facilityMaintenance = (
+        (FACILITY_MAINTENANCE_COSTS.stadium[t.facilities?.stadiumLevel || 1] || 0) +
+        (FACILITY_MAINTENANCE_COSTS.training[t.facilities?.trainingLevel || 1] || 0) +
+        (FACILITY_MAINTENANCE_COSTS.medical[t.facilities?.medicalLevel || 1] || 0)
+      );
+      const totalSalaries = playerSalaries + staffSalaries + facilityMaintenance;
       
       if (t.id === userTeamId) {
           userSalaryPaid = totalSalaries;
@@ -117,6 +123,8 @@ export function processSeasonEnd(teams: Team[], players: Player[], userTeamId: s
   });
 
   playerStore.set(updatedPlayers);
+
+  currentSeason.update(n => n + 1);
 
   return {
     mvp,

@@ -25,6 +25,19 @@
     }
   }
   
+  function getXpUpgradeCost(currentLevel: number): { xp: number, credits: number } {
+    if (currentLevel <= 50) return { xp: 100, credits: 5000 };
+    if (currentLevel <= 75) return { xp: 250, credits: 15000 };
+    if (currentLevel <= 90) return { xp: 500, credits: 50000 };
+    return { xp: 1000, credits: 150000 };
+  }
+
+  function canXpUpgrade(stat: number): boolean {
+    if (stat >= 100) return false;
+    const cost = getXpUpgradeCost(stat);
+    return (selectedPlayer?.xp || 0) >= cost.xp && budget >= cost.credits;
+  }
+
   function handleTraining(statType: string) {
     if (!selectedPlayer) return;
     
@@ -39,11 +52,32 @@
     const result = trainPlayer(selectedPlayer, statType as any);
     if (result.success) {
       teamStore.updateBudget('user_team', -result.cost);
+      teamStore.update(ts =>
+        ts.map(t => ({
+          ...t,
+          players: t.players.map(p =>
+            p.id === selectedPlayer!.id
+              ? { ...p, stats: { ...p.stats, [statType]: result.newStat } }
+              : p
+          )
+        }))
+      );
       selectedPlayer = { ...selectedPlayer, stats: { ...selectedPlayer.stats, [statType]: result.newStat } };
       alert(result.message);
     } else {
       alert(result.message);
     }
+  }
+
+  function handleXpUpgrade(statName: string, currentLevel: number) {
+    if (!selectedPlayer || !canXpUpgrade(currentLevel)) return;
+    const cost = getXpUpgradeCost(currentLevel);
+    import('$lib/stores/gameState').then(({ upgradePlayerStat }) => {
+      upgradePlayerStat(selectedPlayer!.id, 'user_team', statName as any, cost.xp, cost.credits);
+      const stats = { ...selectedPlayer!.stats };
+      (stats as any)[statName] = Math.min(100, (stats as any)[statName] + 1);
+      selectedPlayer = { ...selectedPlayer!, stats, xp: Math.max(0, (selectedPlayer!.xp || 0) - cost.xp) };
+    });
   }
 </script>
 
@@ -74,6 +108,7 @@
               <span class="name">{player.name}</span>
               <span class="role">{player.role} • {player.battingType || 'RHB'} • {player.battingRole || 'Middle Order'}{player.bowlingType && player.bowlingType !== 'none' ? ` • ${player.bowlingType}` : ''}</span>
               <span class="faction">{player.faction}</span>
+              <span class="xp-badge">✨ {player.xp || 0}</span>
               {#if player.special?.isCaptain}
                 <span class="captain-badge">C</span>
               {/if}
@@ -99,18 +134,39 @@
         
         <div class="training-options">
           {#each trainingOptions as option}
+            {@const xpCost = getXpUpgradeCost(option.currentStat)}
+            {@const canXp = canXpUpgrade(option.currentStat)}
             <div class="training-card">
               <div class="training-type">{option.type}</div>
               <div class="training-stats">
                 <span>{option.currentStat} → {option.newStat}</span>
+                {#if option.currentStat < 100}
+                  <div class="xp-alternative" class:can-afford={canXp}>
+                    ✨ XP Route: {xpCost.xp} XP + ${xpCost.credits.toLocaleString()} 
+                    {#if canXp}
+                      <span class="save-badge">Ready!</span>
+                    {/if}
+                  </div>
+                {/if}
               </div>
-              <button 
-                class="train-btn"
-                disabled={budget < option.cost}
-                onclick={() => handleTraining(option.type)}
-              >
-                Train (${option.cost.toLocaleString()})
-              </button>
+              <div class="train-actions">
+                <button 
+                  class="train-btn"
+                  disabled={budget < option.cost}
+                  onclick={() => handleTraining(option.type)}
+                >
+                  Train ${option.cost.toLocaleString()}
+                </button>
+                {#if option.currentStat < 100}
+                  <button 
+                    class="xp-btn"
+                    disabled={!canXp}
+                    onclick={() => handleXpUpgrade(option.type, option.currentStat)}
+                  >
+                    ✨ {xpCost.xp} XP
+                  </button>
+                {/if}
+              </div>
             </div>
           {/each}
         </div>
@@ -252,27 +308,80 @@
     background: var(--bg-tertiary);
     border-radius: 6px;
   }
-  
+
   .training-type {
     text-transform: capitalize;
     font-weight: 600;
     width: 80px;
   }
-  
+
   .training-stats {
     flex: 1;
     font-size: 14px;
     color: var(--text-secondary);
   }
   
+  .xp-badge {
+    font-size: 11px;
+    color: var(--accent-amethyst);
+    background: rgba(var(--accent-amethyst-rgb), 0.12);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .train-actions {
+    display: flex;
+    gap: 6px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .train-btn {
     background: var(--success);
     color: white;
+    width: 100%;
   }
   
   .train-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .xp-btn {
+    background: rgba(var(--accent-amethyst-rgb), 0.15);
+    color: var(--accent-amethyst);
+    border: 1px solid rgba(var(--accent-amethyst-rgb), 0.3);
+    width: 100%;
+  }
+
+  .xp-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .xp-btn:hover:not(:disabled) {
+    background: rgba(var(--accent-amethyst-rgb), 0.25);
+  }
+
+  .xp-alternative {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .xp-alternative.can-afford {
+    color: var(--warning);
+  }
+
+  .save-badge {
+    background: rgba(var(--accent-gold-rgb), 0.15);
+    color: var(--warning);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 4px;
   }
   
   .select-prompt {

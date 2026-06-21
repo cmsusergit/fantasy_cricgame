@@ -40,6 +40,7 @@
     isOut: boolean;
     outType?: string;
     outBowlerId?: string;
+    outFielderId?: string;
   }
 
   interface BowlerScorecard {
@@ -56,21 +57,29 @@
     const batsmanStats: Record<string, BatsmanScorecard> = {};
     const bowlerStats: Record<string, BowlerScorecard> = {};
 
-    // Initialize stats for all players in the batting team
-    displayBattingTeam?.players.forEach(player => {
-      batsmanStats[player.id] = {
-        playerId: player.id,
-        runs: 0,
-        balls: 0,
-        fours: 0,
-        sixes: 0,
-        strikeRate: 0,
-        isOut: false,
-      };
+    const batsmanOrder: string[] = [];
+
+    // Initialize batsman stats in batting order from innings battingOrder
+    if (inningsData.battingOrder) {
+      inningsData.battingOrder.forEach((pid: string) => {
+        batsmanOrder.push(pid);
+        batsmanStats[pid] = {
+          playerId: pid, runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: 0, isOut: false,
+        };
+      });
+    }
+    // Append any remaining squad players not in batting order
+    displayBattingTeam?.players.forEach((player: Player) => {
+      if (!batsmanStats[player.id]) {
+        batsmanOrder.push(player.id);
+        batsmanStats[player.id] = {
+          playerId: player.id, runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: 0, isOut: false,
+        };
+      }
     });
 
     // Initialize stats for all players in the bowling team
-    displayBowlingTeam?.players.forEach(player => {
+    displayBowlingTeam?.players.forEach((player: Player) => {
       bowlerStats[player.id] = {
         playerId: player.id,
         overs: 0,
@@ -93,6 +102,7 @@
           batsmanStats[ball.batsmanId].isOut = true;
           batsmanStats[ball.batsmanId].outType = ball.wicketType;
           batsmanStats[ball.batsmanId].outBowlerId = ball.bowlerId;
+          batsmanStats[ball.batsmanId].outFielderId = ball.fielderId;
         }
         batsmanStats[ball.batsmanId].strikeRate = batsmanStats[ball.batsmanId].balls > 0 
           ? (batsmanStats[ball.batsmanId].runs / batsmanStats[ball.batsmanId].balls) * 100 
@@ -120,30 +130,43 @@
 
     // Convert total balls to overs for bowlers and calculate maidens (simplified)
     Object.values(bowlerStats).forEach(stats => {
-      stats.overs = Math.floor(stats.balls / 6) + (stats.balls % 6) / 10; // e.g., 5.3 overs
-      // Simplified maiden calculation (needs more advanced logic to be truly accurate)
-      // For a real game, you'd track runs per over.
-      // For now, let's assume 0 maidens, or implement a basic check per over
-      // A proper maiden calculation would need to check each full over for runs.
-      // This is left as an exercise for a more complex match engine.
-      stats.maidens = 0; // Placeholder
+      stats.overs = Math.floor(stats.balls / 6) + (stats.balls % 6) / 10;
+      stats.maidens = 0;
     });
 
+    // Compute first-appearance order for bowlers from ballsFaced
+    const bowlerFirstAppearance: Record<string, number> = {};
+    inningsData.ballsFaced.forEach((ball: BallEvent, index: number) => {
+      if (bowlerFirstAppearance[ball.bowlerId] === undefined) {
+        bowlerFirstAppearance[ball.bowlerId] = index;
+      }
+    });
+
+    // Sort bowlers by first appearance in the innings
+    const sortedBowlers = Object.values(bowlerStats)
+      .sort((a, b) => (bowlerFirstAppearance[a.playerId] ?? Infinity) - (bowlerFirstAppearance[b.playerId] ?? Infinity));
+
     return {
-      batsmanScorecards: Object.values(batsmanStats),
-      bowlerScorecards: Object.values(bowlerStats),
+      batsmanScorecards: batsmanOrder.map(id => batsmanStats[id]),
+      bowlerScorecards: sortedBowlers,
     };
   }
 
   function formatDismissal(stats: BatsmanScorecard, displayBowlingTeamPlayers: Player[]) {
     if (!stats.isOut) return 'not out';
     const bowler = displayBowlingTeamPlayers.find(p => p.id === stats.outBowlerId)?.name || 'Unknown';
+    const fielder = displayBowlingTeamPlayers.find(p => p.id === stats.outFielderId)?.name || 'Unknown';
+    
     switch (stats.outType) {
       case 'bowled': return `b ${bowler}`;
-      case 'caught': return `c & b ${bowler}`; // Assuming 'c & b' for caught and bowled for simplicity as fielder not tracked
+      case 'caught': 
+        if (stats.outFielderId && stats.outFielderId !== stats.outBowlerId) {
+            return `c ${fielder} b ${bowler}`;
+        }
+        return `c & b ${bowler}`;
       case 'lbw': return `lbw b ${bowler}`;
-      case 'stumped': return `st b ${bowler}`;
-      case 'run out': return `run out`;
+      case 'stumped': return `st ${stats.outFielderId ? fielder : 'WK'} b ${bowler}`;
+      case 'run out': return `run out (${stats.outFielderId ? fielder : 'Unknown'})`;
       default: return stats.outType;
     }
   }
@@ -185,7 +208,7 @@
           </thead>
           <tbody>
             {#each scorecard.batsmanScorecards as stats}
-              {@const player = displayBattingTeam?.players.find(p => p.id === stats.playerId)}
+              {@const player = displayBattingTeam?.players.find((p: Player) => p.id === stats.playerId)}
               {#if player}
                 <tr>
                   <td class="batsman-name">{player.name}</td>
@@ -197,6 +220,8 @@
                   <td>
                     {#if stats.isOut}
                       {formatDismissal(stats, displayBowlingTeam?.players || [])}
+                    {:else if stats.balls === 0}
+                      did not bat
                     {:else}
                       not out
                     {/if}
@@ -222,7 +247,7 @@
           </thead>
           <tbody>
             {#each scorecard.bowlerScorecards as stats}
-              {@const player = displayBowlingTeam?.players.find(p => p.id === stats.playerId)}
+              {@const player = displayBowlingTeam?.players.find((p: Player) => p.id === stats.playerId)}
               {#if player && stats.balls > 0}
                 <tr>
                   <td class="bowler-name">{player.name}</td>

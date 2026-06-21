@@ -84,7 +84,7 @@
 <div class="scouting-page">
   <header class="page-header">
     <h1>Youth Academy & Scouting</h1>
-    <p class="subtitle">Season {season + 1} Draft Prospects</p>
+    <p class="subtitle">Draft Prospects</p>
     
     <div class="budget-panel">
         <span class="budget-label">Available Budget:</span>

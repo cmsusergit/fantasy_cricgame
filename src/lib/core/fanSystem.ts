@@ -1,3 +1,6 @@
+import type { Player } from '../models/player';
+import type { Team } from '../models/team';
+
 export interface FanProfile {
   homeAdvantage: number;
   popularity: number;
@@ -62,4 +65,20 @@ export function getHomeAdvantageDescription(advantage: number): string {
   if (advantage >= 2) return 'Strong home support';
   if (advantage >= 1) return 'Minor home advantage';
   return 'Neutral venue';
+}
+
+export function getCrowdFavourites(team: Team, count: number = 3): Player[] {
+  if (!team.players || team.players.length === 0) return [];
+  return [...team.players]
+    .sort((a, b) => {
+      const aScore = (a.runsScored || 0) + (a.wickets || 0) * 25 + (a.form || 0) * 5 + (a.morale || 50);
+      const bScore = (b.runsScored || 0) + (b.wickets || 0) * 25 + (b.form || 0) * 5 + (b.morale || 50);
+      return bScore - aScore;
+    })
+    .slice(0, count);
+}
+
+export function isCrowdFavourite(player: Player, team: Team): boolean {
+  const favourites = getCrowdFavourites(team, 3);
+  return favourites.some(p => p.id === player.id);
 }
