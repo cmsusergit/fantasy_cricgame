@@ -7,6 +7,7 @@
   import { generateSponsorship, type SponsorshipContract } from '$lib/core/sponsorship';
   import { simulateInnings, calculateStandings, simulateMatch } from '$lib/core/tournamentSim';
   import { resolveMatch, postMatchMoraleUpdate, type MatchResult } from '$lib/core/matchEngine';
+  import { updatePopularity, calculateHomeAdvantage } from '$lib/core/fanSystem';
   import { recoverFromInjury } from '$lib/core/injurySystem';
   import type { innings } from '$lib/models/match';
   import MatchSummary from '$lib/components/match/MatchSummary.svelte';
@@ -56,18 +57,32 @@
   let playing11Count = $derived(userTeam?.playing11?.length ?? 0);
   let lineupReady = $derived(Boolean(userTeam?.playing11?.length === 11 && userTeam?.captain && userTeam?.wicketKeeper));
   
+  let maxSponsors = $derived(
+    userTeam 
+      ? ((userTeam.tournamentWins > 0 || (userTeam.fanProfile?.popularityStreak || 0) >= 5) ? 2 : 1)
+      : 1
+  );
+  let activeSponsorshipsCount = $derived(
+    userTeam && userTeam.sponsorships 
+      ? userTeam.sponsorships.filter((s: any) => s.active).length 
+      : 0
+  );
+
   $effect(() => {
-    const maxSponsors = userTeam?.tournamentWins > 0 ? 2 : 1;
-    if (userTeam && userTeam.sponsorships && userTeam.sponsorships.length < maxSponsors && ($gamePhase === 'tournament' || $gamePhase === 'menu') && sponsorshipOffers.length === 0) {
-      const offers: SponsorshipContract[] = [];
-      // Generate 3 unique offers
-      while(offers.length < 3) {
-         const newOffer = generateSponsorship(userTeam.budget);
-         if (!offers.find(o => o.sponsorName === newOffer.sponsorName)) {
-            offers.push(newOffer);
-         }
+    if (userTeam && activeSponsorshipsCount < maxSponsors && ($gamePhase === 'tournament' || $gamePhase === 'menu')) {
+      if (sponsorshipOffers.length === 0) {
+        const offers: SponsorshipContract[] = [];
+        // Generate 3 unique offers
+        while(offers.length < 3) {
+           const newOffer = generateSponsorship(userTeam.budget);
+           if (!offers.find(o => o.sponsorName === newOffer.sponsorName)) {
+              offers.push(newOffer);
+           }
+        }
+        sponsorshipOffers = offers;
       }
-      sponsorshipOffers = offers;
+    } else {
+      sponsorshipOffers = [];
     }
   });
 
@@ -78,9 +93,9 @@
   }
   
   let currentDayGames = $derived(schedule ? getMatchesForDay(schedule, selectedDay) : []);
-  let dayInfo = $derived(schedule?.days.find(d => d.day === selectedDay));
-  let userNextMatch = $derived(schedule?.matches.find(m => 
-    m.status === 'scheduled' && (m.team1Id === 'user_team' || m.team2Id === 'user_team') && m.day === schedule?.currentDay
+  let dayInfo = $derived((schedule as any)?.days.find((d: any) => d.day === selectedDay));
+  let userNextMatch = $derived((schedule as any)?.matches.find((m: any) => 
+    m.status === 'scheduled' && (m.team1Id === 'user_team' || m.team2Id === 'user_team') && m.day === (schedule as any)?.currentDay
   ));
   
   // Expose gamePhase for conditional UI rendering
@@ -166,7 +181,7 @@
       }
       
       let status: 'completed' | 'today' | 'tbd' = 'tbd';
-      let outcome: 'W' | 'L' | 'D' | 'TBD' | 'Done' = 'TBD';
+      let outcome: 'W' | 'L' | 'D' | 'TBD' | 'Done' | 'TODAY' = 'TBD';
       let isHome = false;
       let opponentLogo = '🏏';
       let team1Logo = '';
@@ -317,16 +332,20 @@
       const localTeam = t.id === team1.id ? team1 : team2;
       return {
         ...t,
+        fanProfile: localTeam.fanProfile,
+        sponsorships: localTeam.sponsorships || [],
+        injuries: localTeam.injuries || [],
         players: t.players.map(p => {
-          const localPlayer = localTeam.players.find(lp => lp.id === p.id);
+          const localPlayer = localTeam.players.find((lp: any) => lp.id === p.id);
           const updates = playerStatsUpdates[p.id];
           
           const fatigue = localPlayer ? localPlayer.fatigue : (p.fatigue || 0);
           const morale = localPlayer ? localPlayer.morale : (p.morale || 50);
           const form = localPlayer ? localPlayer.form : (p.form || 0);
+          const activeInjury = localPlayer ? (localPlayer as any).activeInjury : undefined;
 
           if (!updates) {
-            return { ...p, fatigue, morale, form };
+            return { ...p, fatigue, morale, form, activeInjury };
           }
           const ts = p.tournamentStats || { runs: 0, wickets: 0, catches: 0 };
           return {
@@ -340,6 +359,7 @@
             fatigue,
             morale,
             form,
+            activeInjury,
             tournamentStats: {
               runs: (ts.runs || 0) + updates.runs,
               wickets: (ts.wickets || 0) + updates.wickets,
@@ -421,6 +441,11 @@
         let losses = team.losses;
         let draws = team.draws;
         
+        const teamResult = match.result.winner === team.id ? 'win' : match.result.winner === 'draw' ? 'draw' : 'loss';
+        const newPopularity = updatePopularity(team.fanProfile?.popularity || 50, teamResult, runsFor);
+        const homeAdvantage = match.team1Id === team.id ? calculateHomeAdvantage(newPopularity) : 0;
+        const newStreak = newPopularity > 75 ? (team.fanProfile?.popularityStreak || 0) + 1 : 0;
+
         if (match.result.winner === team.id) {
           wins++;
           earnings += winBonus;
@@ -438,7 +463,14 @@
           matchesPlayed: team.matchesPlayed + 1,
           runsFor: team.runsFor + runsFor,
           runsAgainst: team.runsAgainst + runsAgainst,
-          budget: team.budget + earnings
+          budget: team.budget + earnings,
+          fanProfile: {
+            ...(team.fanProfile || { homeAdvantage: 0, popularity: 50, revenue: 0, matchBonus: 0, popularityStreak: 0 }),
+            popularity: newPopularity,
+            homeAdvantage,
+            revenue: (team.fanProfile?.revenue || 0) + earnings,
+            popularityStreak: newStreak
+          }
         };
       });
 
@@ -494,7 +526,7 @@
       // 3. Update player details (fatigue, morale, form, injury, XP, performance)
       nextStore = nextStore.map(team => {
         // Find if this team had a match today
-        const teamMatch = schedule.matches.find(m => 
+        const teamMatch = (schedule as any)?.matches.find((m: any) => 
           m.day === currentDay && 
           (m.team1Id === team.id || m.team2Id === team.id)
         );
@@ -506,14 +538,14 @@
           if (team.isUserTeam) {
             (team.playing11 || []).forEach(id => playing11Ids.add(id));
           } else {
-            const innsData = newlyCompletedMatches.find(m => m.id === teamMatch?.id) 
+            const innsData = newlyCompletedMatches.find((m: any) => m.id === teamMatch?.id) 
               ? aiMatchInnings[teamMatch!.id] 
               : null;
             if (innsData) {
               const inn = innsData.innings1.teamId === team.id ? innsData.innings1 : innsData.innings2;
               (inn.battingOrder || []).slice(0, 11).forEach(id => playing11Ids.add(id));
             } else {
-              (team.playing11 || team.players.slice(0, 11).map(p => p.id)).forEach(id => playing11Ids.add(id));
+              (team.playing11 || team.players.slice(0, 11).map((p: any) => p.id)).forEach(id => playing11Ids.add(id));
             }
           }
         }
@@ -521,7 +553,7 @@
         const updatedPlayers = team.players.map(p => {
           // Get mutated player from the local teams copy (which has simulated fatigue and morale updates)
           const localTeam = teams.find(t => t.id === team.id);
-          const localPlayer = localTeam?.players.find(lp => lp.id === p.id);
+          const localPlayer = localTeam?.players.find((lp: any) => lp.id === p.id);
           
           let fatigue = localPlayer ? localPlayer.fatigue : (p.fatigue || 0);
           let morale = localPlayer ? localPlayer.morale : (p.morale || 50);
@@ -584,7 +616,7 @@
   }
 
   let userHasAnyMatchesRemaining = $derived(
-    schedule ? schedule.matches.some(m => 
+    schedule ? (schedule as any).matches.some((m: any) => 
       m.status === 'scheduled' && (m.team1Id === 'user_team' || m.team2Id === 'user_team')
     ) : false
   );
@@ -731,11 +763,11 @@
         <div class="sponsor-status-card">
           {#if userTeam.sponsorships && userTeam.sponsorships.length > 0}
             {#each userTeam.sponsorships as sponsor}
-              <div class="signed-sponsor-box">
+              <div class="signed-sponsor-box {!sponsor.active ? 'expired' : ''}">
                 <div class="sponsor-header">
                   <span class="sponsor-icon-large">{getSponsorIcon(sponsor.sponsorName)}</span>
                   <div>
-                    <h4>{sponsor.sponsorName}</h4>
+                    <h4>{sponsor.sponsorName} {#if !sponsor.active}<span class="expired-lbl">(EXPIRED)</span>{/if}</h4>
                     <span class="sponsor-badge-type {sponsor.type}">{sponsor.type} sponsor</span>
                   </div>
                 </div>
@@ -878,24 +910,35 @@
         </div>
 
         <div class="calendar-scroll-wrapper">
-          {#each calendarDays() as day}
+           {#each calendarDays() as day}
             <div class="calendar-day-card" 
                  class:active-today={day.day === schedule.currentDay} 
                  class:completed={day.status === 'completed'}
                  class:future={day.day > schedule.currentDay}>
               <span class="day-num-lbl">DAY {day.day}</span>
+              {#if day.hasMatch && (day.team1Id === 'user_team' || day.team2Id === 'user_team')}
+                <span class="venue-pill {day.team1Id === 'user_team' ? 'home' : 'away'}">
+                  {day.team1Id === 'user_team' ? '🏠 HOME' : '✈️ AWAY'}
+                </span>
+              {/if}
               
               {#if day.hasMatch}
                 <div class="calendar-match-icons">
                   <div class="mini-logo-container">
-                    <span class="mini-logo" title={day.team1Name}>{day.team1Logo}</span>
+                    <span class="mini-logo" title="{day.team1Name} (Home)" style="position: relative; display: inline-block;">
+                      {day.team1Logo}
+                      <span class="venue-logo-badge home" style="position: absolute; bottom: -4px; right: -4px; font-size: 8px;">🏠</span>
+                    </span>
                     {#if day.winnerId === day.team1Id}
                       <span class="winner-crown" title="Winner">👑</span>
                     {/if}
                   </div>
                   <span class="calendar-vs">v</span>
                   <div class="mini-logo-container">
-                    <span class="mini-logo" title={day.team2Name}>{day.team2Logo}</span>
+                    <span class="mini-logo" title="{day.team2Name} (Away)" style="position: relative; display: inline-block;">
+                      {day.team2Logo}
+                      <span class="venue-logo-badge away" style="position: absolute; bottom: -4px; right: -4px; font-size: 8px;">✈️</span>
+                    </span>
                     {#if day.winnerId === day.team2Id}
                       <span class="winner-crown" title="Winner">👑</span>
                     {/if}
@@ -923,12 +966,12 @@
     {/if}
 
     <!-- SPONSORSHIP OFFERS SECTION -->
-    {#if userTeam.sponsorships && userTeam.sponsorships.length < (userTeam.tournamentWins > 0 ? 2 : 1) && ($gamePhase === 'tournament' || $gamePhase === 'menu') && sponsorshipOffers.length > 0}
+    {#if userTeam && activeSponsorshipsCount < maxSponsors && ($gamePhase === 'tournament' || $gamePhase === 'menu') && sponsorshipOffers.length > 0}
       <section class="sponsorship-offers-panel">
         <div class="panel-header">
           <h3>🤝 SPONSORSHIP OFFERS</h3>
         </div>
-        <p class="offers-desc">Review deals for the season. Sponsors provide vital operational match funds. You can sign up to {userTeam.tournamentWins > 0 ? 2 : 1} contract(s).</p>
+        <p class="offers-desc">Review deals for the season. Sponsors provide vital operational match funds. You can sign up to {maxSponsors} contract(s).</p>
         
         <div class="offers-grid">
           {#each sponsorshipOffers as offer}
@@ -1222,6 +1265,18 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+
+  .signed-sponsor-box.expired {
+    opacity: 0.5;
+    filter: grayscale(40%);
+  }
+
+  .expired-lbl {
+    color: #ef4444;
+    font-size: 10px;
+    margin-left: 4px;
+    font-weight: 900;
   }
 
   .sponsor-header {
@@ -1693,6 +1748,25 @@
     align-items: center;
     gap: 8px;
     transition: all 0.2s;
+  }
+
+  .venue-pill {
+    font-size: 8px;
+    font-weight: 800;
+    padding: 2px 5px;
+    border-radius: 8px;
+    margin-top: -2px;
+    display: inline-block;
+  }
+
+  .venue-pill.home {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+  }
+
+  .venue-pill.away {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
   }
 
   :global([data-theme="light"]) .calendar-day-card {

@@ -737,6 +737,9 @@ export function resolveMatch(
   const team1NewPopularity = updatePopularity(team1.fanProfile?.popularity || 50, team1Result, innings1.totalRuns);
   const team2NewPopularity = updatePopularity(team2.fanProfile?.popularity || 50, team2Result, innings2.totalRuns);
   
+  const team1Streak = team1NewPopularity > 75 ? (team1.fanProfile?.popularityStreak || 0) + 1 : 0;
+  const team2Streak = team2NewPopularity > 75 ? (team2.fanProfile?.popularityStreak || 0) + 1 : 0;
+
   const team1HomeAdvantage = homeTeamId === team1.id ? calculateHomeAdvantage(team1NewPopularity) : 0;
   const team2HomeAdvantage = homeTeamId === team2.id ? calculateHomeAdvantage(team2NewPopularity) : 0;
   
@@ -755,17 +758,19 @@ export function resolveMatch(
   }
 
   team1.fanProfile = {
-    ...(team1.fanProfile || { homeAdvantage: 0, popularity: 50, revenue: 0, matchBonus: 0 }),
+    ...(team1.fanProfile || { homeAdvantage: 0, popularity: 50, revenue: 0, matchBonus: 0, popularityStreak: 0 }),
     popularity: team1NewPopularity,
     homeAdvantage: team1HomeAdvantage,
-    revenue: (team1.fanProfile?.revenue || 0) + matchEarningsTeam1
+    revenue: (team1.fanProfile?.revenue || 0) + matchEarningsTeam1,
+    popularityStreak: team1Streak
   };
 
   team2.fanProfile = {
-    ...(team2.fanProfile || { homeAdvantage: 0, popularity: 50, revenue: 0, matchBonus: 0 }),
+    ...(team2.fanProfile || { homeAdvantage: 0, popularity: 50, revenue: 0, matchBonus: 0, popularityStreak: 0 }),
     popularity: team2NewPopularity,
     homeAdvantage: team2HomeAdvantage,
-    revenue: (team2.fanProfile?.revenue || 0) + matchEarningsTeam2
+    revenue: (team2.fanProfile?.revenue || 0) + matchEarningsTeam2,
+    popularityStreak: team2Streak
   };
   
   // Calculate POTM (Simple approximation: 1 run = 1 pt, 1 wicket = 25 pts)

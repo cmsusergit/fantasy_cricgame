@@ -16,6 +16,16 @@
   let totalPlayerSalaries = $derived(userTeam?.players.reduce((sum, p) => sum + p.price * 0.05, 0) || 0); // Assuming 5% of market value as annual salary
   let totalStaffSalaries = $derived(250000); // Placeholder for staff salaries
   let totalMatchEarningsEst = $derived((userTeam?.matchesPlayed || 0) * 10000 + (userTeam?.wins || 0) * 50000);
+  let maxSponsors = $derived(
+    userTeam 
+      ? ((userTeam.tournamentWins > 0 || (userTeam.fanProfile?.popularityStreak || 0) >= 5) ? 2 : 1)
+      : 1
+  );
+  let activeSponsorshipsCount = $derived(
+    userTeam && userTeam.sponsorships 
+      ? userTeam.sponsorships.filter(s => s.active).length 
+      : 0
+  );
 </script>
 
 <svelte:head>
@@ -74,19 +84,24 @@
       </section>
       
       <section class="sponsors-section">
-        <h2>Active Sponsorships</h2>
+        <h2>Active Sponsorships ({activeSponsorshipsCount} / {maxSponsors} Slots Signed)</h2>
         {#if userTeam.sponsorships && userTeam.sponsorships.length > 0}
           <div class="sponsor-list">
             {#each userTeam.sponsorships as sponsor}
-              <div class="sponsor-card {sponsor.type}">
+              <div class="sponsor-card {sponsor.type} {!sponsor.active ? 'expired' : ''}">
                 <div class="sponsor-header">
                   <h4>{sponsor.sponsorName}</h4>
-                  <span class="badge {sponsor.type}">{sponsor.type.toUpperCase()}</span>
+                  <div class="badge-group" style="display: flex; gap: 6px;">
+                    <span class="badge {sponsor.type}">{sponsor.type.toUpperCase()}</span>
+                    {#if !sponsor.active}
+                      <span class="badge expired-badge">EXPIRED</span>
+                    {/if}
+                  </div>
                 </div>
                 <div class="sponsor-stats">
                   <div class="stat">
                     <span class="label">Matches Left</span>
-                    <span class="value">{sponsor.matches - sponsor.matchesPlayed}</span>
+                    <span class="value">{Math.max(0, sponsor.matches - sponsor.matchesPlayed)}</span>
                   </div>
                   <div class="stat">
                     <span class="label">Total Earned</span>
@@ -153,6 +168,8 @@
   .badge.bonus { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
   .badge.performance { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
   .badge.hybrid { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+  .badge.expired-badge { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+  .sponsor-card.expired { opacity: 0.65; border-style: dashed; filter: grayscale(30%); }
 
   .sponsor-stats { display: flex; gap: 10px; margin-bottom: 12px; padding: 14px; background: rgba(0,0,0,0.2); border-radius: 6px; }
   .stat { display: flex; flex-direction: column; }

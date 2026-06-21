@@ -571,6 +571,29 @@ export function upgradePlayerStat(playerId: string, teamId: string, statName: ke
       return p;
     })
   );
+
+  teamStore.update(teams => 
+    teams.map(t => {
+      if (t.id !== teamId) return t;
+      return {
+        ...t,
+        players: t.players.map(p => {
+          if (p.id === playerId) {
+            return {
+              ...p,
+              xp: Math.max(0, (p.xp || 0) - xpCost),
+              stats: {
+                ...p.stats,
+                [statName]: Math.min(100, p.stats[statName] + 1)
+              }
+            };
+          }
+          return p;
+        })
+      };
+    })
+  );
+
   teamStore.updateBudget(teamId, -creditCost);
 }
 

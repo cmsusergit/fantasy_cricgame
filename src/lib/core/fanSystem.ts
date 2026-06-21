@@ -6,6 +6,7 @@ export interface FanProfile {
   popularity: number;
   revenue: number;
   matchBonus: number;
+  popularityStreak?: number;
 }
 
 export function initializeFanProfile(): FanProfile {
@@ -13,7 +14,8 @@ export function initializeFanProfile(): FanProfile {
     homeAdvantage: 0,
     popularity: 50,
     revenue: 0,
-    matchBonus: 0
+    matchBonus: 0,
+    popularityStreak: 0
   };
 }
 

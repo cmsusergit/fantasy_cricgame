@@ -51,6 +51,7 @@
     
     const result = trainPlayer(selectedPlayer, statType as any);
     if (result.success) {
+      const nextBudget = budget - result.cost;
       teamStore.updateBudget('user_team', -result.cost);
       teamStore.update(ts =>
         ts.map(t => ({
@@ -63,6 +64,11 @@
         }))
       );
       selectedPlayer = { ...selectedPlayer, stats: { ...selectedPlayer.stats, [statType]: result.newStat } };
+      
+      import('$lib/stores/gameState').then(({ saveCurrentGame }) => {
+        saveCurrentGame(nextBudget);
+      });
+      
       alert(result.message);
     } else {
       alert(result.message);
@@ -72,11 +78,14 @@
   function handleXpUpgrade(statName: string, currentLevel: number) {
     if (!selectedPlayer || !canXpUpgrade(currentLevel)) return;
     const cost = getXpUpgradeCost(currentLevel);
-    import('$lib/stores/gameState').then(({ upgradePlayerStat }) => {
+    import('$lib/stores/gameState').then(({ upgradePlayerStat, saveCurrentGame }) => {
+      const nextBudget = budget - cost.credits;
       upgradePlayerStat(selectedPlayer!.id, 'user_team', statName as any, cost.xp, cost.credits);
       const stats = { ...selectedPlayer!.stats };
       (stats as any)[statName] = Math.min(100, (stats as any)[statName] + 1);
       selectedPlayer = { ...selectedPlayer!, stats, xp: Math.max(0, (selectedPlayer!.xp || 0) - cost.xp) };
+      
+      saveCurrentGame(nextBudget);
     });
   }
 </script>

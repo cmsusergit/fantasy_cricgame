@@ -3,6 +3,7 @@
   import { teamStore, scheduleStore, playerStore, saveCurrentGame } from '$lib/stores/gameState';
   import { getAvatarUrl } from '$lib/models/faction';
   import { loadActiveMatch, saveActiveMatch, clearActiveMatch } from '$lib/services/storage';
+  import { gameAudio } from '$lib/services/audio';
   import { resolveBall, updateFatigueAndMorale, calculateCurrentRunRate, getOverBalls, resolveMatch } from '$lib/core/matchEngine';
   import { getAIIntent } from '$lib/core/teamBuilder';
   import type { Player } from '$lib/models/player';
@@ -43,7 +44,7 @@
   let currentInnings = $state(1);
   let target = $state(0);
   let matchResultObj = $state<any>(null);
-  let playerStatsUpdatesObj = $state<any>(null);
+  let playerStatsUpdatesObj = $state<Record<string, any> | null>(null);
   let matchFatigue: Record<string, number> = {};
   let currentBowlerIndex = $state(0);
   let ballInterval: any = null;
@@ -435,6 +436,8 @@
     if (ballInterval) clearInterval(ballInterval);
     
     if (currentMatch && matchTeam1 && matchTeam2) {
+      const team1 = matchTeam1;
+      const team2 = matchTeam2;
       const t1Won = innings1.totalRuns > innings2.totalRuns;
       const t2Won = innings2.totalRuns > innings1.totalRuns;
 
@@ -443,7 +446,7 @@
       const score2 = currentMatch.team2Id === innings2.teamId ? innings2.totalRuns : innings1.totalRuns;
 
       // RESOLVE MATCH FIRST — mutates morale/form on local refs
-      const result = resolveMatch(matchTeam1, matchTeam2, innings1, innings2, currentMatch.team1Id);
+      const result = resolveMatch(team1, team2, innings1, innings2, currentMatch.team1Id);
       matchResultObj = result;
       
       // Apply Earnings
@@ -457,7 +460,7 @@
         (playerStatsUpdates[id] as any)[stat] += value;
       };
       
-      const allPlayingIds = [...getPlaying11(matchTeam1), ...getPlaying11(matchTeam2)];
+      const allPlayingIds = [...getPlaying11(team1), ...getPlaying11(team2)];
       allPlayingIds.forEach(id => {
          if (!playerStatsUpdates[id]) playerStatsUpdates[id] = { runs: 0, wickets: 0, catches: 0, matches: 1, runOuts: 0, xp: 0 };
          else playerStatsUpdates[id].matches = 1;
@@ -472,14 +475,14 @@
           return staff.tier === 'Legendary' ? 1.25 : staff.tier === 'Epic' ? 1.15 : staff.tier === 'Rare' ? 1.10 : 1.05;
       };
       
-      const t1BattingMult = getXpMultiplier(matchTeam1, 'Batting Consultant');
-      const t1BowlingMult = getXpMultiplier(matchTeam1, 'Bowling Consultant');
-      const t2BattingMult = getXpMultiplier(matchTeam2, 'Batting Consultant');
-      const t2BowlingMult = getXpMultiplier(matchTeam2, 'Bowling Consultant');
+      const t1BattingMult = getXpMultiplier(team1, 'Batting Consultant');
+      const t1BowlingMult = getXpMultiplier(team1, 'Bowling Consultant');
+      const t2BattingMult = getXpMultiplier(team2, 'Batting Consultant');
+      const t2BowlingMult = getXpMultiplier(team2, 'Bowling Consultant');
 
       [innings1, innings2].forEach((inn, index) => {
-          const battingMult = inn.teamId === matchTeam1.id ? t1BattingMult : t2BattingMult;
-          const bowlingMult = inn.teamId === matchTeam1.id ? t2BowlingMult : t1BowlingMult; // Bowling team is the opposite
+          const battingMult = inn.teamId === team1.id ? t1BattingMult : t2BattingMult;
+          const bowlingMult = inn.teamId === team1.id ? t2BowlingMult : t1BowlingMult; // Bowling team is the opposite
 
           inn.ballsFaced.forEach(ball => {
               if (ball.result !== 'wide' && ball.result !== 'noball') {
@@ -505,9 +508,9 @@
       // Calculate milestones and POTM
       Object.keys(playerStatsUpdates).forEach(id => {
           const pStats = playerStatsUpdates[id];
-          const teamId = matchTeam1.players.some(p => p.id === id) ? matchTeam1.id : matchTeam2.id;
-          const battingMult = teamId === matchTeam1.id ? t1BattingMult : t2BattingMult;
-          const bowlingMult = teamId === matchTeam1.id ? t1BowlingMult : t2BowlingMult;
+          const teamId = team1.players.some(p => p.id === id) ? team1.id : team2.id;
+          const battingMult = teamId === team1.id ? t1BattingMult : t2BattingMult;
+          const bowlingMult = teamId === team1.id ? t1BowlingMult : t2BowlingMult;
 
           if (pStats.runs >= 100) pStats.xp += 100 * battingMult;
           else if (pStats.runs >= 50) pStats.xp += 50 * battingMult;
@@ -525,12 +528,15 @@
       
       playerStatsUpdatesObj = playerStatsUpdates;
       
-      const updatedTeamIds = new Set([matchTeam1.id, matchTeam2.id]);
+      const updatedTeamIds = new Set([team1.id, team2.id]);
       teamStore.update(tStore => tStore.map(t => {
         if (!updatedTeamIds.has(t.id)) return t;
-        const localTeam = t.id === matchTeam1.id ? matchTeam1 : matchTeam2;
+        const localTeam = t.id === team1.id ? team1 : team2;
         return {
           ...t,
+          fanProfile: localTeam.fanProfile,
+          sponsorships: localTeam.sponsorships || [],
+          injuries: localTeam.injuries || [],
           players: t.players.map(p => {
             const localPlayer = localTeam.players.find(lp => lp.id === p.id);
             const updates = playerStatsUpdates[p.id];
@@ -538,9 +544,10 @@
             const fatigue = Math.min(100, (p.fatigue || 0) + (matchFatigue[p.id] || 0));
             const morale = localPlayer ? localPlayer.morale : (p.morale || 50);
             const form = localPlayer ? localPlayer.form : (p.form || 0);
+            const activeInjury = localPlayer ? (localPlayer as any).activeInjury : undefined;
 
             if (!updates) {
-              return { ...p, fatigue, morale, form };
+              return { ...p, fatigue, morale, form, activeInjury };
             }
             const ts = p.tournamentStats || { runs: 0, wickets: 0, catches: 0 };
             return {
@@ -554,6 +561,7 @@
               fatigue,
               morale,
               form,
+              activeInjury,
               tournamentStats: {
                 runs: (ts.runs || 0) + (updates.runs || 0),
                 wickets: (ts.wickets || 0) + (updates.wickets || 0),
@@ -573,8 +581,8 @@
         teamStore.addLoss(innings1.teamId, innings1.totalRuns, innings2.totalRuns);
       }
 
-      if (totalEarningsTeam1 > 0) teamStore.updateBudget(matchTeam1.id, totalEarningsTeam1);
-      if (totalEarningsTeam2 > 0) teamStore.updateBudget(matchTeam2.id, totalEarningsTeam2);
+      if (totalEarningsTeam1 > 0) teamStore.updateBudget(team1.id, totalEarningsTeam1);
+      if (totalEarningsTeam2 > 0) teamStore.updateBudget(team2.id, totalEarningsTeam2);
       
       if (result.playerOfTheMatch && result.potmReward > 0) {
           teamStore.updateBudget(result.playerOfTheMatch.teamId, result.potmReward);
@@ -684,19 +692,63 @@
     currentInn.batsmanConcentration[strikerId] = conc;
     currentInn.bowlerRhythm[bowlerId] = rhythm;
     
-    // Trigger impact animations
+    // Trigger impact animations and sounds
+    const isUserBatting = currentBattingTeam?.id === 'user_team';
+    const isHome = currentMatch?.team1Id === 'user_team';
+
     if (ballEvent.isWicket) {
+      if (isUserBatting) {
+        if (isHome) {
+          gameAudio.groan(1.0);
+        } else {
+          gameAudio.cheer(0.8);
+        }
+      } else {
+        if (isHome) {
+          gameAudio.cheer(1.0);
+        } else {
+          gameAudio.groan(0.7);
+        }
+      }
       showImpactAnimation = true;
       impactAnimationType = 'wicket';
       animationTimeout = setTimeout(clearAnimation, 1500); // Show for 1.5 seconds
     } else if (ballEvent.runs === 4) {
+      if (isUserBatting) {
+        if (isHome) {
+          gameAudio.cheer(0.9);
+        } else {
+          gameAudio.cheer(0.35);
+        }
+      } else {
+        if (isHome) {
+          gameAudio.groan(0.75);
+        } else {
+          gameAudio.cheer(0.9);
+        }
+      }
       showImpactAnimation = true;
       impactAnimationType = 'four';
       animationTimeout = setTimeout(clearAnimation, 1000); // Show for 1 second
     } else if (ballEvent.runs === 6) {
+      if (isUserBatting) {
+        if (isHome) {
+          gameAudio.cheer(1.15);
+        } else {
+          gameAudio.cheer(0.45);
+        }
+      } else {
+        if (isHome) {
+          gameAudio.groan(0.95);
+        } else {
+          gameAudio.cheer(1.15);
+        }
+      }
       showImpactAnimation = true;
       impactAnimationType = 'six';
       animationTimeout = setTimeout(clearAnimation, 1000); // Show for 1 second
+    } else if (ballEvent.runs > 0) {
+      gameAudio.batCrack();
     }
     
     const fatigueUpdates = updateFatigueAndMorale(striker, bowler, ballEvent.result, currentActiveBattingIntent, currentActiveBowlingIntent);
@@ -1319,10 +1371,10 @@
                       </tr>
                     </thead>
                     <tbody>
-                      {#each Object.entries(playerStatsUpdatesObj).sort((a,b) => b[1].xp - a[1].xp) as [id, stats]}
+                      {#each (Object.entries(playerStatsUpdatesObj || {}) as [string, any][]).sort((a,b) => b[1].xp - a[1].xp) as [id, stats]}
                         {#if stats.xp > 0}
                           <tr style="border-bottom: 1px solid var(--border-color-light);">
-                            <td style="padding: 6px 4px;">{matchTeam1.players.find(p => p.id === id)?.name || matchTeam2.players.find(p => p.id === id)?.name || 'Unknown'}</td>
+                            <td style="padding: 6px 4px;">{matchTeam1?.players.find(p => p.id === id)?.name || matchTeam2?.players.find(p => p.id === id)?.name || 'Unknown'}</td>
                             <td style="text-align: right; padding: 6px 4px; color: var(--color-success); font-weight: bold;">+{stats.xp}</td>
                           </tr>
                         {/if}
@@ -1449,7 +1501,7 @@
                           </span>
                         </td>
                         <td>{p.role}</td>
-                        <td>{p.battingType || 'RHB'}</td>
+                        <td>{p.battingType || 'RHB'} ({p.battingRole || 'Middle Order'})</td>
                         <td class="rating-val">{p.stats.batting}</td>
                         <td>
                           <div class="bar-container">
@@ -1697,7 +1749,7 @@
                           class="btn-intent intent-{level}" 
                           class:selected={isSelected} 
                           onclick={() => {
-                            batsmanIntents[batsmanId] = level;
+                            batsmanIntents[batsmanId] = level as IntentType;
                           }}>
                           {level === 'very_aggressive' ? 'Slog' : INTENT_LABELS[level]}
                         </button>
@@ -1743,7 +1795,7 @@
                         class="btn-intent intent-{level}" 
                         class:selected={isSelected} 
                         onclick={() => {
-                          if (bowlerId) bowlerIntents[bowlerId] = level;
+                          if (bowlerId) bowlerIntents[bowlerId] = level as IntentType;
                         }}>
                         {INTENT_LABELS[level]}
                       </button>
