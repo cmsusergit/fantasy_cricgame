@@ -1,0 +1,993 @@
+
+> fantasy-cricmanager@0.0.1 check
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json
+
+Loading svelte-check in workspace: /home/user1/game/fantasy_cricmanager
+Getting Svelte diagnostics...
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/match/FullScorecard.svelte:291:3
+Warn: Unused CSS selector ".close-btn"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+  .close-btn {
+    background: none;
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/match/FullScorecard.svelte:299:3
+Warn: Unused CSS selector ".tab-controls"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+  .tab-controls {
+    display: flex;
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/match/FullScorecard.svelte:304:3
+Warn: Unused CSS selector ".tab-btn"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+  .tab-btn {
+    flex: 1;
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/match/FullScorecard.svelte:316:3
+Warn: Unused CSS selector ".tab-btn:hover"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+  .tab-btn:hover {
+    color: var(--text-primary);
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/match/FullScorecard.svelte:320:3
+Warn: Unused CSS selector ".tab-btn.active"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+  .tab-btn.active {
+    color: var(--batting-primary, var(--color-accent));
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/match/ScorecardDrawer.svelte:12:14
+Warn: Component has unused export property 'battingTeamColorSecondary'. If it is for external reference only, please consider using `export const battingTeamColorSecondary`
+https://svelte.dev/e/export_let_unused (svelte)
+  export let battingTeamColorPrimary: string = '#3b82f6';
+  export let battingTeamColorSecondary: string = '#fbbf24';
+  export let bowlingTeamColorPrimary: string = '#3b82f6';
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/match/ScorecardDrawer.svelte:14:14
+Warn: Component has unused export property 'bowlingTeamColorSecondary'. If it is for external reference only, please consider using `export const bowlingTeamColorSecondary`
+https://svelte.dev/e/export_let_unused (svelte)
+  export let bowlingTeamColorPrimary: string = '#3b82f6';
+  export let bowlingTeamColorSecondary: string = '#fbbf24';
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/team/PlayerCard.svelte:36:32
+Warn: This reference only captures the initial value of `player`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    let isEditingName = $state(false);
+    let editNameValue = $state(player.name);
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/team/PlayerCard.svelte:78:1
+Warn: noninteractive element cannot have nonnegative tabIndex value
+https://svelte.dev/e/a11y_no_noninteractive_tabindex (svelte)
+
+<div 
+  class="player-card" 
+  class:selected 
+  class:unavailable={!hideAvailability && !player.isAvailable} 
+  data-faction={player.faction}
+  style={teamColorPrimary ? `--team-primary: ${teamColorPrimary}; --team-secondary: ${teamColorSecondary ?? '#6b7280'}; --team-primary-rgb: ${hexToRgb(teamColorPrimary)}; --team-secondary-rgb: ${hexToRgb(teamColorSecondary ?? '#6b7280')}; --card-bg: linear-gradient(180deg, ${(teamColorSecondary ?? '#6b7280')}10, transparent 40%), var(--bg-surface);` : ''}
+  onclick={() => onSelect && (hideAvailability || player.isAvailable) && onSelect(player)}
+  role={onSelect && (hideAvailability || player.isAvailable) ? "button" : undefined}
+  tabindex={onSelect && (hideAvailability || player.isAvailable) ? 0 : undefined}
+  onkeydown={(e) => e.key === 'Enter' && onSelect && (hideAvailability || player.isAvailable) && onSelect(player)}
+>
+  <div class="player-header">
+    <div class="avatar-container">
+      <img src={avatarUrl} alt={player.name} class="avatar-img" />
+      <div class="faction-badge" title="Faction: {faction.name}">
+        {player.faction === 'human' ? '⚔' : player.faction === 'elf' ? '🌿' : player.faction === 'orc' ? '🪓' : player.faction === 'dwarf' ? '⛏' : player.faction === 'goblin' ? '💎' : '🌙'}
+      </div>
+    </div>
+    <div class="player-info">
+      {#if isEditingName}
+        <div class="edit-name-container" onclick={(e) => e.stopPropagation()}>
+          <input type="text" class="edit-name-input" bind:value={editNameValue} maxlength="30" onkeydown={(e) => e.key === 'Enter' && saveEdit(e)} />
+          <button class="icon-btn save-btn" onclick={saveEdit} title="Save">✓</button>
+          <button class="icon-btn cancel-btn" onclick={cancelEdit} title="Cancel">✕</button>
+        </div>
+      {:else}
+        <span class="name" title={player.name}>
+          <span class="name-text">{player.name}</span>
+          {#if allowRename}
+            <button class="icon-btn edit-btn" onclick={startEdit} title="Edit Name">✎</button>
+          {/if}
+        </span>
+      {/if}
+      <span class="role" title={roleSummary}>{roleSummary}</span>
+      <div class="status-row">
+        {#if !hideAvailability}
+          <span class="status-pill {player.isAvailable ? 'available' : 'locked'}">{player.isAvailable ? 'Available' : 'Locked'}</span>
+        {/if}
+        {#if player.retiring}
+          <span class="status-pill retiring">Retiring</span>
+        {/if}
+        {#if activeInjury}
+          <span class="status-pill injury">Injury: {activeInjury.type}</span>
+        {/if}
+      </div>
+    </div>
+  </div>
+  
+  <div class="stats">
+    <div class="stat-row" title="Batting: Determines run-scoring ability and consistency.">
+      <span class="stat-label">Batting</span>
+      <div class="stat-bar">
+        <div class="stat-bar-fill {getStatClass(player.stats.batting)}" style="width: {player.stats.batting}%"></div>
+      </div>
+      <span class="stat-value">{Math.round(player.stats.batting)}</span>
+    </div>
+    <div class="stat-row" title="Bowling: Determines wicket-taking ability and economy rate.">
+      <span class="stat-label">Bowling</span>
+      <div class="stat-bar">
+        <div class="stat-bar-fill {getStatClass(player.stats.bowling)}" style="width: {player.stats.bowling}%"></div>
+      </div>
+      <span class="stat-value">{Math.round(player.stats.bowling)}</span>
+    </div>
+    <div class="stat-row" title="Power: Affects boundary hitting (sixes/fours) and fast bowling pace.">
+      <span class="stat-label">Power</span>
+      <div class="stat-bar">
+        <div class="stat-bar-fill {getStatClass(player.stats.power)}" style="width: {player.stats.power}%"></div>
+      </div>
+      <span class="stat-value">{Math.round(player.stats.power)}</span>
+    </div>
+    <div class="stat-row" title="Technique: Helps survive good bowling and bowl with better control/spin.">
+      <span class="stat-label">Tech</span>
+      <div class="stat-bar">
+        <div class="stat-bar-fill {getStatClass(player.stats.technique)}" style="width: {player.stats.technique}%"></div>
+      </div>
+      <span class="stat-value">{Math.round(player.stats.technique)}</span>
+    </div>
+    <div class="stat-row" title="Fielding: Determines ability to take catches and save runs.">
+      <span class="stat-label">Field</span>
+      <div class="stat-bar">
+        <div class="stat-bar-fill {getStatClass(player.stats.fielding || 60)}" style="width: {player.stats.fielding || 60}%"></div>
+      </div>
+      <span class="stat-value">{Math.round(player.stats.fielding || 60)}</span>
+    </div>
+    
+    <div class="mini-grid">
+       <div class="mini-stat" title="Morale/Form: Higher morale improves performance.">
+          <span class="stat-label">Form</span>
+          <span class="stat-value" style="color: {player.morale > 70 ? 'var(--success)' : player.morale < 40 ? 'var(--danger)' : 'var(--text-secondary)'}">{Math.round(player.morale)}%</span>
+       </div>
+       <div class="mini-stat" title="Fatigue: High fatigue reduces performance and increases injury risk.">
+          <span class="stat-label">Fatigue</span>
+          <span class="stat-value" style="color: {player.fatigue > 70 ? 'var(--danger)' : player.fatigue > 40 ? 'var(--warning)' : 'var(--success)'}">{Math.round(player.fatigue)}%</span>
+       </div>
+    </div>
+  </div>
+  
+  {#if showPrice}
+    <div class="price">${player.price.toLocaleString()}</div>
+  {/if}
+  
+  {#if onSelect && (hideAvailability || player.isAvailable)}
+    <button class="select-btn {selected ? 'selected' : ''}" onclick={(e) => { e.stopPropagation(); onSelect(player); }}>
+      {selected ? selectedActionText : actionText}
+    </button>
+  {/if}
+  
+  {#if children}
+    {@render children()}
+  {/if}
+</div>
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/team/PlayerCard.svelte:98:9
+Warn: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+      {#if isEditingName}
+        <div class="edit-name-container" onclick={(e) => e.stopPropagation()}>
+          <input type="text" class="edit-name-input" bind:value={editNameValue} maxlength="30" onkeydown={(e) => e.key === 'Enter' && saveEdit(e)} />
+          <button class="icon-btn save-btn" onclick={saveEdit} title="Save">✓</button>
+          <button class="icon-btn cancel-btn" onclick={cancelEdit} title="Cancel">✕</button>
+        </div>
+      {:else}
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/team/PlayerCard.svelte:98:9
+Warn: `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
+      {#if isEditingName}
+        <div class="edit-name-container" onclick={(e) => e.stopPropagation()}>
+          <input type="text" class="edit-name-input" bind:value={editNameValue} maxlength="30" onkeydown={(e) => e.key === 'Enter' && saveEdit(e)} />
+          <button class="icon-btn save-btn" onclick={saveEdit} title="Save">✓</button>
+          <button class="icon-btn cancel-btn" onclick={cancelEdit} title="Cancel">✕</button>
+        </div>
+      {:else}
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/team/PlayerModal.svelte:16:30
+Warn: This reference only captures the initial value of `player`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+  let isEditingName = $state(false);
+  let editNameValue = $state(player.name);
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/team/PlayerModal.svelte:49:1
+Warn: Elements with the 'dialog' interactive role must have a tabindex value
+https://svelte.dev/e/a11y_interactive_supports_focus (svelte)
+
+<div class="modal-overlay" onclick={onClose} role="dialog">
+  <div class="modal" onclick={(e) => e.stopPropagation()} role="document" data-faction={player.faction}>
+    <button class="close-btn" onclick={onClose}>×</button>
+    
+    <div class="player-header">
+      <div class="avatar-container">
+        <img src={avatarUrl} alt={player.name} class="avatar-img" />
+        <div class="faction-badge" title="Faction: {faction.name}">
+          {player.faction === 'human' ? '⚔' : player.faction === 'elf' ? '🌿' : player.faction === 'orc' ? '🪓' : player.faction === 'dwarf' ? '⛏' : player.faction === 'goblin' ? '💎' : '🌙'}
+        </div>
+      </div>
+      <div class="player-info">
+        {#if isEditingName}
+          <div class="edit-name-container" onclick={(e) => e.stopPropagation()}>
+            <input type="text" class="edit-name-input" bind:value={editNameValue} maxlength="30" onkeydown={(e) => e.key === 'Enter' && saveEdit(e)} />
+            <button class="icon-btn save-btn" onclick={saveEdit} title="Save">✓</button>
+            <button class="icon-btn cancel-btn" onclick={cancelEdit} title="Cancel">✕</button>
+          </div>
+        {:else}
+          <h2>
+            {player.name}
+            {#if allowRename}
+              <button class="icon-btn edit-btn" onclick={startEdit} title="Edit Name">✎</button>
+            {/if}
+          </h2>
+        {/if}
+        <span class="role">{player.role} • {player.battingType || 'RHB'} • {player.battingRole || 'Middle Order'}{player.bowlingType && player.bowlingType !== 'none' ? ` • ${player.bowlingType}` : ''}</span>
+        <span class="faction">{faction.name}</span>
+      </div>
+    </div>
+    
+    {#if player.special.isCaptain}
+      <div class="badge captain">Captain</div>
+    {/if}
+    {#if player.special.isWicketKeeper}
+      <div class="badge wk">Wicket Keeper</div>
+    {/if}
+    {#if player.retiring}
+      <div class="badge retire">Retiring</div>
+    {/if}
+    {#if activeInjury}
+      <div class="badge injury">Injury: {activeInjury.type} • {activeInjury.bodyPart.replace('_', ' ')}</div>
+    {/if}
+    
+    <div class="stats-section">
+      <h3>Current Stats</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">Batting</span>
+          <span class="stat-value {getStatClass(effectiveStats.batting)}">{effectiveStats.batting}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Bowling</span>
+          <span class="stat-value {getStatClass(effectiveStats.bowling)}">{effectiveStats.bowling}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Power</span>
+          <span class="stat-value {getStatClass(effectiveStats.power)}">{effectiveStats.power}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Technique</span>
+          <span class="stat-value {getStatClass(effectiveStats.technique)}">{effectiveStats.technique}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Fielding</span>
+          <span class="stat-value {getStatClass(effectiveStats.fielding || 60)}">{effectiveStats.fielding || 60}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="stats-section">
+      <h3>Base Stats</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">Batting</span>
+          <span class="stat-value">{player.stats.batting}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Bowling</span>
+          <span class="stat-value">{player.stats.bowling}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Power</span>
+          <span class="stat-value">{player.stats.power}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Technique</span>
+          <span class="stat-value">{player.stats.technique}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Fielding</span>
+          <span class="stat-value">{player.stats.fielding || 60}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="meta-section">
+      <div class="meta-item">
+        <span class="meta-label">Form</span>
+        <span class="meta-value {player.form >= 0 ? 'positive' : 'negative'}">{player.form >= 0 ? '+' : ''}{player.form}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Fatigue</span>
+        <span class="meta-value {player.fatigue > 70 ? 'danger' : ''}">{player.fatigue.toFixed(0)}%</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Morale</span>
+        <span class="meta-value">{player.morale}</span>
+      </div>
+    </div>
+    
+    <div class="career-section">
+      <h3>Career Stats</h3>
+      <div class="career-stats">
+        <div class="career-item">
+          <span class="career-label">Matches</span>
+          <span class="career-value">{player.matches}</span>
+        </div>
+        <div class="career-item">
+          <span class="career-label">Runs</span>
+          <span class="career-value">{player.runsScored}</span>
+        </div>
+        <div class="career-item">
+          <span class="career-label">Wickets</span>
+          <span class="career-value">{player.wickets}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="faction-bonus">
+      <h3>Faction Bonus</h3>
+      <p>Tech: ×{faction.modifiers.tech.toFixed(2)}, Power: ×{faction.modifiers.power.toFixed(2)}, Fatigue Buildup: ×{faction.modifiers.fatigue.toFixed(2)}</p>
+    </div>
+  </div>
+</div>
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/team/PlayerModal.svelte:49:1
+Warn: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+
+<div class="modal-overlay" onclick={onClose} role="dialog">
+  <div class="modal" onclick={(e) => e.stopPropagation()} role="document" data-faction={player.faction}>
+    <button class="close-btn" onclick={onClose}>×</button>
+    
+    <div class="player-header">
+      <div class="avatar-container">
+        <img src={avatarUrl} alt={player.name} class="avatar-img" />
+        <div class="faction-badge" title="Faction: {faction.name}">
+          {player.faction === 'human' ? '⚔' : player.faction === 'elf' ? '🌿' : player.faction === 'orc' ? '🪓' : player.faction === 'dwarf' ? '⛏' : player.faction === 'goblin' ? '💎' : '🌙'}
+        </div>
+      </div>
+      <div class="player-info">
+        {#if isEditingName}
+          <div class="edit-name-container" onclick={(e) => e.stopPropagation()}>
+            <input type="text" class="edit-name-input" bind:value={editNameValue} maxlength="30" onkeydown={(e) => e.key === 'Enter' && saveEdit(e)} />
+            <button class="icon-btn save-btn" onclick={saveEdit} title="Save">✓</button>
+            <button class="icon-btn cancel-btn" onclick={cancelEdit} title="Cancel">✕</button>
+          </div>
+        {:else}
+          <h2>
+            {player.name}
+            {#if allowRename}
+              <button class="icon-btn edit-btn" onclick={startEdit} title="Edit Name">✎</button>
+            {/if}
+          </h2>
+        {/if}
+        <span class="role">{player.role} • {player.battingType || 'RHB'} • {player.battingRole || 'Middle Order'}{player.bowlingType && player.bowlingType !== 'none' ? ` • ${player.bowlingType}` : ''}</span>
+        <span class="faction">{faction.name}</span>
+      </div>
+    </div>
+    
+    {#if player.special.isCaptain}
+      <div class="badge captain">Captain</div>
+    {/if}
+    {#if player.special.isWicketKeeper}
+      <div class="badge wk">Wicket Keeper</div>
+    {/if}
+    {#if player.retiring}
+      <div class="badge retire">Retiring</div>
+    {/if}
+    {#if activeInjury}
+      <div class="badge injury">Injury: {activeInjury.type} • {activeInjury.bodyPart.replace('_', ' ')}</div>
+    {/if}
+    
+    <div class="stats-section">
+      <h3>Current Stats</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">Batting</span>
+          <span class="stat-value {getStatClass(effectiveStats.batting)}">{effectiveStats.batting}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Bowling</span>
+          <span class="stat-value {getStatClass(effectiveStats.bowling)}">{effectiveStats.bowling}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Power</span>
+          <span class="stat-value {getStatClass(effectiveStats.power)}">{effectiveStats.power}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Technique</span>
+          <span class="stat-value {getStatClass(effectiveStats.technique)}">{effectiveStats.technique}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Fielding</span>
+          <span class="stat-value {getStatClass(effectiveStats.fielding || 60)}">{effectiveStats.fielding || 60}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="stats-section">
+      <h3>Base Stats</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">Batting</span>
+          <span class="stat-value">{player.stats.batting}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Bowling</span>
+          <span class="stat-value">{player.stats.bowling}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Power</span>
+          <span class="stat-value">{player.stats.power}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Technique</span>
+          <span class="stat-value">{player.stats.technique}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Fielding</span>
+          <span class="stat-value">{player.stats.fielding || 60}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="meta-section">
+      <div class="meta-item">
+        <span class="meta-label">Form</span>
+        <span class="meta-value {player.form >= 0 ? 'positive' : 'negative'}">{player.form >= 0 ? '+' : ''}{player.form}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Fatigue</span>
+        <span class="meta-value {player.fatigue > 70 ? 'danger' : ''}">{player.fatigue.toFixed(0)}%</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Morale</span>
+        <span class="meta-value">{player.morale}</span>
+      </div>
+    </div>
+    
+    <div class="career-section">
+      <h3>Career Stats</h3>
+      <div class="career-stats">
+        <div class="career-item">
+          <span class="career-label">Matches</span>
+          <span class="career-value">{player.matches}</span>
+        </div>
+        <div class="career-item">
+          <span class="career-label">Runs</span>
+          <span class="career-value">{player.runsScored}</span>
+        </div>
+        <div class="career-item">
+          <span class="career-label">Wickets</span>
+          <span class="career-value">{player.wickets}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="faction-bonus">
+      <h3>Faction Bonus</h3>
+      <p>Tech: ×{faction.modifiers.tech.toFixed(2)}, Power: ×{faction.modifiers.power.toFixed(2)}, Fatigue Buildup: ×{faction.modifiers.fatigue.toFixed(2)}</p>
+    </div>
+  </div>
+</div>
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/team/PlayerModal.svelte:50:3
+Warn: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+<div class="modal-overlay" onclick={onClose} role="dialog">
+  <div class="modal" onclick={(e) => e.stopPropagation()} role="document" data-faction={player.faction}>
+    <button class="close-btn" onclick={onClose}>×</button>
+    
+    <div class="player-header">
+      <div class="avatar-container">
+        <img src={avatarUrl} alt={player.name} class="avatar-img" />
+        <div class="faction-badge" title="Faction: {faction.name}">
+          {player.faction === 'human' ? '⚔' : player.faction === 'elf' ? '🌿' : player.faction === 'orc' ? '🪓' : player.faction === 'dwarf' ? '⛏' : player.faction === 'goblin' ? '💎' : '🌙'}
+        </div>
+      </div>
+      <div class="player-info">
+        {#if isEditingName}
+          <div class="edit-name-container" onclick={(e) => e.stopPropagation()}>
+            <input type="text" class="edit-name-input" bind:value={editNameValue} maxlength="30" onkeydown={(e) => e.key === 'Enter' && saveEdit(e)} />
+            <button class="icon-btn save-btn" onclick={saveEdit} title="Save">✓</button>
+            <button class="icon-btn cancel-btn" onclick={cancelEdit} title="Cancel">✕</button>
+          </div>
+        {:else}
+          <h2>
+            {player.name}
+            {#if allowRename}
+              <button class="icon-btn edit-btn" onclick={startEdit} title="Edit Name">✎</button>
+            {/if}
+          </h2>
+        {/if}
+        <span class="role">{player.role} • {player.battingType || 'RHB'} • {player.battingRole || 'Middle Order'}{player.bowlingType && player.bowlingType !== 'none' ? ` • ${player.bowlingType}` : ''}</span>
+        <span class="faction">{faction.name}</span>
+      </div>
+    </div>
+    
+    {#if player.special.isCaptain}
+      <div class="badge captain">Captain</div>
+    {/if}
+    {#if player.special.isWicketKeeper}
+      <div class="badge wk">Wicket Keeper</div>
+    {/if}
+    {#if player.retiring}
+      <div class="badge retire">Retiring</div>
+    {/if}
+    {#if activeInjury}
+      <div class="badge injury">Injury: {activeInjury.type} • {activeInjury.bodyPart.replace('_', ' ')}</div>
+    {/if}
+    
+    <div class="stats-section">
+      <h3>Current Stats</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">Batting</span>
+          <span class="stat-value {getStatClass(effectiveStats.batting)}">{effectiveStats.batting}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Bowling</span>
+          <span class="stat-value {getStatClass(effectiveStats.bowling)}">{effectiveStats.bowling}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Power</span>
+          <span class="stat-value {getStatClass(effectiveStats.power)}">{effectiveStats.power}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Technique</span>
+          <span class="stat-value {getStatClass(effectiveStats.technique)}">{effectiveStats.technique}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Fielding</span>
+          <span class="stat-value {getStatClass(effectiveStats.fielding || 60)}">{effectiveStats.fielding || 60}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="stats-section">
+      <h3>Base Stats</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">Batting</span>
+          <span class="stat-value">{player.stats.batting}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Bowling</span>
+          <span class="stat-value">{player.stats.bowling}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Power</span>
+          <span class="stat-value">{player.stats.power}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Technique</span>
+          <span class="stat-value">{player.stats.technique}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Fielding</span>
+          <span class="stat-value">{player.stats.fielding || 60}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="meta-section">
+      <div class="meta-item">
+        <span class="meta-label">Form</span>
+        <span class="meta-value {player.form >= 0 ? 'positive' : 'negative'}">{player.form >= 0 ? '+' : ''}{player.form}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Fatigue</span>
+        <span class="meta-value {player.fatigue > 70 ? 'danger' : ''}">{player.fatigue.toFixed(0)}%</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Morale</span>
+        <span class="meta-value">{player.morale}</span>
+      </div>
+    </div>
+    
+    <div class="career-section">
+      <h3>Career Stats</h3>
+      <div class="career-stats">
+        <div class="career-item">
+          <span class="career-label">Matches</span>
+          <span class="career-value">{player.matches}</span>
+        </div>
+        <div class="career-item">
+          <span class="career-label">Runs</span>
+          <span class="career-value">{player.runsScored}</span>
+        </div>
+        <div class="career-item">
+          <span class="career-label">Wickets</span>
+          <span class="career-value">{player.wickets}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="faction-bonus">
+      <h3>Faction Bonus</h3>
+      <p>Tech: ×{faction.modifiers.tech.toFixed(2)}, Power: ×{faction.modifiers.power.toFixed(2)}, Fatigue Buildup: ×{faction.modifiers.fatigue.toFixed(2)}</p>
+    </div>
+  </div>
+</div>
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/team/PlayerModal.svelte:50:3
+Warn: Non-interactive element `<div>` should not be assigned mouse or keyboard event listeners
+https://svelte.dev/e/a11y_no_noninteractive_element_interactions (svelte)
+<div class="modal-overlay" onclick={onClose} role="dialog">
+  <div class="modal" onclick={(e) => e.stopPropagation()} role="document" data-faction={player.faction}>
+    <button class="close-btn" onclick={onClose}>×</button>
+    
+    <div class="player-header">
+      <div class="avatar-container">
+        <img src={avatarUrl} alt={player.name} class="avatar-img" />
+        <div class="faction-badge" title="Faction: {faction.name}">
+          {player.faction === 'human' ? '⚔' : player.faction === 'elf' ? '🌿' : player.faction === 'orc' ? '🪓' : player.faction === 'dwarf' ? '⛏' : player.faction === 'goblin' ? '💎' : '🌙'}
+        </div>
+      </div>
+      <div class="player-info">
+        {#if isEditingName}
+          <div class="edit-name-container" onclick={(e) => e.stopPropagation()}>
+            <input type="text" class="edit-name-input" bind:value={editNameValue} maxlength="30" onkeydown={(e) => e.key === 'Enter' && saveEdit(e)} />
+            <button class="icon-btn save-btn" onclick={saveEdit} title="Save">✓</button>
+            <button class="icon-btn cancel-btn" onclick={cancelEdit} title="Cancel">✕</button>
+          </div>
+        {:else}
+          <h2>
+            {player.name}
+            {#if allowRename}
+              <button class="icon-btn edit-btn" onclick={startEdit} title="Edit Name">✎</button>
+            {/if}
+          </h2>
+        {/if}
+        <span class="role">{player.role} • {player.battingType || 'RHB'} • {player.battingRole || 'Middle Order'}{player.bowlingType && player.bowlingType !== 'none' ? ` • ${player.bowlingType}` : ''}</span>
+        <span class="faction">{faction.name}</span>
+      </div>
+    </div>
+    
+    {#if player.special.isCaptain}
+      <div class="badge captain">Captain</div>
+    {/if}
+    {#if player.special.isWicketKeeper}
+      <div class="badge wk">Wicket Keeper</div>
+    {/if}
+    {#if player.retiring}
+      <div class="badge retire">Retiring</div>
+    {/if}
+    {#if activeInjury}
+      <div class="badge injury">Injury: {activeInjury.type} • {activeInjury.bodyPart.replace('_', ' ')}</div>
+    {/if}
+    
+    <div class="stats-section">
+      <h3>Current Stats</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">Batting</span>
+          <span class="stat-value {getStatClass(effectiveStats.batting)}">{effectiveStats.batting}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Bowling</span>
+          <span class="stat-value {getStatClass(effectiveStats.bowling)}">{effectiveStats.bowling}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Power</span>
+          <span class="stat-value {getStatClass(effectiveStats.power)}">{effectiveStats.power}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Technique</span>
+          <span class="stat-value {getStatClass(effectiveStats.technique)}">{effectiveStats.technique}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Fielding</span>
+          <span class="stat-value {getStatClass(effectiveStats.fielding || 60)}">{effectiveStats.fielding || 60}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="stats-section">
+      <h3>Base Stats</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">Batting</span>
+          <span class="stat-value">{player.stats.batting}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Bowling</span>
+          <span class="stat-value">{player.stats.bowling}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Power</span>
+          <span class="stat-value">{player.stats.power}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Technique</span>
+          <span class="stat-value">{player.stats.technique}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Fielding</span>
+          <span class="stat-value">{player.stats.fielding || 60}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="meta-section">
+      <div class="meta-item">
+        <span class="meta-label">Form</span>
+        <span class="meta-value {player.form >= 0 ? 'positive' : 'negative'}">{player.form >= 0 ? '+' : ''}{player.form}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Fatigue</span>
+        <span class="meta-value {player.fatigue > 70 ? 'danger' : ''}">{player.fatigue.toFixed(0)}%</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Morale</span>
+        <span class="meta-value">{player.morale}</span>
+      </div>
+    </div>
+    
+    <div class="career-section">
+      <h3>Career Stats</h3>
+      <div class="career-stats">
+        <div class="career-item">
+          <span class="career-label">Matches</span>
+          <span class="career-value">{player.matches}</span>
+        </div>
+        <div class="career-item">
+          <span class="career-label">Runs</span>
+          <span class="career-value">{player.runsScored}</span>
+        </div>
+        <div class="career-item">
+          <span class="career-label">Wickets</span>
+          <span class="career-value">{player.wickets}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="faction-bonus">
+      <h3>Faction Bonus</h3>
+      <p>Tech: ×{faction.modifiers.tech.toFixed(2)}, Power: ×{faction.modifiers.power.toFixed(2)}, Fatigue Buildup: ×{faction.modifiers.fatigue.toFixed(2)}</p>
+    </div>
+  </div>
+</div>
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/team/PlayerModal.svelte:62:11
+Warn: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+        {#if isEditingName}
+          <div class="edit-name-container" onclick={(e) => e.stopPropagation()}>
+            <input type="text" class="edit-name-input" bind:value={editNameValue} maxlength="30" onkeydown={(e) => e.key === 'Enter' && saveEdit(e)} />
+            <button class="icon-btn save-btn" onclick={saveEdit} title="Save">✓</button>
+            <button class="icon-btn cancel-btn" onclick={cancelEdit} title="Cancel">✕</button>
+          </div>
+        {:else}
+
+/home/user1/game/fantasy_cricmanager/src/lib/components/team/PlayerModal.svelte:62:11
+Warn: `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
+        {#if isEditingName}
+          <div class="edit-name-container" onclick={(e) => e.stopPropagation()}>
+            <input type="text" class="edit-name-input" bind:value={editNameValue} maxlength="30" onkeydown={(e) => e.key === 'Enter' && saveEdit(e)} />
+            <button class="icon-btn save-btn" onclick={saveEdit} title="Save">✓</button>
+            <button class="icon-btn cancel-btn" onclick={cancelEdit} title="Cancel">✕</button>
+          </div>
+        {:else}
+
+/home/user1/game/fantasy_cricmanager/src/routes/+layout.svelte:231:11
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+        <div class="field-group">
+          <label class="small-label">Coat of Arms</label>
+          <div class="command-row" style="flex-wrap: wrap;">
+
+/home/user1/game/fantasy_cricmanager/src/routes/club/+page.svelte:333:5
+Warn: Also define the standard property 'line-clamp' for compatibility (css)
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+
+/home/user1/game/fantasy_cricmanager/src/routes/club/+page.svelte:396:5
+Warn: Also define the standard property 'line-clamp' for compatibility (css)
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:1946:3
+Warn: Unused CSS selector ".pane-header h3"
+https://svelte.dev/e/css_unused_selector (svelte)
+  }
+  .pane-header h3 { margin: 0; font-size: 1.2rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:1949:3
+Warn: Unused CSS selector ".batting-header h3"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .batting-header { border-bottom-color: var(--color-batting); }
+  .batting-header h3 { color: var(--color-batting); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:1952:3
+Warn: Unused CSS selector ".bowling-header h3"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .bowling-header { border-bottom-color: var(--color-bowling); }
+  .bowling-header h3 { color: var(--color-bowling); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2235:3
+Warn: Unused CSS selector ".match-rewards-panel h4"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .match-rewards-panel { background: rgba(var(--accent-emerald-rgb), 0.1); border: 1px solid var(--success); border-radius: 12px; padding: 20px; margin: 20px auto; width: 100%; max-width: 800px; text-align: left; }
+  .match-rewards-panel h4 { color: var(--success); font-size: 1.5rem; margin-top: 0; margin-bottom: 16px; text-align: center; }
+  .rewards-grid { display: flex; gap: 24px; flex-wrap: wrap; }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2238:3
+Warn: Unused CSS selector ".reward-col h5"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .reward-col { flex: 1; min-width: 200px; background: var(--color-bg-panel); padding: 16px; border-radius: 8px; border: 1px solid var(--color-border); }
+  .reward-col h5 { margin-top: 0; margin-bottom: 12px; font-size: 1.1rem; color: var(--text-primary); border-bottom: 1px solid var(--color-border); padding-bottom: 8px; }
+  .reward-col p { margin: 8px 0; font-size: 0.95rem; color: var(--text-secondary); display: flex; justify-content: space-between; }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2239:3
+Warn: Unused CSS selector ".reward-col p"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .reward-col h5 { margin-top: 0; margin-bottom: 12px; font-size: 1.1rem; color: var(--text-primary); border-bottom: 1px solid var(--color-border); padding-bottom: 8px; }
+  .reward-col p { margin: 8px 0; font-size: 0.95rem; color: var(--text-secondary); display: flex; justify-content: space-between; }
+  .reward-col .money { color: var(--success); font-weight: bold; font-family: var(--font-sports); font-size: 1.1rem; }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2242:3
+Warn: Unused CSS selector ".potm-col h5"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .potm-col { border-color: var(--accent-amethyst); background: rgba(var(--accent-amethyst-rgb), 0.05); }
+  .potm-col h5 { color: var(--accent-amethyst); border-bottom-color: rgba(var(--accent-amethyst-rgb), 0.2); }
+  .potm-name { font-weight: bold; color: var(--text-primary) !important; font-size: 1.1rem !important; }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2364:3
+Warn: Unused CSS selector ".scorecard-item[data-faction="human"]"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+  .scorecard-item[data-faction="human"] { border-left: 3px solid var(--team-primary, var(--accent-human)); }
+  .scorecard-item[data-faction="human"]::after { color: var(--team-primary, var(--accent-human)); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2365:3
+Warn: Unused CSS selector ".scorecard-item[data-faction="human"]::after"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .scorecard-item[data-faction="human"] { border-left: 3px solid var(--team-primary, var(--accent-human)); }
+  .scorecard-item[data-faction="human"]::after { color: var(--team-primary, var(--accent-human)); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2367:3
+Warn: Unused CSS selector ".scorecard-item[data-faction="elf"]"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+  .scorecard-item[data-faction="elf"] { border-left: 3px solid var(--team-primary, var(--accent-elf)); }
+  .scorecard-item[data-faction="elf"]::after { color: var(--team-primary, var(--accent-elf)); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2368:3
+Warn: Unused CSS selector ".scorecard-item[data-faction="elf"]::after"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .scorecard-item[data-faction="elf"] { border-left: 3px solid var(--team-primary, var(--accent-elf)); }
+  .scorecard-item[data-faction="elf"]::after { color: var(--team-primary, var(--accent-elf)); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2370:3
+Warn: Unused CSS selector ".scorecard-item[data-faction="orc"]"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+  .scorecard-item[data-faction="orc"] { border-left: 3px solid var(--team-primary, var(--accent-orc)); }
+  .scorecard-item[data-faction="orc"]::after { color: var(--team-primary, var(--accent-orc)); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2371:3
+Warn: Unused CSS selector ".scorecard-item[data-faction="orc"]::after"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .scorecard-item[data-faction="orc"] { border-left: 3px solid var(--team-primary, var(--accent-orc)); }
+  .scorecard-item[data-faction="orc"]::after { color: var(--team-primary, var(--accent-orc)); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2373:3
+Warn: Unused CSS selector ".scorecard-item[data-faction="dwarf"]"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+  .scorecard-item[data-faction="dwarf"] { border-left: 3px solid var(--team-primary, var(--accent-dwarf)); }
+  .scorecard-item[data-faction="dwarf"]::after { color: var(--team-primary, var(--accent-dwarf)); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2374:3
+Warn: Unused CSS selector ".scorecard-item[data-faction="dwarf"]::after"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .scorecard-item[data-faction="dwarf"] { border-left: 3px solid var(--team-primary, var(--accent-dwarf)); }
+  .scorecard-item[data-faction="dwarf"]::after { color: var(--team-primary, var(--accent-dwarf)); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2376:3
+Warn: Unused CSS selector ".scorecard-item[data-faction="goblin"]"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+  .scorecard-item[data-faction="goblin"] { border-left: 3px solid var(--team-primary, var(--accent-goblin)); }
+  .scorecard-item[data-faction="goblin"]::after { color: var(--team-primary, var(--accent-goblin)); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2377:3
+Warn: Unused CSS selector ".scorecard-item[data-faction="goblin"]::after"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .scorecard-item[data-faction="goblin"] { border-left: 3px solid var(--team-primary, var(--accent-goblin)); }
+  .scorecard-item[data-faction="goblin"]::after { color: var(--team-primary, var(--accent-goblin)); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2379:3
+Warn: Unused CSS selector ".scorecard-item[data-faction="nightelf"]"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+  .scorecard-item[data-faction="nightelf"] { border-left: 3px solid var(--team-primary, var(--accent-nightelf)); }
+  .scorecard-item[data-faction="nightelf"]::after { color: var(--team-primary, var(--accent-nightelf)); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/match/+page.svelte:2380:3
+Warn: Unused CSS selector ".scorecard-item[data-faction="nightelf"]::after"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .scorecard-item[data-faction="nightelf"] { border-left: 3px solid var(--team-primary, var(--accent-nightelf)); }
+  .scorecard-item[data-faction="nightelf"]::after { color: var(--team-primary, var(--accent-nightelf)); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/teams/+page.svelte:334:3
+Warn: Unused CSS selector ".stat-bar-fill.high"
+https://svelte.dev/e/css_unused_selector (svelte)
+  
+  .stat-bar-fill.high { background: var(--success); }
+  .stat-bar-fill.medium { background: var(--warning); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/teams/+page.svelte:335:3
+Warn: Unused CSS selector ".stat-bar-fill.medium"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .stat-bar-fill.high { background: var(--success); }
+  .stat-bar-fill.medium { background: var(--warning); }
+  .stat-bar-fill.low { background: var(--danger); }
+
+/home/user1/game/fantasy_cricmanager/src/routes/teams/+page.svelte:336:3
+Warn: Unused CSS selector ".stat-bar-fill.low"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .stat-bar-fill.medium { background: var(--warning); }
+  .stat-bar-fill.low { background: var(--danger); }
+  .stat-bar-fill.team-fill {
+
+/home/user1/game/fantasy_cricmanager/src/routes/tournament/+page.svelte:126:9
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+      <div class="schedule-filters">
+        <label>Filter by Team:</label>
+        <select bind:value={scheduleFilterTeam}>
+
+/home/user1/game/fantasy_cricmanager/src/routes/tournament/+page.svelte:260:3
+Warn: Unused CSS selector ".standings-table h2"
+https://svelte.dev/e/css_unused_selector (svelte)
+  
+  .standings-table h2 {
+    margin-bottom: 12px;
+
+/home/user1/game/fantasy_cricmanager/src/routes/tournament/+page.svelte:285:3
+Warn: Unused CSS selector ".matches-section h2"
+https://svelte.dev/e/css_unused_selector (svelte)
+  
+  .matches-section h2 {
+    margin-bottom: 12px;
+
+/home/user1/game/fantasy_cricmanager/src/routes/tournament/+page.svelte:289:3
+Warn: Unused CSS selector ".matches-header"
+https://svelte.dev/e/css_unused_selector (svelte)
+  
+  .matches-header {
+    display: flex;
+
+/home/user1/game/fantasy_cricmanager/src/routes/tournament/+page.svelte:341:3
+Warn: Unused CSS selector ".button-link"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+  .button-link {
+    background: var(--info);
+
+/home/user1/game/fantasy_cricmanager/src/routes/tournament/+page.svelte:351:3
+Warn: Unused CSS selector ".matches-section h3"
+https://svelte.dev/e/css_unused_selector (svelte)
+  
+  .matches-section h3 {
+    margin-bottom: 12px;
+
+====================================
+svelte-check found 0 errors and 49 warnings in 9 files
