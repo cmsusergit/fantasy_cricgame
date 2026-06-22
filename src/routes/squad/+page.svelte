@@ -405,11 +405,13 @@
                     <td>
                       <div class="bar-container" title="Fatigue: {p.fatigue}%">
                         <div class="bar fatigue" style="width: {p.fatigue}%; background-color: {getFatigueBarColor(p.fatigue)};"></div>
+                        <span class="bar-lbl">{p.fatigue}%</span>
                       </div>
                     </td>
                     <td>
-                      <div class="bar-container">
+                      <div class="bar-container" title="Morale: {p.morale}%">
                         <div class="bar confidence" style="width: {p.morale}%; background-color: {getBarColor(p.morale)};"></div>
+                        <span class="bar-lbl">{p.morale}%</span>
                       </div>
                     </td>
                     <td style="text-align: center;">
@@ -501,11 +503,13 @@
                     <td>
                       <div class="bar-container" title="Fatigue: {p.fatigue}%">
                         <div class="bar fatigue" style="width: {p.fatigue}%; background-color: {getFatigueBarColor(p.fatigue)};"></div>
+                        <span class="bar-lbl">{p.fatigue}%</span>
                       </div>
                     </td>
                     <td>
-                      <div class="bar-container">
+                      <div class="bar-container" title="Morale: {p.morale}%">
                         <div class="bar confidence" style="width: {p.morale}%; background-color: {getBarColor(p.morale)};"></div>
+                        <span class="bar-lbl">{p.morale}%</span>
                       </div>
                     </td>
                     <td style="text-align: center;">
@@ -949,6 +953,14 @@
     border-radius: 3px;
     flex-grow: 1;
     background: var(--bg-tertiary);
+  }
+  
+  .selection-table .bar-lbl {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: bold;
+    min-width: 32px;
+    text-align: right;
   }
   
   .btn-select {
