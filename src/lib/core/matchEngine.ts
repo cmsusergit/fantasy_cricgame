@@ -558,7 +558,7 @@ export function updateFatigueAndMorale(
 ): { batterFatigue: number; batterMorale: number; bowlerFatigue: number; bowlerMorale: number } {
   let batterFatigue = 0.9;
   let batterMorale = 0;
-  let bowlerFatigue = 0.8;
+  let bowlerFatigue = 0.5;
   let bowlerMorale = 0;
   
   if (ballResult === 'six' || ballResult === 'four') {
