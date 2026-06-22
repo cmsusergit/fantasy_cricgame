@@ -1109,7 +1109,7 @@
   };
 
   function getIntentIndex(intent: IntentType) {
-      return INTENT_LEVELS.indexOf(intent) !== -1 ? INTENT_LEVELS.indexOf(intent) : 1;
+      return INTENT_LEVELS.indexOf(intent) !== -1 ? INTENT_LEVELS.indexOf(intent) : 2;
   }
 
   function changeBatsmanIntent(id: string, delta: number) {
@@ -1122,6 +1122,18 @@
       const current = getIntentIndex(bowlerIntents[id] || 'balanced');
       const nextIndex = Math.max(0, Math.min(INTENT_LEVELS.length - 1, current + delta));
       bowlerIntents[id] = INTENT_LEVELS[nextIndex];
+  }
+
+  function getBatsmanIntentLabel(intent: IntentType) {
+      if (intent === 'very_defensive') return 'Block (Very Defensive)';
+      if (intent === 'very_aggressive') return 'Slog (Ultra Aggressive)';
+      return INTENT_LABELS[intent] || 'Neutral';
+  }
+
+  function getBowlerIntentLabel(intent: IntentType) {
+      if (intent === 'very_defensive') return 'Ultra Def (Very Defensive)';
+      if (intent === 'very_aggressive') return 'Ultra Att (Ultra Aggressive)';
+      return INTENT_LABELS[intent] || 'Neutral';
   }
   
   let currentActiveBattingIntent = $derived(currentInningsData.currentBatsmen[0] ? (batsmanIntents[currentInningsData.currentBatsmen[0]] || 'balanced') : 'balanced');
@@ -1741,30 +1753,60 @@
                         {p.name} {i === 0 ? '🏏 (Striker)' : '(Non-Striker)'}
                       </span>
                     </div>
-                    <div class="intent-options">
-                      {#each ['very_defensive', 'defensive', 'balanced', 'aggressive', 'very_aggressive'] as level}
-                        {@const currentIntent = batsmanIntents[batsmanId] || 'balanced'}
-                        {@const isSelected = currentIntent === level}
-                        <button 
-                          class="btn-intent intent-{level}" 
-                          class:selected={isSelected} 
-                          onclick={() => {
-                            batsmanIntents[batsmanId] = level as IntentType;
-                          }}>
-                          {level === 'very_defensive' ? 'Block' : level === 'very_aggressive' ? 'Slog' : INTENT_LABELS[level]}
-                        </button>
-                      {/each}
+                    <div class="intent-progressbar-container">
+                      <button 
+                        class="btn-intent-adjust" 
+                        disabled={getIntentIndex(batsmanIntents[batsmanId] || 'balanced') === 0} 
+                        onclick={() => changeBatsmanIntent(batsmanId, -1)}>
+                        ➖
+                      </button>
+                      
+                      <div class="intent-progressbar">
+                        {#each INTENT_LEVELS as level, idx}
+                          {@const currentIntent = batsmanIntents[batsmanId] || 'balanced'}
+                          {@const currentIdx = getIntentIndex(currentIntent)}
+                          {@const isActive = currentIdx === idx}
+                          {@const isFilled = idx <= currentIdx}
+                          <button 
+                            class="intent-bar-segment segment-{level}" 
+                            class:active={isActive}
+                            class:filled={isFilled}
+                            title={level === 'very_defensive' ? 'Block' : level === 'very_aggressive' ? 'Slog' : INTENT_LABELS[level]}
+                            onclick={() => {
+                              batsmanIntents[batsmanId] = level;
+                            }}>
+                          </button>
+                        {/each}
+                      </div>
+                      
+                      <button 
+                        class="btn-intent-adjust" 
+                        disabled={getIntentIndex(batsmanIntents[batsmanId] || 'balanced') === INTENT_LEVELS.length - 1} 
+                        onclick={() => changeBatsmanIntent(batsmanId, 1)}>
+                        ➕
+                      </button>
+                    </div>
+
+                    <div class="intent-label-display">
+                      <span class="active-intent-name {batsmanIntents[batsmanId] || 'balanced'}">
+                        {getBatsmanIntentLabel(batsmanIntents[batsmanId] || 'balanced')}
+                      </span>
                     </div>
                   </div>
                 {/if}
               {/each}
             {:else}
-              <div class="intent-options">
-                {#each ['very_defensive', 'defensive', 'balanced', 'aggressive', 'very_aggressive'] as level}
-                  <button class="btn-intent intent-{level}" disabled>
-                    {level === 'very_defensive' ? 'Block' : level === 'very_aggressive' ? 'Slog' : INTENT_LABELS[level]}
-                  </button>
-                {/each}
+              <div class="intent-progressbar-container disabled">
+                <button class="btn-intent-adjust" disabled>➖</button>
+                <div class="intent-progressbar">
+                  {#each INTENT_LEVELS as level}
+                    <div class="intent-bar-segment segment-{level} disabled"></div>
+                  {/each}
+                </div>
+                <button class="btn-intent-adjust" disabled>➕</button>
+              </div>
+              <div class="intent-label-display">
+                <span class="active-intent-name text-muted">AI Managed</span>
               </div>
             {/if}
           </div>
@@ -1787,31 +1829,61 @@
                     <img src={getAvatarUrl(activeBowler.faction, activeBowler.portraitId || 1)} alt={activeBowler.name} class="player-avatar-mini" style="width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border-color); object-fit: cover;" />
                     <span class="active-player-name" style="font-weight: 700; font-size: 0.8rem; color: var(--color-accent);">{activeBowler.name}</span>
                   </div>
-                  <div class="intent-options">
-                    {#each ['very_defensive', 'defensive', 'balanced', 'aggressive', 'very_aggressive'] as level}
-                      {@const currentIntent = bowlerId ? (bowlerIntents[bowlerId] || 'balanced') : 'balanced'}
-                      {@const isSelected = bowlerId ? (currentIntent === level) : false}
-                      <button 
-                        class="btn-intent intent-{level}" 
-                        class:selected={isSelected} 
-                        onclick={() => {
-                          if (bowlerId) bowlerIntents[bowlerId] = level as IntentType;
-                        }}>
-                        {level === 'very_defensive' ? 'Ultra Def' : level === 'very_aggressive' ? 'Ultra Att' : INTENT_LABELS[level]}
-                      </button>
-                    {/each}
+                  <div class="intent-progressbar-container">
+                    <button 
+                      class="btn-intent-adjust" 
+                      disabled={getIntentIndex(bowlerId ? (bowlerIntents[bowlerId] || 'balanced') : 'balanced') === 0} 
+                      onclick={() => bowlerId && changeBowlerIntent(bowlerId, -1)}>
+                      ➖
+                    </button>
+                    
+                    <div class="intent-progressbar">
+                      {#each INTENT_LEVELS as level, idx}
+                        {@const currentIntent = bowlerId ? (bowlerIntents[bowlerId] || 'balanced') : 'balanced'}
+                        {@const currentIdx = getIntentIndex(currentIntent)}
+                        {@const isActive = currentIdx === idx}
+                        {@const isFilled = idx <= currentIdx}
+                        <button 
+                          class="intent-bar-segment segment-{level}" 
+                          class:active={isActive}
+                          class:filled={isFilled}
+                          title={level === 'very_defensive' ? 'Ultra Def' : level === 'very_aggressive' ? 'Ultra Att' : INTENT_LABELS[level]}
+                          onclick={() => {
+                            if (bowlerId) bowlerIntents[bowlerId] = level;
+                          }}>
+                        </button>
+                      {/each}
+                    </div>
+                    
+                    <button 
+                      class="btn-intent-adjust" 
+                      disabled={getIntentIndex(bowlerId ? (bowlerIntents[bowlerId] || 'balanced') : 'balanced') === INTENT_LEVELS.length - 1} 
+                      onclick={() => bowlerId && changeBowlerIntent(bowlerId, 1)}>
+                      ➕
+                    </button>
+                  </div>
+                  
+                  <div class="intent-label-display">
+                    <span class="active-intent-name {bowlerId ? (bowlerIntents[bowlerId] || 'balanced') : 'balanced'}">
+                      {getBowlerIntentLabel(bowlerId ? (bowlerIntents[bowlerId] || 'balanced') : 'balanced')}
+                    </span>
                   </div>
                 </div>
               {:else}
                 <span class="active-player-name text-muted" style="font-size: 0.8rem; display: block; margin-top: 8px;">Select Bowler</span>
               {/if}
             {:else}
-              <div class="intent-options">
-                {#each ['very_defensive', 'defensive', 'balanced', 'aggressive', 'very_aggressive'] as level}
-                  <button class="btn-intent intent-{level}" disabled>
-                    {level === 'very_defensive' ? 'Ultra Def' : level === 'very_aggressive' ? 'Ultra Att' : INTENT_LABELS[level]}
-                  </button>
-                {/each}
+              <div class="intent-progressbar-container disabled">
+                <button class="btn-intent-adjust" disabled>➖</button>
+                <div class="intent-progressbar">
+                  {#each INTENT_LEVELS as level}
+                    <div class="intent-bar-segment segment-{level} disabled"></div>
+                  {/each}
+                </div>
+                <button class="btn-intent-adjust" disabled>➕</button>
+              </div>
+              <div class="intent-label-display">
+                <span class="active-intent-name text-muted">AI Managed</span>
               </div>
             {/if}
           </div>
@@ -2420,74 +2492,132 @@
     background: rgba(15, 23, 42, 0.05);
   }
   
-  .intent-options {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-  
-  .intent-section:last-child .intent-options {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  .btn-intent {
-    background: var(--bg-secondary);
-    color: var(--text-muted);
+  .intent-progressbar-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px 12px;
+    border-radius: 8px;
     border: 1px solid var(--border-color);
-    padding: 8px 4px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    transition: all 0.2s ease;
-    text-align: center;
-    cursor: pointer;
+  }
+
+  :global([data-theme="light"]) .intent-progressbar-container {
+    background: rgba(15, 23, 42, 0.04);
   }
   
-  .btn-intent:hover:not(:disabled) {
+  .intent-progressbar-container.disabled {
+    opacity: 0.6;
+  }
+  
+  .btn-intent-adjust {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
     color: var(--text-primary);
-    border-color: var(--text-secondary);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 10px;
+    transition: all 0.2s;
+    user-select: none;
+    padding: 0;
   }
   
-  .btn-intent:disabled {
-    opacity: 0.5;
+  .btn-intent-adjust:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--text-secondary);
+    transform: scale(1.08);
+  }
+  
+  .btn-intent-adjust:disabled {
+    opacity: 0.3;
     cursor: not-allowed;
   }
   
-  /* Intent-specific active states */
-  .btn-intent.intent-very_defensive.selected {
-    background: #6366f1;
-    color: white;
-    border-color: #4f46e5;
-    box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+  .intent-progressbar {
+    display: flex;
+    flex: 1;
+    gap: 6px;
+    height: 12px;
+    align-items: center;
+  }
+  
+  .intent-bar-segment {
+    flex: 1;
+    height: 100%;
+    border-radius: 3px;
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    padding: 0;
   }
 
-  .btn-intent.intent-defensive.selected {
+  :global([data-theme="light"]) .intent-bar-segment {
+    background: rgba(15, 23, 42, 0.08);
+  }
+  
+  .intent-bar-segment.disabled {
+    cursor: not-allowed;
+  }
+  
+  /* Color-coded segments when filled/active */
+  .intent-bar-segment.segment-very_defensive.filled {
+    background: #6366f1;
+    box-shadow: 0 0 6px rgba(99, 102, 241, 0.3);
+  }
+  .intent-bar-segment.segment-defensive.filled {
     background: #3b82f6;
-    color: white;
-    border-color: #2563eb;
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 6px rgba(59, 130, 246, 0.3);
   }
-  
-  .btn-intent.intent-balanced.selected {
+  .intent-bar-segment.segment-balanced.filled {
     background: #fbbf24;
-    color: #1e293b;
-    border-color: #d97706;
-    box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.3);
   }
-  
-  .btn-intent.intent-aggressive.selected {
+  .intent-bar-segment.segment-aggressive.filled {
     background: #22c55e;
-    color: white;
-    border-color: #16a34a;
-    box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.3);
+  }
+  .intent-bar-segment.segment-very_aggressive.filled {
+    background: #ef4444;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.3);
   }
   
-  .btn-intent.intent-very_aggressive.selected {
-    background: #ef4444;
-    color: white;
-    border-color: #dc2626;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+  /* Make the active segment shine brighter */
+  .intent-bar-segment.active {
+    transform: scaleY(1.3);
+    border: 1px solid rgba(255, 255, 255, 0.4);
   }
+
+  :global([data-theme="light"]) .intent-bar-segment.active {
+    border-color: rgba(15, 23, 42, 0.4);
+  }
+  
+  .intent-label-display {
+    text-align: center;
+    margin-top: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+  
+  .active-intent-name {
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-block;
+  }
+  
+  .active-intent-name.very_defensive { color: #818cf8; background: rgba(99, 102, 241, 0.1); }
+  .active-intent-name.defensive { color: #60a5fa; background: rgba(59, 130, 246, 0.1); }
+  .active-intent-name.balanced { color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
+  .active-intent-name.aggressive { color: #34d399; background: rgba(34, 197, 94, 0.1); }
+  .active-intent-name.very_aggressive { color: #f87171; background: rgba(239, 68, 68, 0.1); }
   
   /* Commentary Feed Screen Adaptations */
   .commentary-panel-new {
