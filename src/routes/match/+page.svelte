@@ -1951,12 +1951,14 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+    min-width: 0;
   }
   
   .match-right-column {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    min-width: 0;
   }
   
   /* Premium Cards */
@@ -2693,6 +2695,7 @@
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 0.5px;
+    text-align: center;
   }
   
   :global([data-theme="light"]) .selection-table th {
@@ -2703,10 +2706,16 @@
     padding: 10px 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     vertical-align: middle;
+    text-align: center;
   }
   
   :global([data-theme="light"]) .selection-table td {
     border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+  }
+
+  .selection-table th:first-child,
+  .selection-table td:first-child {
+    text-align: left;
   }
   
   .selection-table tbody tr {
@@ -2761,10 +2770,11 @@
   }
   
   .selection-table .bar-container {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
     min-width: 100px;
+    text-align: left;
   }
   
   .selection-table .bar-container .bar {

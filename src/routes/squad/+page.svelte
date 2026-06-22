@@ -20,7 +20,7 @@
   let filterRole: string = $state('all');
   let searchQuery: string = $state('');
 
-  let viewMode = $state<'grid' | 'table'>('grid');
+  let viewMode = $state<'grid' | 'table'>('table');
 
   function getBarColor(val: number): string {
     if (val >= 70) return '#22c55e'; // Green
