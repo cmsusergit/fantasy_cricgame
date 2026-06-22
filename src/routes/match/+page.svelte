@@ -231,7 +231,7 @@
       const userT = teams.find(t => t.id === 'user_team');
       
       if (userMatch) {
-        if (!userT || !userT.playing11 || userT.playing11.length !== 11 || !userT.captain || !userT.wicketKeeper) {
+        if (!userT || !userT.playing11 || userT.playing11.length !== 11 || !userT.captain || !userT.wicketKeeper || !userT.reservePlayer) {
           phase = 'invalidSquad';
           return;
         }
@@ -293,6 +293,10 @@
   onMount(() => {
     const unsubTeam = teamStore.subscribe(t => {
       teams = t;
+      if (currentMatch) {
+        matchTeam1 = teams.find(team => team.id === currentMatch.team1Id) || null;
+        matchTeam2 = teams.find(team => team.id === currentMatch.team2Id) || null;
+      }
       if (schedule && phase === 'loading') {
         initMatchState(schedule);
       }
@@ -1450,7 +1454,7 @@
     <div class="full-screen-message">
       <div class="message-card error">
         <h2>Incomplete Squad</h2>
-        <p>You must select exactly 11 players, a captain, and a wicketkeeper before you can play a match.</p>
+        <p>You must select exactly 11 players, a captain, a wicketkeeper, and an impact player (reserve) before you can play a match.</p>
         <a href="/squad" class="btn-primary">Go to Squad Management</a>
       </div>
     </div>
@@ -2158,7 +2162,7 @@
             {/if}
           </div>
           
-          {#if userTeam && userTeam.reservePlayer && !impactUsed && (phase === 'paused' || phase === 'ready')}
+          {#if userTeam && userTeam.reservePlayer && !impactUsed && (phase === 'paused' || phase === 'ready' || phase === 'selectNextBowler' || phase === 'selectNextBatsman' || phase === 'inningBreak')}
             {@const reserveObj = userTeam.players.find(p => p.id === userTeam.reservePlayer)}
             {#if reserveObj}
               <div class="impact-sub-dock" style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 12px;">

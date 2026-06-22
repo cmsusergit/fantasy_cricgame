@@ -200,7 +200,7 @@
       setTimeout(() => saveMessage = '', 3000);
       return;
     }
-    if (!reservePlayer && userTeam.players.length >= 12) {
+    if (!reservePlayer) {
       saveMessage = "Please select a Reserve Player (Impact Sub).";
       setTimeout(() => saveMessage = '', 3000);
       return;
@@ -551,9 +551,7 @@
         <span class="status-item">Players: <strong>{playing11.length}/11</strong></span>
         <span class="status-item">Captain: <strong class={captain ? 'success' : 'error'}>{captain ? 'Selected' : 'Missing'}</strong></span>
         <span class="status-item">Wicket Keeper: <strong class={wicketKeeper ? 'success' : 'error'}>{wicketKeeper ? 'Selected' : 'Missing'}</strong></span>
-        {#if userTeam && userTeam.players.length >= 12}
-          <span class="status-item">Impact Sub: <strong class={reservePlayer ? 'success' : 'error'}>{reservePlayer ? 'Selected' : 'Missing'}</strong></span>
-        {/if}
+        <span class="status-item">Impact Sub: <strong class={reservePlayer ? 'success' : 'error'}>{reservePlayer ? 'Selected' : 'Missing'}</strong></span>
       </div>
       
       {#if saveMessage}
@@ -565,7 +563,7 @@
       <button 
         class="primary bid-btn" 
         style="background: linear-gradient(135deg, {userTeam?.colorPrimary}, {userTeam?.colorSecondary});"
-        disabled={playing11.length !== 11 || !captain || !wicketKeeper || (!reservePlayer && (userTeam?.players.length ?? 0) >= 12)}
+        disabled={playing11.length !== 11 || !captain || !wicketKeeper || !reservePlayer}
         onclick={saveSquad}
       >
         Save Lineup
