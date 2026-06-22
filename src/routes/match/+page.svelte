@@ -1938,7 +1938,7 @@
     max-width: 1400px;
     margin: 0 auto;
     box-sizing: border-box;
-    align-items: start;
+    align-items: stretch;
   }
   
   @media (max-width: 1024px) {
@@ -2626,7 +2626,8 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    height: 400px;
+    flex: 1;
+    min-height: 400px;
     padding: 0;
   }
   
