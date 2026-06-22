@@ -556,19 +556,19 @@ export function updateFatigueAndMorale(
   bowlingIntent: IntentType = 'balanced',
   morale: number = 50
 ): { batterFatigue: number; batterMorale: number; bowlerFatigue: number; bowlerMorale: number } {
-  let batterFatigue = 0.3;
+  let batterFatigue = 0.9;
   let batterMorale = 0;
-  let bowlerFatigue = 0.2;
+  let bowlerFatigue = 0.8;
   let bowlerMorale = 0;
   
   if (ballResult === 'six' || ballResult === 'four') {
-    batterFatigue = 0.35;
+    batterFatigue = 1.1;
   } else if (ballResult === 'three') {
-    batterFatigue = 0.4;
+    batterFatigue = 1.3;
   } else if (ballResult === 'two') {
-    batterFatigue = 0.3;
+    batterFatigue = 1.0;
   } else if (ballResult === 'single') {
-    batterFatigue = 0.2;
+    batterFatigue = 0.7;
   }
 
   // Morale changes based on ball result
@@ -607,10 +607,18 @@ export function updateFatigueAndMorale(
     : bowlingIntent === 'very_defensive' ? 0.6
     : 1.0;
 
+  const getAgeFatigueMult = (age: number): number => {
+    const a = age || 25;
+    return Math.max(0.5, 1 + (a - 25) * 0.025);
+  };
+  
+  const batterAgeMult = getAgeFatigueMult(batter.age);
+  const bowlerAgeMult = getAgeFatigueMult(bowler.age);
+
   return {
-    batterFatigue: batterFatigue * battingMult,
+    batterFatigue: batterFatigue * battingMult * batterAgeMult,
     batterMorale,
-    bowlerFatigue: bowlerFatigue * bowlingMult,
+    bowlerFatigue: bowlerFatigue * bowlingMult * bowlerAgeMult,
     bowlerMorale
   };
 }

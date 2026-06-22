@@ -559,10 +559,16 @@
           let morale = localPlayer ? localPlayer.morale : (p.morale || 50);
           let form = localPlayer ? localPlayer.form : (p.form || 0);
 
-          // Rest recovery: if player did NOT play today, fatigue decreases by 15
+          // Rest recovery: if player did NOT play today, fatigue decreases by 10
           const didPlay = playedToday && playing11Ids.has(p.id);
           if (!didPlay && fatigue > 0) {
-            fatigue = Math.max(0, fatigue - 15);
+            fatigue = Math.max(0, fatigue - 10);
+          }
+
+          // Morale decay: if team played today and player did NOT play, morale drops by 4% (minimum 25%)
+          if (playedToday && !didPlay) {
+            morale = Math.max(25, morale - 4);
+            form = Math.max(-10, Math.min(10, Math.round((morale - 50) / 5)));
           }
 
           let player = { ...p, fatigue, morale, form };
