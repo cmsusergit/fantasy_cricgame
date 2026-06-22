@@ -1742,7 +1742,7 @@
                       </span>
                     </div>
                     <div class="intent-options">
-                      {#each ['defensive', 'balanced', 'aggressive', 'very_aggressive'] as level}
+                      {#each ['very_defensive', 'defensive', 'balanced', 'aggressive', 'very_aggressive'] as level}
                         {@const currentIntent = batsmanIntents[batsmanId] || 'balanced'}
                         {@const isSelected = currentIntent === level}
                         <button 
@@ -1751,7 +1751,7 @@
                           onclick={() => {
                             batsmanIntents[batsmanId] = level as IntentType;
                           }}>
-                          {level === 'very_aggressive' ? 'Slog' : INTENT_LABELS[level]}
+                          {level === 'very_defensive' ? 'Block' : level === 'very_aggressive' ? 'Slog' : INTENT_LABELS[level]}
                         </button>
                       {/each}
                     </div>
@@ -1760,9 +1760,9 @@
               {/each}
             {:else}
               <div class="intent-options">
-                {#each ['defensive', 'balanced', 'aggressive', 'very_aggressive'] as level}
+                {#each ['very_defensive', 'defensive', 'balanced', 'aggressive', 'very_aggressive'] as level}
                   <button class="btn-intent intent-{level}" disabled>
-                    {level === 'very_aggressive' ? 'Slog' : INTENT_LABELS[level]}
+                    {level === 'very_defensive' ? 'Block' : level === 'very_aggressive' ? 'Slog' : INTENT_LABELS[level]}
                   </button>
                 {/each}
               </div>
@@ -1788,7 +1788,7 @@
                     <span class="active-player-name" style="font-weight: 700; font-size: 0.8rem; color: var(--color-accent);">{activeBowler.name}</span>
                   </div>
                   <div class="intent-options">
-                    {#each ['defensive', 'balanced', 'aggressive'] as level}
+                    {#each ['very_defensive', 'defensive', 'balanced', 'aggressive', 'very_aggressive'] as level}
                       {@const currentIntent = bowlerId ? (bowlerIntents[bowlerId] || 'balanced') : 'balanced'}
                       {@const isSelected = bowlerId ? (currentIntent === level) : false}
                       <button 
@@ -1797,7 +1797,7 @@
                         onclick={() => {
                           if (bowlerId) bowlerIntents[bowlerId] = level as IntentType;
                         }}>
-                        {INTENT_LABELS[level]}
+                        {level === 'very_defensive' ? 'Ultra Def' : level === 'very_aggressive' ? 'Ultra Att' : INTENT_LABELS[level]}
                       </button>
                     {/each}
                   </div>
@@ -1807,9 +1807,9 @@
               {/if}
             {:else}
               <div class="intent-options">
-                {#each ['defensive', 'balanced', 'aggressive'] as level}
+                {#each ['very_defensive', 'defensive', 'balanced', 'aggressive', 'very_aggressive'] as level}
                   <button class="btn-intent intent-{level}" disabled>
-                    {INTENT_LABELS[level]}
+                    {level === 'very_defensive' ? 'Ultra Def' : level === 'very_aggressive' ? 'Ultra Att' : INTENT_LABELS[level]}
                   </button>
                 {/each}
               </div>
@@ -2454,6 +2454,13 @@
   }
   
   /* Intent-specific active states */
+  .btn-intent.intent-very_defensive.selected {
+    background: #6366f1;
+    color: white;
+    border-color: #4f46e5;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+  }
+
   .btn-intent.intent-defensive.selected {
     background: #3b82f6;
     color: white;
