@@ -447,9 +447,12 @@
 
       <!-- Reserves Section -->
       <div class="squad-section-table">
-        <h2 style="font-family: var(--font-fantasy); font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+        <h2 style="font-family: var(--font-fantasy); font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
           🛡️ Reserve Players <span style="font-size: 0.9rem; font-weight: normal; color: var(--text-muted);">({tableReserves.length} reserve)</span>
         </h2>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.4;">
+          Select exactly <strong>1 reserve player</strong> as your nominated <strong>Impact Sub</strong> using the radio button below. They can replace any player in your starting 11 during the match.
+        </p>
         
         {#if tableReserves.length === 0}
           <div style="padding: 16px; text-align: center; color: var(--text-muted); background: rgba(0, 0, 0, 0.05); border: 1px dashed var(--border-color); border-radius: 8px;">
@@ -477,8 +480,8 @@
                 {#each tableReserves as p (p.id)}
                   {@const isCaptain = captain === p.id}
                   {@const isWk = wicketKeeper === p.id}
-                  {@const isSelected = false}
-                  <tr>
+                  {@const isSelected = reservePlayer === p.id}
+                  <tr class:selected={isSelected}>
                     <td>
                       <div class="player-cell" style="display: flex; align-items: center; gap: 8px;">
                         <div style="position: relative;">
@@ -488,6 +491,9 @@
                           {/if}
                         </div>
                         <span class="player-name" style="font-family: var(--font-fantasy);">{p.name}</span>
+                        {#if isSelected}
+                          <span class="status-pill available" style="margin-left: 8px; font-size: 0.65rem; padding: 2px 6px;">⚡ Impact Sub</span>
+                        {/if}
                       </div>
                     </td>
                     <td style="font-family: var(--font-sports); font-weight: bold; font-size: 0.85rem;">{p.age}</td>
@@ -563,9 +569,9 @@
       <h3>Selection Status</h3>
       <div class="status-details">
         <span class="status-item">Players: <strong>{playing11.length}/11</strong></span>
-        <span class="status-item">Captain: <strong class={captain ? 'success' : 'error'}>{captain ? 'Selected' : 'Missing'}</strong></span>
-        <span class="status-item">Wicket Keeper: <strong class={wicketKeeper ? 'success' : 'error'}>{wicketKeeper ? 'Selected' : 'Missing'}</strong></span>
-        <span class="status-item">Impact Sub: <strong class={reservePlayer ? 'success' : 'error'}>{reservePlayer ? 'Selected' : 'Missing'}</strong></span>
+        <span class="status-item">Captain: <strong class={captain ? 'success' : 'error'}>{captain ? (userTeam.players.find((pl: any) => pl.id === captain)?.name || 'Selected') : 'Missing'}</strong></span>
+        <span class="status-item">Wicket Keeper: <strong class={wicketKeeper ? 'success' : 'error'}>{wicketKeeper ? (userTeam.players.find((pl: any) => pl.id === wicketKeeper)?.name || 'Selected') : 'Missing'}</strong></span>
+        <span class="status-item">Impact Sub: <strong class={reservePlayer ? 'success' : 'error'}>{reservePlayer ? (userTeam.players.find((pl: any) => pl.id === reservePlayer)?.name || 'Selected') : 'Missing'}</strong></span>
       </div>
       
       {#if saveMessage}
