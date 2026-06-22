@@ -91,9 +91,9 @@ export function getFactionArchetype(faction: FactionType): 'balanced' | 'tech' |
 const FACTION_PORTRAIT_COUNTS: Record<FactionType, number> = {
   dwarf: 36,
   elf: 16,
-  goblin: 25,
+  goblin: 16,
   human: 16,
-  nightelf: 16,
+  nightelf: 25,
   orc: 30
 };
 
