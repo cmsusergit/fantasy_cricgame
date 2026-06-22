@@ -74,7 +74,7 @@
   let faction = $derived(FACTIONS[player.faction]);
   let avatarUrl = $derived(getAvatarUrl(player.faction, player.portraitId || 1));
   let roleSummary = $derived(
-    `${player.role} • ${player.battingType || 'RHB'} • ${player.battingRole || 'Middle Order'}${
+    `Age: ${player.age} • ${player.role} • ${player.battingType || 'RHB'} • ${player.battingRole || 'Middle Order'}${
       player.bowlingType && player.bowlingType !== 'none' ? ` • ${player.bowlingType}` : ''
     }`
   );

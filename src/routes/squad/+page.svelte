@@ -29,6 +29,12 @@
     return '#ef4444'; // Red
   }
 
+  function getFatigueBarColor(fatigue: number): string {
+    if (fatigue >= 70) return '#ef4444'; // Red (High fatigue)
+    if (fatigue >= 35) return '#fbbf24'; // Yellow (Medium fatigue)
+    return '#22c55e'; // Green (Low fatigue)
+  }
+
   let dndPlayers: Player[] = $state([]);
 
   let crowdFavouriteIds = $derived(new Set(
@@ -358,10 +364,11 @@
               <thead>
                 <tr>
                   <th>Player</th>
+                  <th>Age</th>
                   <th>Faction</th>
                   <th>Role</th>
                   <th>Rating</th>
-                  <th style="width: 100px;">Stamina</th>
+                  <th style="width: 100px;">Fatigue</th>
                   <th style="width: 100px;">Confidence</th>
                   <th style="text-align: center;">Captain</th>
                   <th style="text-align: center;">WK</th>
@@ -385,6 +392,7 @@
                         <span class="player-name" style="font-family: var(--font-fantasy);">{p.name}</span>
                       </div>
                     </td>
+                    <td style="font-family: var(--font-sports); font-weight: bold; font-size: 0.85rem;">{p.age}</td>
                     <td>
                       <span class="faction-icon faction-{p.faction}">
                         {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
@@ -395,8 +403,8 @@
                       B: {p.stats.batting} | O: {p.stats.bowling}
                     </td>
                     <td>
-                      <div class="bar-container">
-                        <div class="bar stamina" style="width: {100 - p.fatigue}%; background-color: {getBarColor(100 - p.fatigue)};"></div>
+                      <div class="bar-container" title="Fatigue: {p.fatigue}%">
+                        <div class="bar fatigue" style="width: {p.fatigue}%; background-color: {getFatigueBarColor(p.fatigue)};"></div>
                       </div>
                     </td>
                     <td>
@@ -451,10 +459,11 @@
               <thead>
                 <tr>
                   <th>Player</th>
+                  <th>Age</th>
                   <th>Faction</th>
                   <th>Role</th>
                   <th>Rating</th>
-                  <th style="width: 100px;">Stamina</th>
+                  <th style="width: 100px;">Fatigue</th>
                   <th style="width: 100px;">Confidence</th>
                   <th style="text-align: center;">Impact Sub</th>
                   <th style="text-align: center;">Captain</th>
@@ -479,6 +488,7 @@
                         <span class="player-name" style="font-family: var(--font-fantasy);">{p.name}</span>
                       </div>
                     </td>
+                    <td style="font-family: var(--font-sports); font-weight: bold; font-size: 0.85rem;">{p.age}</td>
                     <td>
                       <span class="faction-icon faction-{p.faction}">
                         {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
@@ -489,8 +499,8 @@
                       B: {p.stats.batting} | O: {p.stats.bowling}
                     </td>
                     <td>
-                      <div class="bar-container">
-                        <div class="bar stamina" style="width: {100 - p.fatigue}%; background-color: {getBarColor(100 - p.fatigue)};"></div>
+                      <div class="bar-container" title="Fatigue: {p.fatigue}%">
+                        <div class="bar fatigue" style="width: {p.fatigue}%; background-color: {getFatigueBarColor(p.fatigue)};"></div>
                       </div>
                     </td>
                     <td>
@@ -931,7 +941,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    min-width: 100px;
+    min-width: 50px;
   }
   
   .selection-table .bar-container .bar {

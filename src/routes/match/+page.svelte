@@ -293,9 +293,10 @@
   onMount(() => {
     const unsubTeam = teamStore.subscribe(t => {
       teams = t;
-      if (currentMatch) {
-        matchTeam1 = teams.find(team => team.id === currentMatch.team1Id) || null;
-        matchTeam2 = teams.find(team => team.id === currentMatch.team2Id) || null;
+      const match = currentMatch;
+      if (match) {
+        matchTeam1 = teams.find(team => team.id === match.team1Id) || null;
+        matchTeam2 = teams.find(team => team.id === match.team2Id) || null;
       }
       if (schedule && phase === 'loading') {
         initMatchState(schedule);
@@ -3011,13 +3012,13 @@
   }
   
   .selection-table th {
-    padding: 10px 12px;
+    padding: 6px 8px;
     background: rgba(0, 0, 0, 0.2);
     font-weight: 700;
     color: var(--text-secondary);
     border-bottom: 1px solid var(--border-color);
     text-transform: uppercase;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     letter-spacing: 0.5px;
     text-align: center;
   }
@@ -3027,7 +3028,7 @@
   }
   
   .selection-table td {
-    padding: 10px 12px;
+    padding: 6px 8px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     vertical-align: middle;
     text-align: center;
@@ -3066,12 +3067,12 @@
   .selection-table td .player-cell {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
   }
   
   .selection-table .player-avatar-mini {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     border: 1px solid var(--border-color);
     object-fit: cover;
@@ -3088,7 +3089,7 @@
   
   .selection-table .rating-val {
     font-family: var(--font-sports);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: var(--color-accent);
   }
@@ -3096,8 +3097,8 @@
   .selection-table .bar-container {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    min-width: 100px;
+    gap: 4px;
+    min-width: 50px;
     text-align: left;
   }
   
