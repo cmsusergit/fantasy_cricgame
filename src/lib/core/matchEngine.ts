@@ -439,9 +439,13 @@ export function resolveBall(
 
   const wicketChance = calculateWicketChance(batter, bowler, battingIntent, currentOver, totalOvers, weather, pitch, bowlingIntent, concentrationMult, rhythmMult) * bowlingEffort;
 
-  if (Math.random() < wicketChance && !isFreeHit) {
+  if (Math.random() < wicketChance) {
     const wicketTypes = ['caught', 'bowled', 'lbw', 'run out', 'stumped'];
-    const wicketType = wicketTypes[randomInt(0, wicketTypes.length - 1)];
+    let wicketType = wicketTypes[randomInt(0, wicketTypes.length - 1)];
+
+    if (isFreeHit) {
+      wicketType = 'run out'; // Only run out is allowed on free hit
+    }
 
     if (wicketType === 'caught' || wicketType === 'run out') {
       const dropChance = Math.max(0.02, 0.25 - (fieldingAverage * 0.003)); // Higher fielding = lower drop chance
@@ -458,7 +462,9 @@ export function resolveBall(
             result: dropRuns === 1 ? 'single' : 'dot', // Simplify result mapping
             runs: dropRuns,
             isWicket: false,
-            commentary: `${wicketType === 'caught' ? 'Dropped catch!' : 'Missed run out!'} They scrambled for ${dropRuns} run${dropRuns > 1 ? 's' : ''}.`,
+            commentary: isFreeHit
+              ? `Missed run out on Free Hit! They scrambled for ${dropRuns} run${dropRuns > 1 ? 's' : ''}.`
+              : `${wicketType === 'caught' ? 'Dropped catch!' : 'Missed run out!'} They scrambled for ${dropRuns} run${dropRuns > 1 ? 's' : ''}.`,
             isPowerplay
          };
       }
@@ -471,19 +477,23 @@ export function resolveBall(
         }
     }
 
-    return {
-      ballNumber,
-      over: currentOver,
-      ball: ballNumber % 6 || 6,
-      batsmanId: batter.id,
-      bowlerId: bowler.id,
-      result: 'wicket',
-      runs: 0,
-      isWicket: true,
-      commentary: `${batter.name} is out! ${wicketType}`,
-      wicketType,
-      fielderId
-    };
+    if (isFreeHit && wicketType !== 'run out') {
+      // Bypassed on Free Hit
+    } else {
+      return {
+        ballNumber,
+        over: currentOver,
+        ball: ballNumber % 6 || 6,
+        batsmanId: batter.id,
+        bowlerId: bowler.id,
+        result: 'wicket',
+        runs: 0,
+        isWicket: true,
+        commentary: `${batter.name} is out! ${wicketType === 'run out' ? 'run out' : wicketType}`,
+        wicketType,
+        fielderId
+      };
+    }
   }
 
   const shotQuality = calculateShotQuality(batter, bowler, battingIntent, isLastOver, weather, pitch, homeAdvantage, bowlingEffort, currentOver, bowlingIntent, concentrationMult, rhythmMult);

@@ -43,6 +43,7 @@ export interface Team {
   playing11?: string[]; // Array of player IDs
   captain?: string; // Player ID
   wicketKeeper?: string; // Player ID
+  reservePlayer?: string; // Player ID
   retainedPlayers?: string[]; // Array of player IDs retained for next season
 }
 

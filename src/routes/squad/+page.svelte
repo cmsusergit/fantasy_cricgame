@@ -15,6 +15,7 @@
   let playing11: string[] = $state([]);
   let captain: string = $state('');
   let wicketKeeper: string = $state('');
+  let reservePlayer: string = $state('');
   let saveMessage: string = $state('');
   
   let filterRole: string = $state('all');
@@ -51,6 +52,7 @@
           playing11 = userT.playing11 || [];
           captain = userT.captain || '';
           wicketKeeper = userT.wicketKeeper || '';
+          reservePlayer = userT.reservePlayer || '';
         }
         dndPlayers = [...userT.players]; // Initialize dndPlayers
       }
@@ -117,6 +119,7 @@
     } else {
       if (playing11.length < 11) {
         playing11 = [...playing11, playerId];
+        if (reservePlayer === playerId) reservePlayer = '';
       }
     }
   }
@@ -175,6 +178,9 @@
 
     const wkCandidate = players.find(p => playing11.includes(p.id) && (p.role === 'wicketkeeper' || p.special.isWicketKeeper));
     wicketKeeper = wkCandidate ? wkCandidate.id : playing11[0];
+
+    const reserveCandidate = players.find(p => !selected.has(p.id));
+    reservePlayer = reserveCandidate ? reserveCandidate.id : '';
   }
   
   async function saveSquad() {
@@ -194,8 +200,13 @@
       setTimeout(() => saveMessage = '', 3000);
       return;
     }
+    if (!reservePlayer && userTeam.players.length >= 12) {
+      saveMessage = "Please select a Reserve Player (Impact Sub).";
+      setTimeout(() => saveMessage = '', 3000);
+      return;
+    }
     
-    teamStore.setPlaying11(userTeam.id, playing11, captain, wicketKeeper);
+    teamStore.setPlaying11(userTeam.id, playing11, captain, wicketKeeper, reservePlayer);
     await saveCurrentGame(userTeam.budget);
     saveMessage = "Squad saved successfully! Redirecting to match...";
     setTimeout(() => {
@@ -445,6 +456,7 @@
                   <th>Rating</th>
                   <th style="width: 100px;">Stamina</th>
                   <th style="width: 100px;">Confidence</th>
+                  <th style="text-align: center;">Impact Sub</th>
                   <th style="text-align: center;">Captain</th>
                   <th style="text-align: center;">WK</th>
                   <th style="text-align: center;">Select</th>
@@ -485,6 +497,15 @@
                       <div class="bar-container">
                         <div class="bar confidence" style="width: {p.morale}%; background-color: {getBarColor(p.morale)};"></div>
                       </div>
+                    </td>
+                    <td style="text-align: center;">
+                      <input 
+                        type="radio" 
+                        name="impact-sub-radio"
+                        checked={reservePlayer === p.id}
+                        onchange={() => reservePlayer = p.id}
+                        style="cursor: pointer;"
+                      />
                     </td>
                     <td style="text-align: center;">
                       <input 
@@ -530,6 +551,9 @@
         <span class="status-item">Players: <strong>{playing11.length}/11</strong></span>
         <span class="status-item">Captain: <strong class={captain ? 'success' : 'error'}>{captain ? 'Selected' : 'Missing'}</strong></span>
         <span class="status-item">Wicket Keeper: <strong class={wicketKeeper ? 'success' : 'error'}>{wicketKeeper ? 'Selected' : 'Missing'}</strong></span>
+        {#if userTeam && userTeam.players.length >= 12}
+          <span class="status-item">Impact Sub: <strong class={reservePlayer ? 'success' : 'error'}>{reservePlayer ? 'Selected' : 'Missing'}</strong></span>
+        {/if}
       </div>
       
       {#if saveMessage}
@@ -541,7 +565,7 @@
       <button 
         class="primary bid-btn" 
         style="background: linear-gradient(135deg, {userTeam?.colorPrimary}, {userTeam?.colorSecondary});"
-        disabled={playing11.length !== 11 || !captain || !wicketKeeper}
+        disabled={playing11.length !== 11 || !captain || !wicketKeeper || (!reservePlayer && (userTeam?.players.length ?? 0) >= 12)}
         onclick={saveSquad}
       >
         Save Lineup

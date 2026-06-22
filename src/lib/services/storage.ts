@@ -17,6 +17,13 @@ export interface ActiveMatchState {
   selectedBowlerId: string | null;
   placeholderBatsman: string | null;
   pendingBowlerSelection: boolean;
+  freeHitActive: boolean;
+  impactUsed: boolean;
+  replacedPlayerId: string | null;
+  impactPlayerId: string | null;
+  aiImpactUsed: boolean;
+  aiReplacedPlayerId: string | null;
+  aiImpactPlayerId: string | null;
   savedAt: number;
 }
 

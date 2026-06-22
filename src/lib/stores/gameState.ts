@@ -82,7 +82,7 @@ function createPlayerStore() {
   };
 }
 
-export function selectInitialPlaying11(players: Player[]): { playing11: string[], captain: string, wicketKeeper: string } {
+export function selectInitialPlaying11(players: Player[]): { playing11: string[], captain: string, wicketKeeper: string, reservePlayer?: string } {
   const batsmen = [...players].filter(p => p.role === 'batsman').sort((a, b) => b.stats.batting - a.stats.batting);
   const wks = [...players].filter(p => p.role === 'wicketkeeper').sort((a, b) => b.stats.batting - a.stats.batting);
   const allrounders = [...players].filter(p => p.role === 'allrounder').sort((a, b) => (b.stats.batting + b.stats.bowling) - (a.stats.batting + a.stats.bowling));
@@ -123,7 +123,11 @@ export function selectInitialPlaying11(players: Player[]): { playing11: string[]
   // Choose WicketKeeper
   const wicketKeeper = selectedWk?.id || playing11Players.find(p => p.special?.isWicketKeeper)?.id || playing11[0];
 
-  return { playing11, captain, wicketKeeper };
+  // Nominate 1 reserve player from those not in starting 11
+  const reserveCandidates = players.filter(p => !playing11.includes(p.id));
+  const reservePlayer = reserveCandidates[0]?.id;
+
+  return { playing11, captain, wicketKeeper, reservePlayer };
 }
 
 function createTeamStore() {
@@ -144,7 +148,7 @@ function createTeamStore() {
         const teamPlayers = generateBalancedSquad(faction)
           .map(p => ({ ...p, isAvailable: false }));
         
-        const { playing11, captain, wicketKeeper } = selectInitialPlaying11(teamPlayers);
+        const { playing11, captain, wicketKeeper, reservePlayer } = selectInitialPlaying11(teamPlayers);
         
         baseTeams.push({
           id: teamId,
@@ -172,7 +176,8 @@ function createTeamStore() {
           colorSecondary: TEAM_COLORS[i % TEAM_COLORS.length].secondary,
           playing11,
           captain,
-          wicketKeeper
+          wicketKeeper,
+          reservePlayer
         });
       }
       
@@ -280,11 +285,11 @@ function createTeamStore() {
         })
       );
     },
-    setPlaying11: (teamId: string, playing11: string[], captain: string, wicketKeeper: string) => {
+    setPlaying11: (teamId: string, playing11: string[], captain: string, wicketKeeper: string, reservePlayer?: string) => {
       update(teams =>
         teams.map(t => {
           if (t.id === teamId) {
-            return { ...t, playing11, captain, wicketKeeper };
+            return { ...t, playing11, captain, wicketKeeper, reservePlayer };
           }
           return t;
         })
@@ -411,13 +416,14 @@ export async function initializeGame(
     playerStore.initialize(existingSave.players);
     // Sanitize loaded teams to guarantee playing 11, captain, and wicketkeeper are initialized
     const sanitizedTeams = existingSave.teams.map((t: Team) => {
-      if (!t.playing11 || t.playing11.length !== 11 || !t.captain || !t.wicketKeeper) {
-        const { playing11, captain, wicketKeeper } = selectInitialPlaying11(t.players);
+      if (!t.playing11 || t.playing11.length !== 11 || !t.captain || !t.wicketKeeper || !t.reservePlayer) {
+        const { playing11, captain, wicketKeeper, reservePlayer } = selectInitialPlaying11(t.players);
         return {
           ...t,
           playing11: t.playing11 && t.playing11.length === 11 ? t.playing11 : playing11,
           captain: t.captain || captain,
-          wicketKeeper: t.wicketKeeper || wicketKeeper
+          wicketKeeper: t.wicketKeeper || wicketKeeper,
+          reservePlayer: t.reservePlayer || reservePlayer
         };
       }
       return t;
@@ -456,7 +462,7 @@ export async function initializeGame(
       
       playerPool = [...playerPool, ...teamPlayers];
       
-      const { playing11, captain, wicketKeeper } = selectInitialPlaying11(teamPlayers);
+      const { playing11, captain, wicketKeeper, reservePlayer } = selectInitialPlaying11(teamPlayers);
 
       teams.push({
         id: isUserTeam ? 'user_team' : `team_${i}`,
@@ -485,7 +491,8 @@ export async function initializeGame(
         colorSecondary: orderedColors[i % orderedColors.length].secondary,
         playing11: startWithAuction ? undefined : playing11,
         captain: startWithAuction ? undefined : captain,
-        wicketKeeper: startWithAuction ? undefined : wicketKeeper
+        wicketKeeper: startWithAuction ? undefined : wicketKeeper,
+        reservePlayer: startWithAuction ? undefined : reservePlayer
       });
     }
     
@@ -604,7 +611,7 @@ export function startNewSeason() {
   // 2. Reset team standings stats to 0, reset player fatigue, and clear player tournamentStats
   teamStore.update(teams => 
     teams.map(t => {
-      const { playing11, captain, wicketKeeper } = selectInitialPlaying11(t.players);
+      const { playing11, captain, wicketKeeper, reservePlayer } = selectInitialPlaying11(t.players);
       return {
         ...t,
         wins: 0,
@@ -616,6 +623,7 @@ export function startNewSeason() {
         playing11,
         captain,
         wicketKeeper,
+        reservePlayer,
         players: t.players.map(p => ({
           ...p,
           fatigue: 0,

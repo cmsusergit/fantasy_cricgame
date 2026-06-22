@@ -89,6 +89,14 @@
   let currentOverBalls = $derived(getOverBalls(currentInningsData));
 
   let showSuggestion = $state(false);
+  let freeHitActive = $state(false);
+  let impactUsed = $state(false);
+  let replacedPlayerId = $state<string | null>(null);
+  let impactPlayerId = $state<string | null>(null);
+  let aiImpactUsed = $state(false);
+  let aiReplacedPlayerId = $state<string | null>(null);
+  let aiImpactPlayerId = $state<string | null>(null);
+  let showImpactSelector = $state(false);
   let currentSuggestion = $derived.by(() => {
      if (!currentInningsData) return "No suggestions available yet.";
      
@@ -249,10 +257,24 @@
             selectedBowlerId = savedMatch.selectedBowlerId;
             placeholderBatsman = savedMatch.placeholderBatsman;
             pendingBowlerSelection = savedMatch.pendingBowlerSelection;
+            freeHitActive = savedMatch.freeHitActive || false;
+            impactUsed = savedMatch.impactUsed || false;
+            replacedPlayerId = savedMatch.replacedPlayerId || null;
+            impactPlayerId = savedMatch.impactPlayerId || null;
+            aiImpactUsed = savedMatch.aiImpactUsed || false;
+            aiReplacedPlayerId = savedMatch.aiReplacedPlayerId || null;
+            aiImpactPlayerId = savedMatch.aiImpactPlayerId || null;
         } else {
             weather = getRandomWeather();
             pitch = getRandomPitch();
             phase = 'toss';
+            freeHitActive = false;
+            impactUsed = false;
+            replacedPlayerId = null;
+            impactPlayerId = null;
+            aiImpactUsed = false;
+            aiReplacedPlayerId = null;
+            aiImpactPlayerId = null;
             clearActiveMatch();
         }
       } else {
@@ -301,9 +323,21 @@
           selectedBowlerId,
           placeholderBatsman,
           pendingBowlerSelection,
+          freeHitActive,
+          impactUsed,
+          replacedPlayerId,
+          impactPlayerId,
+          aiImpactUsed,
+          aiReplacedPlayerId,
+          aiImpactPlayerId,
           savedAt: Date.now()
       });
   }
+
+  onDestroy(() => {
+    if (ballInterval) clearInterval(ballInterval);
+    syncActiveMatchState();
+  });
   
   function getPlaying11(team: Team) {
     return team.playing11 && team.playing11.length === 11 
@@ -605,6 +639,224 @@
     if (animationTimeout) clearTimeout(animationTimeout);
     animationTimeout = null;
   }
+
+  let reservePlayerObj = $derived(
+    userTeam?.reservePlayer 
+      ? userTeam.players.find(p => p.id === userTeam.reservePlayer) 
+      : null
+  );
+
+  function activateImpactPlayer(replacedId: string) {
+    if (!userTeam || !userTeam.reservePlayer || impactUsed) return;
+    
+    const impactId = userTeam.reservePlayer;
+    impactPlayerId = impactId;
+    replacedPlayerId = replacedId;
+    impactUsed = true;
+    
+    gameAudio.playImpactFanfare();
+    
+    teamStore.update(teams => 
+      teams.map(t => {
+        if (t.id === userTeam.id) {
+          const newPlaying11 = (t.playing11 || []).map(id => id === replacedId ? impactId : id);
+          return {
+            ...t,
+            playing11: newPlaying11,
+            captain: t.captain === replacedId ? impactId : t.captain,
+            wicketKeeper: t.wicketKeeper === replacedId ? impactId : t.wicketKeeper
+          };
+        }
+        return t;
+      })
+    );
+
+    const swapInInnings = (inn: innings) => {
+      let updated = false;
+      let newBatsmen = [...inn.currentBatsmen] as [string, string];
+      if (inn.currentBatsmen[0] === replacedId) {
+        newBatsmen[0] = impactId;
+        updated = true;
+      }
+      if (inn.currentBatsmen[1] === replacedId) {
+        newBatsmen[1] = impactId;
+        updated = true;
+      }
+      let newOrder = [...inn.battingOrder];
+      if (newOrder.includes(replacedId)) {
+        newOrder = newOrder.map(id => id === replacedId ? impactId : id);
+        updated = true;
+      }
+      if (updated) {
+        return {
+          ...inn,
+          currentBatsmen: newBatsmen,
+          battingOrder: newOrder
+        };
+      }
+      return inn;
+    };
+
+    if (currentInnings === 1) {
+      innings1 = swapInInnings(innings1);
+    } else {
+      innings2 = swapInInnings(innings2);
+    }
+
+    if (selectedBowlerId === replacedId) {
+      selectedBowlerId = impactId;
+    }
+
+    const replacedPlayer = userTeam.players.find(p => p.id === replacedId);
+    const impactPlayer = userTeam.players.find(p => p.id === impactId);
+    if (replacedPlayer && impactPlayer) {
+      const commentaryMsg = `⚡ IMPACT PLAYER SUB: ${impactPlayer.name} replaces ${replacedPlayer.name}!`;
+      const currentInn = currentInnings === 1 ? innings1 : innings2;
+      const updatedInn = {
+        ...currentInn,
+        ballsFaced: [
+          ...currentInn.ballsFaced,
+          {
+            ballNumber: currentInn.balls,
+            over: currentInn.overs,
+            ball: currentInn.balls % 6 || 6,
+            batsmanId: currentInn.currentBatsmen[0] || '',
+            bowlerId: selectedBowlerId || '',
+            result: 'single',
+            runs: 0,
+            isWicket: false,
+            commentary: commentaryMsg
+          } as any
+        ]
+      };
+      if (currentInnings === 1) innings1 = updatedInn;
+      else innings2 = updatedInn;
+    }
+
+    syncActiveMatchState();
+  }
+
+  function triggerAiImpactPlayerCheck() {
+    if (aiImpactUsed || !currentBattingTeam || !currentBowlingTeam) return;
+    
+    const aiTeam = currentBattingTeam.id !== 'user_team' ? currentBattingTeam : (currentBowlingTeam.id !== 'user_team' ? currentBowlingTeam : null);
+    if (!aiTeam) return;
+
+    const isBatting = aiTeam.id === currentBattingTeam.id;
+    const currentInn = currentInnings === 1 ? innings1 : innings2;
+    
+    let shouldActivate = false;
+    let roleToBringIn: 'batsman' | 'bowler' = 'batsman';
+    
+    if (isBatting && currentInn.wickets === 5 && currentInn.balls % 6 === 0) {
+      shouldActivate = true;
+      roleToBringIn = 'batsman';
+    } else if (!isBatting && currentInn.balls === 0) {
+      shouldActivate = true;
+      roleToBringIn = 'bowler';
+    }
+
+    if (shouldActivate) {
+      const p11 = getPlaying11(aiTeam);
+      const reserves = aiTeam.players.filter(p => !p11.includes(p.id));
+      if (reserves.length === 0) return;
+
+      reserves.sort((a, b) => {
+        if (roleToBringIn === 'batsman') {
+          return b.stats.batting - a.stats.batting;
+        } else {
+          return b.stats.bowling - a.stats.bowling;
+        }
+      });
+      const impactId = reserves[0].id;
+
+      const playing11PlayersList = aiTeam.players.filter(p => p11.includes(p.id));
+      playing11PlayersList.sort((a, b) => {
+        if (roleToBringIn === 'batsman') {
+          return a.stats.batting - b.stats.batting;
+        } else {
+          return a.stats.bowling - b.stats.bowling;
+        }
+      });
+
+      const replacedId = playing11PlayersList[0].id;
+      aiImpactPlayerId = impactId;
+      aiReplacedPlayerId = replacedId;
+      aiImpactUsed = true;
+
+      teamStore.update(teams => 
+        teams.map(t => {
+          if (t.id === aiTeam.id) {
+            const newPlaying11 = (t.playing11 || []).map(id => id === replacedId ? impactId : id);
+            return {
+              ...t,
+              playing11: newPlaying11,
+              captain: t.captain === replacedId ? impactId : t.captain,
+              wicketKeeper: t.wicketKeeper === replacedId ? impactId : t.wicketKeeper
+            };
+          }
+          return t;
+        })
+      );
+
+      const swapInInnings = (inn: innings) => {
+        let updated = false;
+        let newBatsmen = [...inn.currentBatsmen] as [string, string];
+        if (inn.currentBatsmen[0] === replacedId) {
+          newBatsmen[0] = impactId;
+          updated = true;
+        }
+        if (inn.currentBatsmen[1] === replacedId) {
+          newBatsmen[1] = impactId;
+          updated = true;
+        }
+        let newOrder = [...inn.battingOrder];
+        if (newOrder.includes(replacedId)) {
+          newOrder = newOrder.map(id => id === replacedId ? impactId : id);
+          updated = true;
+        }
+        if (updated) {
+          return {
+            ...inn,
+            currentBatsmen: newBatsmen,
+            battingOrder: newOrder
+          };
+        }
+        return inn;
+      };
+
+      if (currentInnings === 1) {
+        innings1 = swapInInnings(innings1);
+      } else {
+        innings2 = swapInInnings(innings2);
+      }
+
+      const replacedPlayer = aiTeam.players.find(p => p.id === replacedId);
+      const impactPlayer = aiTeam.players.find(p => p.id === impactId);
+      if (replacedPlayer && impactPlayer) {
+        const commentaryMsg = `⚡ AI IMPACT PLAYER SUB: ${impactPlayer.name} replaces ${replacedPlayer.name} for ${aiTeam.name}!`;
+        const updatedInn = {
+          ...currentInn,
+          ballsFaced: [
+            ...currentInn.ballsFaced,
+            {
+              ballNumber: currentInn.balls,
+              over: currentInn.overs,
+              ball: currentInn.balls % 6 || 6,
+              batsmanId: currentInn.currentBatsmen[0] || '',
+              bowlerId: selectedBowlerId || '',
+              result: 'single',
+              runs: 0,
+              isWicket: false,
+              commentary: commentaryMsg
+            } as any
+          ]
+        };
+        if (currentInnings === 1) innings1 = updatedInn;
+        else innings2 = updatedInn;
+      }
+    }
+  }
   
   function executeSingleBall() {
     if (isComplete || !currentBattingTeam || !currentBowlingTeam) {
@@ -613,6 +865,7 @@
     }
     
     clearAnimation(); // Clear any previous animation
+    triggerAiImpactPlayerCheck();
   
     const currentInn = currentInnings === 1 ? innings1 : innings2;
     const strikerId = currentInn.currentBatsmen[0];
@@ -671,7 +924,16 @@
     let rhythm = currentInn.bowlerRhythm[bowlerId];
     let rhythmMult = 1.0 + (rhythm / 100) * 0.15;
 
-    const ballEvent = resolveBall(striker, bowler, currentInn.balls, totalOvers, currentActiveBattingIntent, weather as any, pitch as any, 0, false, currentActiveBowlingIntent, avoidSingles, bowlingFieldingAvg, currentBallType, concMult, rhythmMult, getPlaying11(currentBowlingTeam));
+    const ballEvent = resolveBall(striker, bowler, currentInn.balls, totalOvers, currentActiveBattingIntent, weather as any, pitch as any, 0, freeHitActive, currentActiveBowlingIntent, avoidSingles, bowlingFieldingAvg, currentBallType, concMult, rhythmMult, getPlaying11(currentBowlingTeam));
+
+    if (ballEvent.result === 'noball') {
+      freeHitActive = true;
+      gameAudio.playFreeHitSiren();
+    } else if (ballEvent.result === 'wide') {
+      // keep free hit active
+    } else {
+      freeHitActive = false;
+    }
 
     if (ballEvent.result === 'dot') {
        conc = Math.max(0, conc - 5);
@@ -1266,6 +1528,10 @@
                 <span>{weatherEmojis[weather]} {weather}</span>
                 <span class="dot-separator">•</span>
                 <span>{pitchEmojis[pitch]} {pitch} pitch</span>
+                {#if freeHitActive}
+                  <span class="dot-separator">•</span>
+                  <span class="free-hit-badge" style="color: #ef4444; font-weight: 800; animation: blink 1s infinite;">💥 FREE HIT</span>
+                {/if}
               </div>
               <div class="score-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
                 <div style="display: flex; align-items: baseline; gap: 12px;">
@@ -1430,6 +1696,10 @@
               <span>{weatherEmojis[weather]} {weather}</span>
               <span class="dot-separator">•</span>
               <span>{pitchEmojis[pitch]} {pitch} pitch</span>
+              {#if freeHitActive}
+                <span class="dot-separator">•</span>
+                <span class="free-hit-badge" style="color: #ef4444; font-weight: 800; animation: blink 1s infinite;">💥 FREE HIT</span>
+              {/if}
             </div>
             <div class="score-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
               <div style="display: flex; align-items: baseline; gap: 12px;">
@@ -1887,6 +2157,24 @@
               </div>
             {/if}
           </div>
+          
+          {#if userTeam && userTeam.reservePlayer && !impactUsed && (phase === 'paused' || phase === 'ready')}
+            {@const reserveObj = userTeam.players.find(p => p.id === userTeam.reservePlayer)}
+            {#if reserveObj}
+              <div class="impact-sub-dock" style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                <span class="sub-title" style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 6px;">⚡ Nominated Impact Sub</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <img src={getAvatarUrl(reserveObj.faction, reserveObj.portraitId || 1)} alt={reserveObj.name} style="width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border-color);" />
+                    <span style="font-size: 0.78rem; font-weight: bold; color: var(--color-accent);">{reserveObj.name} ({reserveObj.role})</span>
+                  </div>
+                  <button class="btn-activate-impact" onclick={() => showImpactSelector = true} style="background: var(--color-accent); color: white; border: none; padding: 4px 8px; font-size: 0.72rem; font-weight: bold; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+                    Activate Sub
+                  </button>
+                </div>
+              </div>
+            {/if}
+          {/if}
         </div>
 
         <!-- Live Commentary Console -->
@@ -1901,6 +2189,37 @@
 
       </div> <!-- End Right Column -->
     </div> <!-- End match-dashboard -->
+
+    {#if showImpactSelector && userTeam && userTeam.reservePlayer}
+      {@const reserveObj = userTeam.players.find(p => p.id === userTeam.reservePlayer)}
+      <div class="impact-selector-modal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1100;">
+        <div class="modal-content" style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; max-width: 400px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
+          <h3 style="margin-top: 0; font-family: 'Cinzel', serif; color: var(--color-accent); font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">⚡ Select Player to Replace</h3>
+          <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.4;">Choose which starting player <strong>{reserveObj?.name}</strong> will replace. The replaced player cannot take any further part in the match.</p>
+          
+          <div class="players-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 250px; overflow-y: auto; margin-bottom: 16px; border: 1px solid var(--border-color); padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.15);">
+            {#each playing11Players as p}
+              <button 
+                onclick={() => {
+                  activateImpactPlayer(p.id);
+                  showImpactSelector = false;
+                }}
+                style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 12px; font-size: 0.78rem; text-align: left; cursor: pointer; border-radius: 4px; transition: all 0.2s; width: 100%;"
+                onmouseover={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                onmouseout={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+              >
+                <span>{p.name} ({p.role})</span>
+                <span style="font-size: 0.7rem; color: var(--color-accent); font-weight: bold;">Replace 🔄</span>
+              </button>
+            {/each}
+          </div>
+          
+          <button onclick={() => showImpactSelector = false} style="width: 100%; background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s;">
+            Cancel
+          </button>
+        </div>
+      </div>
+    {/if}
 
     <!-- Full scorecard aligned at the bottom -->
     <div class="full-width-scorecard-container">
@@ -3260,5 +3579,10 @@
   }
   :global([data-theme="light"]) .btn-intent:hover:not(:disabled) {
     background: #e2e8f0;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
   }
 </style>
