@@ -31,7 +31,7 @@ export function processSeasonEnd(teams: Team[], players: Player[], userTeamId: s
       const idx = standings.findIndex(s => s.teamId === t.id);
       const prize = prizePool[idx] || 10000;
       
-      const playerSalaries = t.players.reduce((sum, p) => sum + p.price * 0.05, 0);
+      const playerSalaries = t.players.reduce((sum, p) => sum + p.price * 0.10, 0);
       const staffSalaries = t.staff?.reduce((sum, s) => sum + s.salary, 0) || 0;
       const facilityMaintenance = (
         (FACILITY_MAINTENANCE_COSTS.stadium[t.facilities?.stadiumLevel || 1] || 0) +

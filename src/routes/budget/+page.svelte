@@ -13,8 +13,8 @@
   });
 
   let totalSquadValue = $derived(userTeam?.players.reduce((sum, p) => sum + p.price, 0) || 0);
-  let totalPlayerSalaries = $derived(userTeam?.players.reduce((sum, p) => sum + p.price * 0.05, 0) || 0); // Assuming 5% of market value as annual salary
-  let totalStaffSalaries = $derived(250000); // Placeholder for staff salaries
+  let totalPlayerSalaries = $derived(userTeam?.players.reduce((sum, p) => sum + p.price * 0.10, 0) || 0); // Assuming 10% of market value as annual salary
+  let totalStaffSalaries = $derived(userTeam?.staff?.reduce((sum, s) => sum + s.salary, 0) || 0);
   let totalMatchEarningsEst = $derived((userTeam?.matchesPlayed || 0) * 10000 + (userTeam?.wins || 0) * 50000);
   let maxSponsors = $derived(
     userTeam 
