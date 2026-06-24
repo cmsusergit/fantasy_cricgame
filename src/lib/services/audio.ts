@@ -1,7 +1,65 @@
 class GameAudio {
   private ctx: AudioContext | null = null;
+  private isAudioEnabled: boolean = true;
+  private crowdVolume: number = 0.5;
+  private dialogueVolume: number = 0.5;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      try {
+        const storedEnabled = localStorage.getItem('game_audio_enabled');
+        if (storedEnabled !== null) {
+          this.isAudioEnabled = storedEnabled === 'true';
+        }
+        const storedCrowd = localStorage.getItem('game_audio_crowd_volume');
+        if (storedCrowd !== null) {
+          this.crowdVolume = parseFloat(storedCrowd);
+        }
+        const storedDialogue = localStorage.getItem('game_audio_dialogue_volume');
+        if (storedDialogue !== null) {
+          this.dialogueVolume = parseFloat(storedDialogue);
+        }
+      } catch (e) {
+        console.warn("Failed to load audio settings:", e);
+      }
+    }
+  }
+
+  setAudioEnabled(enabled: boolean) {
+    this.isAudioEnabled = enabled;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('game_audio_enabled', String(enabled));
+    }
+  }
+
+  getAudioEnabled(): boolean {
+    return this.isAudioEnabled;
+  }
+
+  setCrowdVolume(vol: number) {
+    this.crowdVolume = Math.max(0, Math.min(1, vol));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('game_audio_crowd_volume', String(this.crowdVolume));
+    }
+  }
+
+  getCrowdVolume(): number {
+    return this.crowdVolume;
+  }
+
+  setDialogueVolume(vol: number) {
+    this.dialogueVolume = Math.max(0, Math.min(1, vol));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('game_audio_dialogue_volume', String(this.dialogueVolume));
+    }
+  }
+
+  getDialogueVolume(): number {
+    return this.dialogueVolume;
+  }
 
   private init() {
+    if (!this.isAudioEnabled) return;
     if (!this.ctx) {
       this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
@@ -12,6 +70,7 @@ class GameAudio {
 
   // Generates crowd cheer sound using white noise and a lowpass filter
   cheer(intensity: number) {
+    if (!this.isAudioEnabled) return;
     try {
       this.init();
       if (!this.ctx) return;
@@ -37,8 +96,8 @@ class GameAudio {
 
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0.001, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(intensity * 0.12, ctx.currentTime + 0.3); // Limit max volume to protect hearing
-      gain.gain.exponentialRampToValueAtTime(intensity * 0.06, ctx.currentTime + 1.4);
+      gain.gain.linearRampToValueAtTime(intensity * 0.12 * this.crowdVolume, ctx.currentTime + 0.3); // Limit max volume to protect hearing
+      gain.gain.exponentialRampToValueAtTime(intensity * 0.06 * this.crowdVolume, ctx.currentTime + 1.4);
       gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 2.5);
 
       noise.connect(filter);
@@ -53,6 +112,7 @@ class GameAudio {
 
   // Generates crowd groan/ooh sound using white noise and lowpass filter
   groan(intensity: number) {
+    if (!this.isAudioEnabled) return;
     try {
       this.init();
       if (!this.ctx) return;
@@ -77,8 +137,8 @@ class GameAudio {
 
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0.001, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(intensity * 0.10, ctx.currentTime + 0.2);
-      gain.gain.exponentialRampToValueAtTime(intensity * 0.04, ctx.currentTime + 0.9);
+      gain.gain.linearRampToValueAtTime(intensity * 0.10 * this.crowdVolume, ctx.currentTime + 0.2);
+      gain.gain.exponentialRampToValueAtTime(intensity * 0.04 * this.crowdVolume, ctx.currentTime + 0.9);
       gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 1.8);
 
       noise.connect(filter);
@@ -93,6 +153,7 @@ class GameAudio {
 
   // Synthesize a woodblock-like 'click' or bat crack sound
   batCrack() {
+    if (!this.isAudioEnabled) return;
     try {
       this.init();
       if (!this.ctx) return;
@@ -119,6 +180,7 @@ class GameAudio {
   }
 
   playFreeHitSiren() {
+    if (!this.isAudioEnabled) return;
     try {
       this.init();
       if (!this.ctx) return;
@@ -157,6 +219,7 @@ class GameAudio {
   }
 
   playImpactFanfare() {
+    if (!this.isAudioEnabled) return;
     try {
       this.init();
       if (!this.ctx) return;
@@ -167,23 +230,47 @@ class GameAudio {
       
       notes.forEach((freq, index) => {
         const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+        const oscGain = ctx.createGain();
         
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(freq, time + index * 0.12);
         
-        gain.gain.setValueAtTime(0.001, time + index * 0.12);
-        gain.gain.linearRampToValueAtTime(0.06, time + index * 0.12 + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + index * 0.12 + 0.3);
+        oscGain.gain.setValueAtTime(0.001, time + index * 0.12);
+        oscGain.gain.linearRampToValueAtTime(0.06, time + index * 0.12 + 0.05);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, time + index * 0.12 + 0.3);
         
-        osc.connect(gain);
-        gain.connect(ctx.destination);
+        osc.connect(oscGain);
+        oscGain.connect(ctx.destination);
         
         osc.start(time + index * 0.12);
         osc.stop(time + index * 0.12 + 0.35);
       });
     } catch (e) {
       console.warn("Web Audio impact fanfare failed:", e);
+    }
+  }
+
+  speakCommentary(text: string) {
+    if (!this.isAudioEnabled) return;
+    try {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel(); // Cancel any ongoing speech to avoid overlapping
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.15; // Fast, energetic pace
+        utterance.pitch = 1.0;
+        utterance.volume = this.dialogueVolume;
+        
+        // Find English voice
+        const voices = window.speechSynthesis.getVoices();
+        const enVoice = voices.find(v => v.lang.startsWith('en-') || v.lang === 'en');
+        if (enVoice) {
+          utterance.voice = enVoice;
+        }
+        
+        window.speechSynthesis.speak(utterance);
+      }
+    } catch (e) {
+      console.warn("TTS commentary failed:", e);
     }
   }
 }

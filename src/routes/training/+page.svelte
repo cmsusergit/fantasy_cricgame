@@ -95,8 +95,12 @@
 </svelte:head>
 
 <div class="training-lab">
-  <h1>🏋️ Training Lab</h1>
-  <p class="subtitle">Improve your players' stats</p>
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+    <div style="border-left: 4px solid {userTeam?.colorPrimary || '#1e40af'}; padding-left: 12px;">
+      <h1 style="color: {userTeam?.colorPrimary || '#1e40af'}; margin: 0 0 4px 0; font-size: 1.8rem; line-height: 1.2;">🏋️ Training Lab</h1>
+      <p class="subtitle" style="margin-bottom: 0; font-size: 0.9rem; color: var(--text-secondary);">Improve your players' attributes and unlock special abilities.</p>
+    </div>
+  </div>
   
   <div class="budget-display">
     <span class="label">Training Budget:</span>

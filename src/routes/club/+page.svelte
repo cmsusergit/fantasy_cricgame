@@ -11,6 +11,11 @@
   let clubBudget = $derived(userTeam?.budget || 0);
   let facilities = $derived(userTeam?.facilities || { stadiumLevel: 1, trainingLevel: 1, medicalLevel: 1 });
   let staff = $derived(userTeam?.staff || []);
+  let expiredSponsorships = $derived(
+    userTeam && userTeam.sponsorships 
+      ? userTeam.sponsorships.filter((s: any) => !s.active) 
+      : []
+  );
   
   let staffMarket = $state<StaffMember[]>([]);
   let message = $state<string>('');
@@ -69,6 +74,12 @@
       showMessage(`Not enough budget to pay severance ($${severance.toLocaleString()}).`);
     }
   }
+
+  async function handleDismissExpiredSponsorship(sponsorshipId: string) {
+    if (!userTeam) return;
+    teamStore.removeSponsorship(userTeam.id, sponsorshipId);
+    await saveCurrentGame(userTeam.budget);
+  }
 </script>
 
 <svelte:head>
@@ -76,10 +87,29 @@
 </svelte:head>
 
 <div class="club-page">
-  <div class="header">
-    <h1>🏢 Club Management</h1>
-    <p class="subtitle">Upgrade facilities and manage backroom staff.</p>
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+    <div style="border-left: 4px solid {userTeam?.colorPrimary || '#1e40af'}; padding-left: 12px;">
+      <h1 style="color: {userTeam?.colorPrimary || '#1e40af'}; margin: 0 0 4px 0; font-size: 1.8rem; line-height: 1.2;">🏢 Club Management</h1>
+      <p class="subtitle" style="margin-bottom: 0; font-size: 0.9rem; color: var(--text-secondary);">Upgrade facilities and manage backroom staff.</p>
+    </div>
   </div>
+
+  {#if expiredSponsorships.length > 0}
+    <div class="sponsorship-alerts-container">
+      {#each expiredSponsorships as expiredSponsor}
+        <div class="sponsorship-alert-banner">
+          <span class="alert-emoji">⚠️</span>
+          <div class="alert-content">
+            <span class="alert-title">Sponsorship Expired</span>
+            <span class="alert-subtext">Your contract with <strong class="text-gold">{expiredSponsor.sponsorName}</strong> has expired! Please head back to the <a href="/" class="dashboard-link">Dashboard</a> to sign a new deal and secure match-day funds.</span>
+          </div>
+          <button class="alert-dismiss-btn" onclick={() => handleDismissExpiredSponsorship(expiredSponsor.id)}>
+            Dismiss Alert
+          </button>
+        </div>
+      {/each}
+    </div>
+  {/if}
   
   <div class="budget-panel">
     <div class="budget-item">
@@ -195,13 +225,100 @@
 </div>
 
 <style>
+  .sponsorship-alerts-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+    width: 100%;
+  }
+
+  .sponsorship-alert-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(245, 158, 11, 0.08) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-left: 4px solid #ef4444;
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .alert-emoji {
+    font-size: 20px;
+    margin-right: 12px;
+  }
+
+  .alert-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+  }
+
+  .alert-title {
+    font-weight: 700;
+    color: #ef4444;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+
+  .alert-subtext {
+    color: var(--text-primary);
+    line-height: 1.4;
+  }
+
+  .alert-subtext .dashboard-link {
+    color: var(--warning);
+    text-decoration: underline;
+    font-weight: 600;
+  }
+
+  .alert-subtext .dashboard-link:hover {
+    color: #fbbf24;
+  }
+
+  .alert-dismiss-btn {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 16px;
+    white-space: nowrap;
+  }
+
+  .alert-dismiss-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #ef4444;
+    transform: translateY(-1px);
+  }
+
+  .text-gold {
+    color: #fbbf24;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   .club-page {
     max-width: 1200px;
     margin: 0 auto;
     padding-bottom: 60px;
   }
   
-  .header {
+  .header-legacy {
     margin-bottom: 12px;
   }
   
@@ -328,6 +445,7 @@
     margin-bottom: 8px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -391,6 +509,7 @@
     min-height: 2.9em;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }

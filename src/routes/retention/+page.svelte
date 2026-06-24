@@ -109,20 +109,23 @@
 </svelte:head>
 
 <div class="retention-page">
-  <header class="page-header">
-    <h1>{isMega ? 'Mega Auction' : 'Mini Auction'} Retention Board</h1>
-    <p class="subtitle">Select the players you want to keep. Unselected players will be released into the global auction pool.</p>
-    {#if isMega}
-        <div class="mega-warning">
-            ⚠️ <strong>Mega Auction Rules Apply!</strong> You can retain a maximum of {MEGA_AUCTION_MAX_RETENTIONS} players. Retention costs are strictly tiered: 
-            {MEGA_AUCTION_RETENTION_COSTS.map(c => `$${(c/1000)}k`).join(', ')}.
-        </div>
-    {:else}
-        <div class="mini-info">
-            ℹ️ <strong>Mini Auction Rules Apply!</strong> You can retain as many players as you want up to your squad limit. The cost to retain is the player's current Market Value.
-        </div>
-    {/if}
-  </header>
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+    <div style="border-left: 4px solid {userTeam?.colorPrimary || '#1e40af'}; padding-left: 12px;">
+      <h1 style="color: {userTeam?.colorPrimary || '#1e40af'}; margin: 0 0 4px 0; font-size: 1.8rem; line-height: 1.2;">📋 {isMega ? 'Mega Auction' : 'Mini Auction'} Retention Board</h1>
+      <p class="subtitle" style="margin-bottom: 0; font-size: 0.9rem; color: var(--text-secondary);">Select the players you want to keep. Unselected players will be released into the global auction pool.</p>
+    </div>
+  </div>
+
+  {#if isMega}
+      <div class="mega-warning">
+          ⚠️ <strong>Mega Auction Rules Apply!</strong> You can retain a maximum of {MEGA_AUCTION_MAX_RETENTIONS} players. Retention costs are strictly tiered: 
+          {MEGA_AUCTION_RETENTION_COSTS.map(c => `$${(c/1000)}k`).join(', ')}.
+      </div>
+  {:else}
+      <div class="mini-info">
+          ℹ️ <strong>Mini Auction Rules Apply!</strong> You can retain as many players as you want up to your squad limit. The cost to retain is the player's current Market Value.
+      </div>
+  {/if}
 
   {#if errorMsg}
     <div class="error-toast">{errorMsg}</div>
@@ -223,16 +226,7 @@
     padding: 14px;
   }
 
-  .page-header {
-    margin-bottom: 16px;
-    text-align: center;
-  }
 
-  .page-header h1 {
-    font-size: 1rem;
-    color: var(--text-primary);
-    margin-bottom: 8px;
-  }
 
   .subtitle {
     color: var(--text-secondary);

@@ -51,6 +51,8 @@ export function simulateInnings(
   
   const battingOrder = [...players.map(p => p.id)];
   let currentBatsmen: [string, string] = [battingOrder[0], battingOrder[1]];
+  const batsmanConfidence: Record<string, number> = {};
+  const bowlerConfidence: Record<string, number> = {};
   let strikerIndex = 0;
   
   const innings: innings = {
@@ -81,16 +83,54 @@ export function simulateInnings(
       
       const striker = players.find(p => p.id === currentBatsmen[0])!;
       const bowler = bowlers.find(p => p.id === currentBowlerId)!;
-        const intent: IntentType = over < 6 ? 'aggressive' : over >= 15 ? 'very_aggressive' : 'balanced';
-        const bowlingFieldingAvg = bowlingTeam.players.slice(0, 11).reduce((sum, p) => sum + (p.stats.fielding || 60), 0) / 11;
-        const bowlingTeamIds = bowlingTeam.players.slice(0, 11).map(p => p.id);
-        const ballEvent = resolveBall(striker, bowler, over, totalOvers, intent, 'sunny', 'balanced', 0, false, 'balanced', false, bowlingFieldingAvg, 'normal', 1.0, 1.0, bowlingTeamIds);
+      const intent: IntentType = over < 6 ? 'aggressive' : over >= 15 ? 'very_aggressive' : 'balanced';
+      const bowlingFieldingAvg = bowlingTeam.players.slice(0, 11).reduce((sum, p) => sum + (p.stats.fielding || 60), 0) / 11;
+      const bowlingTeamIds = bowlingTeam.players.slice(0, 11).map(p => p.id);
+      
+      const strikerId = striker.id;
+      const bowlerId = bowler.id;
+      if (batsmanConfidence[strikerId] === undefined) batsmanConfidence[strikerId] = 50;
+      if (bowlerConfidence[bowlerId] === undefined) bowlerConfidence[bowlerId] = 50;
+
+      const strikerConf = batsmanConfidence[strikerId];
+      const bowlerConf = bowlerConfidence[bowlerId];
+
+      const concMult = 0.8 + (strikerConf / 100) * 0.40;
+      const rhythmMult = 0.8 + (bowlerConf / 100) * 0.40;
+
+      const ballEvent = resolveBall(striker, bowler, over, totalOvers, intent, 'sunny', 'balanced', 0, false, 'balanced', false, bowlingFieldingAvg, 'normal', concMult, rhythmMult, bowlingTeamIds);
       
       const updates = updateFatigueAndMorale(striker, bowler, ballEvent.result, intent, 'balanced');
       striker.fatigue += updates.batterFatigue;
       striker.morale += updates.batterMorale;
       bowler.fatigue += updates.bowlerFatigue;
       bowler.morale += updates.bowlerMorale;
+
+      // Update match-specific confidence based on morale/form multiplier
+      const strikerMoraleFormMult = Math.max(0.2, Math.min(2.0, 1.0 + ((striker.morale - 50) / 100) + ((striker.form || 0) / 20)));
+      const bowlerMoraleFormMult = Math.max(0.2, Math.min(2.0, 1.0 + ((bowler.morale - 50) / 100) + ((bowler.form || 0) / 20)));
+
+      let newStrikerConf = strikerConf;
+      let newBowlerConf = bowlerConf;
+
+      if (ballEvent.result === 'dot') {
+        newStrikerConf = Math.max(0, strikerConf - 5);
+        newBowlerConf = Math.min(100, bowlerConf + (5 * bowlerMoraleFormMult));
+      } else if (ballEvent.runs === 4 || ballEvent.runs === 6) {
+        newStrikerConf = Math.min(100, strikerConf + (15 * strikerMoraleFormMult));
+        newBowlerConf = Math.max(0, bowlerConf - 10);
+      } else if (ballEvent.runs > 0) {
+        newStrikerConf = Math.min(100, strikerConf + (5 * strikerMoraleFormMult));
+      }
+      if (ballEvent.result === 'wide' || ballEvent.result === 'noball') {
+        newBowlerConf = Math.max(0, bowlerConf - 5);
+      }
+      if (ballEvent.isWicket) {
+        newBowlerConf = Math.min(100, bowlerConf + (25 * bowlerMoraleFormMult));
+      }
+
+      batsmanConfidence[strikerId] = newStrikerConf;
+      bowlerConfidence[bowlerId] = newBowlerConf;
       
       innings.totalRuns += ballEvent.runs;
       if (ballEvent.result === 'wide' || ballEvent.result === 'noball') {

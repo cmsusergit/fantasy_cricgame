@@ -72,8 +72,12 @@
 </svelte:head>
 
 <div class="tournament-page">
-  <h1>🏆 Tournament</h1>
-  <p class="subtitle">8-Team Round Robin (Advance Days in Dashboard)</p>
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+    <div style="border-left: 4px solid {userTeam?.colorPrimary || '#1e40af'}; padding-left: 12px;">
+      <h1 style="color: {userTeam?.colorPrimary || '#1e40af'}; margin: 0 0 4px 0; font-size: 1.8rem; line-height: 1.2;">🏆 Tournament</h1>
+      <p class="subtitle" style="margin-bottom: 0; font-size: 0.9rem; color: var(--text-secondary);">8-Team Round Robin (Advance Days in Dashboard)</p>
+    </div>
+  </div>
   
   {#if userStandings}
     <div class="user-standings" style="border-color: {userTeam?.colorPrimary}; background: linear-gradient(135deg, {userTeam?.colorPrimary}10, {userTeam?.colorSecondary}15);">
@@ -129,8 +133,8 @@
   {#if activeTab === 'schedule'}
     <div class="schedule-tab">
       <div class="schedule-filters">
-        <label>Filter by Team:</label>
-        <select bind:value={scheduleFilterTeam}>
+        <label for="scheduleFilterTeamSelect">Filter by Team:</label>
+        <select id="scheduleFilterTeamSelect" bind:value={scheduleFilterTeam}>
           <option value="all">All Teams</option>
           {#each teams as t}
             <option value={t.id}>{t.name}</option>
@@ -271,10 +275,6 @@
     margin-bottom: 16px;
   }
   
-  .standings-table h2 {
-    margin-bottom: 12px;
-  }
-  
   table {
     width: 100%;
     border-collapse: collapse;
@@ -294,17 +294,6 @@
   
   .user-team {
     background: rgba(var(--team-primary-rgb, 30, 64, 175), 0.1);
-  }
-  
-  .matches-section h2 {
-    margin-bottom: 12px;
-  }
-  
-  .matches-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
   }
   
   .matches-grid {
@@ -350,21 +339,6 @@
     background: var(--bg-tertiary);
     padding: 4px 8px;
     border-radius: 4px;
-  }
-
-  .button-link {
-    background: var(--info);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 6px;
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 600;
-  }
-  
-  .matches-section h3 {
-    margin-bottom: 12px;
-    color: var(--text-secondary);
   }
   
   .tabs {

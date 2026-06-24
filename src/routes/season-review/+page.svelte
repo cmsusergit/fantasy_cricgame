@@ -11,6 +11,8 @@
   let retiringPlayers = $state<Player[]>([]);
   let processing = $state(true);
 
+  let userTeam = $derived($teamStore.find((t: Team) => t.isUserTeam));
+
   onMount(async () => {
     let teams: Team[] = [];
     let players: Player[] = [];
@@ -62,10 +64,12 @@
       <h2>Processing Season Data...</h2>
     </div>
   {:else if awards}
-    <header class="review-header">
-      <h1>Season Completed!</h1>
-      <p class="subtitle">Here is the review of the season</p>
-    </header>
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+      <div style="border-left: 4px solid {userTeam?.colorPrimary || '#1e40af'}; padding-left: 12px;">
+        <h1 style="color: {userTeam?.colorPrimary || '#1e40af'}; margin: 0 0 4px 0; font-size: 1.8rem; line-height: 1.2;">🏆 Season Completed!</h1>
+        <p class="subtitle" style="margin-bottom: 0; font-size: 0.9rem; color: var(--text-secondary);">Here is the review of the season.</p>
+      </div>
+    </div>
 
     <div class="dashboard-grid">
       <!-- Financials & Standings Summary -->
@@ -128,6 +132,43 @@
           </div>
         </section>
       {/if}
+
+      <!-- Team Recalculations / Playstyles -->
+      {#if awards.teamPlaystyleChanges && awards.teamPlaystyleChanges.length > 0}
+        <section class="panel playstyle-panel">
+          <h2>Team Developments</h2>
+          <p class="info-text">Each team's playstyle and overall rating have been recalculated based on player stats and last season's performance.</p>
+          <div class="playstyle-grid">
+            {#each awards.teamPlaystyleChanges as change}
+              <div class="playstyle-item">
+                <div class="team-name">{change.teamName}</div>
+                <div class="change-row">
+                  <div class="change-part">
+                    <span class="change-label">Playstyle</span>
+                    <span class="change-val">
+                      {#if change.oldPlaystyle !== change.newPlaystyle}
+                        <span class="old-val">{change.oldPlaystyle}</span> ➔ <span class="new-val text-accent">{change.newPlaystyle}</span>
+                      {:else}
+                        <span class="new-val">{change.newPlaystyle}</span>
+                      {/if}
+                    </span>
+                  </div>
+                  <div class="change-part">
+                    <span class="change-label">Rating</span>
+                    <span class="change-val stars">
+                      {#if change.oldStars !== change.newStars}
+                        <span class="old-stars">{'⭐'.repeat(change.oldStars)}</span> ➔ <span class="new-stars text-accent">{'⭐'.repeat(change.newStars)}</span>
+                      {:else}
+                        <span class="new-stars">{'⭐'.repeat(change.newStars)}</span>
+                      {/if}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            {/each}
+          </div>
+        </section>
+      {/if}
     </div>
 
     <div class="actions">
@@ -163,22 +204,7 @@
 
   @keyframes spin { 100% { transform: rotate(360deg); } }
 
-  .review-header {
-    text-align: center;
-    margin-bottom: 12px;
-    background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
-    padding: 14px;
-    border-radius: 16px;
-    border: 1px solid var(--border-color);
-  }
 
-  .review-header h1 {
-    font-size: 1rem;
-    color: var(--warning);
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-  }
 
   .dashboard-grid {
     display: grid;
@@ -319,6 +345,82 @@
   .btn-primary:hover {
     transform: translateY(-2px);
     background: #1e702e;
+  }
+
+  .playstyle-panel {
+    grid-column: 1 / -1;
+  }
+
+  .playstyle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .playstyle-item {
+    background: var(--bg-tertiary);
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .playstyle-item .team-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+  }
+
+  .change-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.9rem;
+  }
+
+  .change-part {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .change-label {
+    color: var(--text-secondary);
+  }
+
+  .change-val {
+    font-weight: 500;
+  }
+
+  .old-val {
+    color: var(--text-muted);
+    text-decoration: line-through;
+    text-transform: capitalize;
+  }
+
+  .new-val {
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  .new-val.text-accent {
+    color: var(--color-accent, #06b6d4);
+  }
+
+  .old-stars {
+    color: var(--text-muted);
+    opacity: 0.7;
+  }
+
+  .new-stars {
+    font-weight: bold;
+  }
+
+  .new-stars.text-accent {
+    text-shadow: 0 0 4px var(--color-accent, #06b6d4);
   }
 
   @media (max-width: 900px) {

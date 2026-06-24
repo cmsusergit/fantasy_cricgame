@@ -15,6 +15,7 @@
   import { calculateTeamStrength } from '$lib/core/teamBuilder';
   import { FACTIONS } from '$lib/models/faction';
   import { loadActiveMatch } from '$lib/services/storage';
+  import TeamLogo from '$lib/components/team/TeamLogo.svelte';
   
   let teams: any[] = $state([]);
   let schedule: TournamentSchedule | null = $state(null);
@@ -67,6 +68,11 @@
       ? userTeam.sponsorships.filter((s: any) => s.active).length 
       : 0
   );
+  let expiredSponsorships = $derived(
+    userTeam && userTeam.sponsorships 
+      ? userTeam.sponsorships.filter((s: any) => !s.active) 
+      : []
+  );
 
   $effect(() => {
     if (userTeam && activeSponsorshipsCount < maxSponsors && ($gamePhase === 'tournament' || $gamePhase === 'menu')) {
@@ -90,6 +96,12 @@
     if (!userTeam) return;
     teamStore.addSponsorship(userTeam.id, offer);
     sponsorshipOffers = []; // Clear offers
+  }
+  
+  async function handleDismissExpiredSponsorship(sponsorshipId: string) {
+    if (!userTeam) return;
+    teamStore.removeSponsorship(userTeam.id, sponsorshipId);
+    await saveCurrentGame(budget);
   }
   
   let currentDayGames = $derived(schedule ? getMatchesForDay(schedule, selectedDay) : []);
@@ -707,8 +719,15 @@
 
 <div class="dashboard-page">
   {#if $isFirstLogin}
-    <div class="modal-overlay" style="z-index: 2000; padding: 14px;" onclick={closeWelcomeModal}>
-      <div class="modal-content welcome-modal" onclick={(e) => e.stopPropagation()}>
+    <div
+      class="modal-overlay"
+      style="z-index: 2000; padding: 14px;"
+      onclick={(e) => { if (e.target === e.currentTarget) closeWelcomeModal(); }}
+      onkeydown={(e) => { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') closeWelcomeModal(); }}
+      role="button"
+      tabindex="-1"
+    >
+      <div class="modal-content welcome-modal">
         <h2>Welcome, Manager!</h2>
         <p>You have just taken the reins of a brand new franchise. Before you head into the high-stakes Auction Room to draft your squad, would you like a quick tour of the rules and mechanics?</p>
         <p class="modal-note">Fantasy CricManager features unique tactical mechanics and fantasy faction synergies that are crucial to understand.</p>
@@ -721,6 +740,23 @@
   {/if}
 
   {#if userTeam}
+    {#if expiredSponsorships.length > 0}
+      <div class="sponsorship-alerts-container">
+        {#each expiredSponsorships as expiredSponsor}
+          <div class="sponsorship-alert-banner">
+            <span class="alert-emoji">⚠️</span>
+            <div class="alert-content">
+              <span class="alert-title">Sponsorship Expired</span>
+              <span class="alert-subtext">Your contract with <strong class="text-gold">{expiredSponsor.sponsorName}</strong> has expired! Review the deals below or head to the <a href="/club" class="club-link">Club page</a> to manage facilities.</span>
+            </div>
+            <button class="alert-dismiss-btn" onclick={() => handleDismissExpiredSponsorship(expiredSponsor.id)}>
+              Dismiss Alert
+            </button>
+          </div>
+        {/each}
+      </div>
+    {/if}
+
     <!-- Main Redesigned 3-Column Layout Shell -->
     <div class="dashboard-top-grid">
       
@@ -730,7 +766,7 @@
         <div class="team-profile-card">
           <div class="profile-header">
             <div class="logo-avatar" style="background: linear-gradient(135deg, {userTeam.colorPrimary} 0%, {userTeam.colorSecondary || userTeam.colorPrimary} 100%)" title={userTeam.name}>
-              <span class="logo-emoji">{userTeam.logo || '🛡️'}</span>
+              <TeamLogo logo={userTeam.logo || '🛡️'} size={32} />
             </div>
             <div class="profile-info">
               <h3>{userTeam.name}</h3>
@@ -818,7 +854,7 @@
               <!-- User Team (Home/Away) -->
               <div class="team-side">
                 <div class="team-badge-circle" style="background: linear-gradient(135deg, {userTeam.colorPrimary} 0%, {userTeam.colorSecondary || userTeam.colorPrimary} 100%)" title={userTeam.name}>
-                  <span class="logo-txt">{userTeam.logo || '🛡️'}</span>
+                  <TeamLogo logo={userTeam.logo || '🛡️'} size={36} />
                 </div>
                 <span class="team-title-txt">{userTeam.name}</span>
                 <span class="home-away-lbl">{userNextMatch.team1Id === userTeam.id ? 'HOME' : 'AWAY'}</span>
@@ -833,7 +869,7 @@
               <!-- Opponent Team -->
               <div class="team-side">
                 <div class="team-badge-circle" style="background: linear-gradient(135deg, {opponentTeam?.colorPrimary || '#475569'} 0%, {opponentTeam?.colorSecondary || '#1e293b'} 100%)" title={opponentTeam?.name || 'Opponent'}>
-                  <span class="logo-txt">{getFactionEmoji(opponentTeam?.faction)}</span>
+                  <TeamLogo logo={opponentTeam?.logo || getFactionEmoji(opponentTeam?.faction) || '🛡️'} size={36} />
                 </div>
                 <span class="team-title-txt">{opponentTeam?.name || 'Opponent'}</span>
                 <span class="home-away-lbl">{userNextMatch.team2Id === userTeam.id ? 'HOME' : 'AWAY'}</span>
@@ -931,8 +967,8 @@
               {#if day.hasMatch}
                 <div class="calendar-match-icons">
                   <div class="mini-logo-container">
-                    <span class="mini-logo" title="{day.team1Name} (Home)" style="position: relative; display: inline-block;">
-                      {day.team1Logo}
+                    <span class="mini-logo" title="{day.team1Name} (Home)" style="position: relative; display: inline-block; width: 16px; height: 16px;">
+                      <TeamLogo logo={day.team1Logo} size={16} />
                       <span class="venue-logo-badge home" style="position: absolute; bottom: -4px; right: -4px; font-size: 8px;">🏠</span>
                     </span>
                     {#if day.winnerId === day.team1Id}
@@ -941,8 +977,8 @@
                   </div>
                   <span class="calendar-vs">v</span>
                   <div class="mini-logo-container">
-                    <span class="mini-logo" title="{day.team2Name} (Away)" style="position: relative; display: inline-block;">
-                      {day.team2Logo}
+                    <span class="mini-logo" title="{day.team2Name} (Away)" style="position: relative; display: inline-block; width: 16px; height: 16px;">
+                      <TeamLogo logo={day.team2Logo} size={16} />
                       <span class="venue-logo-badge away" style="position: absolute; bottom: -4px; right: -4px; font-size: 8px;">✈️</span>
                     </span>
                     {#if day.winnerId === day.team2Id}
@@ -1091,8 +1127,15 @@
 
 <!-- Match Result Modal for Auto-Simulate -->
 {#if showMatchResultModal}
-  <div class="modal-overlay" style="z-index: 1000; padding: 14px;" onclick={closeMatchResultModal}>
-    <div class="modal-content match-result-modal-box" onclick={(e) => e.stopPropagation()}>
+  <div
+    class="modal-overlay"
+    style="z-index: 1000; padding: 14px;"
+    onclick={(e) => { if (e.target === e.currentTarget) closeMatchResultModal(); }}
+    onkeydown={(e) => { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') closeMatchResultModal(); }}
+    role="button"
+    tabindex="-1"
+  >
+    <div class="modal-content match-result-modal-box">
        <div class="modal-header">
          <h2>Match Result</h2>
          <button class="btn-cancel" onclick={closeMatchResultModal}>Close & Continue</button>
@@ -1132,6 +1175,89 @@
 {/if}
 
 <style>
+  .sponsorship-alerts-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 8px;
+    width: 100%;
+  }
+
+  .sponsorship-alert-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(245, 158, 11, 0.08) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-left: 4px solid #ef4444;
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .alert-emoji {
+    font-size: 20px;
+    margin-right: 12px;
+  }
+
+  .alert-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+  }
+
+  .alert-title {
+    font-weight: 700;
+    color: #ef4444;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+
+  .alert-subtext {
+    color: var(--text-primary);
+    line-height: 1.4;
+  }
+
+  .alert-subtext .club-link {
+    color: var(--warning);
+    text-decoration: underline;
+    font-weight: 600;
+  }
+
+  .alert-subtext .club-link:hover {
+    color: #fbbf24;
+  }
+
+  .alert-dismiss-btn {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 16px;
+    white-space: nowrap;
+  }
+
+  .alert-dismiss-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #ef4444;
+    transform: translateY(-1px);
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   /* Premium CricMGR Stylesheet matching ttyy.png */
   .dashboard-page {
     width: 100%;
@@ -1802,31 +1928,6 @@
 
   .active-today .day-num-lbl {
     color: var(--accent-gold);
-  }
-
-  .day-icon-circle {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.03);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(148, 163, 184, 0.05);
-  }
-
-  :global([data-theme="light"]) .day-icon-circle {
-    background: rgba(15, 23, 42, 0.02);
-    border-color: rgba(15, 23, 42, 0.04);
-  }
-
-  .active-today .day-icon-circle {
-    background: rgba(245, 158, 11, 0.1);
-    border-color: rgba(245, 158, 11, 0.2);
-  }
-
-  .icon-emoji {
-    font-size: 16px;
   }
 
   .outcome-badge {

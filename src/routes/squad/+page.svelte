@@ -117,6 +117,11 @@
   }
   
   function togglePlayerSelection(player: Player) {
+    if (player.activeInjury) {
+      saveMessage = `⚠️ ${player.name} is injured (${player.activeInjury.name || 'Injured'}) and must rest!`;
+      setTimeout(() => saveMessage = '', 3000);
+      return;
+    }
     const playerId = player.id;
     if (playing11.includes(playerId)) {
       playing11 = playing11.filter(id => id !== playerId);
@@ -131,8 +136,9 @@
   }
 
   function quickSelect() {
-    if (!userTeam || userTeam.players.length < 11) {
-      saveMessage = "Not enough players in roster (need at least 11).";
+    const healthyPlayersCount = userTeam ? userTeam.players.filter((p: any) => !p.activeInjury).length : 0;
+    if (!userTeam || healthyPlayersCount < 12) {
+      saveMessage = "⚠️ Not enough healthy players (need at least 12 healthy players: 11 playing + 1 reserve).";
       setTimeout(() => saveMessage = '', 3000);
       return;
     }
@@ -141,7 +147,7 @@
     captain = '';
     wicketKeeper = '';
 
-    const players = [...userTeam.players] as Player[];
+    const players = [...userTeam.players].filter(p => !p.activeInjury) as Player[];
     
     players.sort((a, b) => {
       const aScore = a.stats.batting + a.stats.bowling + a.stats.technique + a.stats.power;
@@ -185,7 +191,13 @@
     const wkCandidate = players.find(p => playing11.includes(p.id) && (p.role === 'wicketkeeper' || p.special.isWicketKeeper));
     wicketKeeper = wkCandidate ? wkCandidate.id : playing11[0];
 
-    const reserveCandidate = players.find(p => !selected.has(p.id));
+    const remaining = players.filter(p => !selected.has(p.id));
+    remaining.sort((a, b) => {
+      const aScore = a.stats.batting + a.stats.bowling + a.stats.technique + a.stats.power;
+      const bScore = b.stats.batting + b.stats.bowling + b.stats.technique + b.stats.power;
+      return bScore - aScore;
+    });
+    const reserveCandidate = remaining[0];
     reservePlayer = reserveCandidate ? reserveCandidate.id : '';
   }
   
@@ -227,14 +239,14 @@
 </svelte:head>
 
 <div class="squad-page">
-  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
     <div style="border-left: 4px solid {userTeam?.colorPrimary}; padding-left: 12px;">
-      <h1 style="color: {userTeam?.colorPrimary};">🛡️ Squad Selection</h1>
-      <p class="subtitle" style="margin-bottom: 0;">Strategize and finalize your playing 11 for the upcoming match.</p>
+      <h1 style="color: {userTeam?.colorPrimary}; margin: 0 0 4px 0; font-size: 1.8rem; line-height: 1.2;">🛡️ Squad Selection</h1>
+      <p class="subtitle" style="margin-bottom: 0; font-size: 0.9rem; color: var(--text-secondary);">Strategize and finalize your playing 11 for the upcoming match.</p>
     </div>
     <div style="text-align: right;">
-      <span style="font-size: 0.9rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Roster Size</span>
-      <div style="font-size: 1rem; font-family: var(--font-fantasy); font-weight: bold; color: {userTeam?.colorPrimary};">
+      <span style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Roster Size</span>
+      <div style="font-size: 1.25rem; font-family: var(--font-fantasy); font-weight: bold; color: {userTeam?.colorPrimary};">
         {userTeam?.players.length || 0} <span style="font-size: 1rem; color: var(--text-muted);">/ {MAX_SQUAD_SIZE}</span>
       </div>
     </div>
@@ -544,8 +556,8 @@
                       />
                     </td>
                     <td style="text-align: center;">
-                      <button class="btn-select" style="background: var(--color-accent); color: white; border-color: var(--color-accent);" disabled={playing11.length >= 11} onclick={() => togglePlayerSelection(p)}>
-                        Add
+                      <button class="btn-select" style="background: {p.activeInjury ? '#ef4444' : 'var(--color-accent)'}; color: white; border-color: {p.activeInjury ? '#ef4444' : 'var(--color-accent)'};" disabled={playing11.length >= 11 || !!p.activeInjury} onclick={() => togglePlayerSelection(p)}>
+                        {p.activeInjury ? 'Injured' : 'Add'}
                       </button>
                     </td>
                   </tr>

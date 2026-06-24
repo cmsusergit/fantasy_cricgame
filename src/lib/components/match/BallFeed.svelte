@@ -12,9 +12,13 @@
   {#each events.slice(-20).reverse() as event (event)}
     <div class="ball-event" class:wicket={event.isWicket} class:four={event.result === 'four'} class:six={event.result === 'six'}>
       <span class="ball-number">{event.over}.{event.ball}</span>
-      <span class="runs" class:dot={event.runs === 0}>
+      <span class="runs" class:dot={event.runs === 0} class:extra={event.result === 'wide' || event.result === 'noball'}>
         {#if event.isWicket}
           W
+        {:else if event.result === 'wide'}
+          {event.runs}wd
+        {:else if event.result === 'noball'}
+          {event.runs}nb
         {:else}
           {event.runs}
         {/if}
@@ -79,6 +83,11 @@
   .runs.dot {
     opacity: 0.7;
     color: var(--text-muted);
+  }
+
+  .runs.extra {
+    background: rgba(234, 179, 8, 0.15);
+    color: #eab308;
   }
 
   .ball-number {

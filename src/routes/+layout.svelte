@@ -2,6 +2,7 @@
   import '../app.css';
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
+  import { gameAudio } from '$lib/services/audio';
   import { page } from '$app/stores';
   import {
     currentDay,
@@ -15,6 +16,7 @@
     TEAM_COLORS
   } from '$lib/stores/gameState';
   import type { Team } from '$lib/models/team';
+  import TeamLogo from '$lib/components/team/TeamLogo.svelte';
 
   let { children } = $props();
 
@@ -22,16 +24,62 @@
   let isResetting = $state(false);
   let newTeamName = $state('Your Team');
   let newManagerName = $state('You');
-  let newCoat = $state('🛡️');
+  let designBgShape = $state('shield');
+  let designBgColor = $state('#1e40af');
+  let designSymbol = $state('valkyrie_helmet');
+  let designSymbolColor = $state('#fbbf24');
+
+  const customLogoString = $derived(`custom|${designBgShape}|${designBgColor}|${designSymbol}|${designSymbolColor}`);
   let teams = $state<Team[]>([]);
   let startWithAuctionOption = $state(false);
   let selectedColorIndex = $state(0);
+
+  let showSettingsModal = $state(false);
+  let showMoreMenu = $state(false);
+  let audioEnabled = $state(false);
+  let crowdVolume = $state(0.5);
+  let dialogueVolume = $state(0.5);
+
+  function openSettings() {
+    audioEnabled = gameAudio.getAudioEnabled();
+    crowdVolume = gameAudio.getCrowdVolume();
+    dialogueVolume = gameAudio.getDialogueVolume();
+    showSettingsModal = true;
+  }
+
+  function closeSettings() {
+    showSettingsModal = false;
+  }
+
+  function handleAudioToggle(e: Event) {
+    const checked = (e.target as HTMLInputElement).checked;
+    audioEnabled = checked;
+    gameAudio.setAudioEnabled(checked);
+  }
+
+  function handleCrowdVolumeChange(e: Event) {
+    const val = parseFloat((e.target as HTMLInputElement).value);
+    crowdVolume = val;
+    gameAudio.setCrowdVolume(val);
+  }
+
+  function handleDialogueVolumeChange(e: Event) {
+    const val = parseFloat((e.target as HTMLInputElement).value);
+    dialogueVolume = val;
+    gameAudio.setDialogueVolume(val);
+  }
 
   const teamAdjectives = ['Mighty', 'Royal', 'Cosmic', 'Thunder', 'Steel', 'Golden', 'Shadow', 'Silver'];
   const teamNouns = ['Lions', 'Eagles', 'Titans', 'Warriors', 'Knights', 'Dragons', 'Strikers', 'Panthers'];
   const managerFirstNames = ['John', 'Mike', 'David', 'Chris', 'James', 'Sarah', 'Emma', 'Alex'];
   const managerLastNames = ['Smith', 'Johnson', 'Brown', 'Taylor', 'Wilson', 'Davis', 'Miller', 'Moore'];
-  const predefinedCoats = ['🛡️', '🦅', '🦁', '🐺', '⚔️', '👑', '🐉', '⚓', '⚡', '🏹'];
+  const designSymbols = [
+    'unicorn', 'dragon_fire', 'dragon_serpent', 'wizard_magic', 'tree_of_life',
+    'ram_horns', 'demon_horns', 'valkyrie_helmet', 'gargoyle_statue', 'gargoyle_wings',
+    'archer_bow', 'elven_bow', 'hunter_bow', 'siren_tail', 'crest_ornament',
+    'crest_filigree', 'shield_filigree', 'crown_filigree', 'star_filigree', 'mystic_symbol',
+    'sword', 'crown', 'lightning', 'star', 'wolf', 'dragon'
+  ];
 
   type NavItem = {
     href: string;
@@ -53,7 +101,8 @@
     { href: '/tournament', label: 'Tournament', accent: 'brand' },
     { href: '/teams', label: 'Teams', accent: 'brand' },
     { href: '/season-review', label: 'Review', accent: 'success', showWhen: (phase: GamePhase) => phase === 'season_end' },
-    { href: '/guide', label: 'Guide', accent: 'warning' }
+    { href: '/guide', label: 'Guide', accent: 'warning' },
+    { href: '#settings', label: 'Settings', accent: 'warning' }
   ];
 
   onMount(() => {
@@ -77,6 +126,22 @@
     navItems.filter((item) => !item.showWhen || item.showWhen($gamePhase))
   );
 
+  const mobilePrimaryItems = $derived(
+    visibleNavItems.filter(item => !['Training', 'Budget', 'Tournament', 'Teams', 'Review', 'Guide', 'Settings'].includes(item.label)).slice(0, 4)
+  );
+
+  const mobileMoreItems = $derived([
+    ...visibleNavItems.filter(item => ['Training', 'Budget', 'Tournament', 'Teams', 'Review', 'Guide', 'Settings'].includes(item.label)),
+    ...visibleNavItems.filter(item => !['Training', 'Budget', 'Tournament', 'Teams', 'Review', 'Guide', 'Settings'].includes(item.label)).slice(4)
+  ]);
+
+  const isMoreActive = $derived(
+    mobileMoreItems.some(item => {
+      if (item.href === '#settings') return showSettingsModal;
+      return isActiveRoute($page.url.pathname, item.href);
+    })
+  );
+
   function randomizeTeam() {
     newTeamName = `${teamAdjectives[Math.floor(Math.random() * teamAdjectives.length)]} ${teamNouns[Math.floor(Math.random() * teamNouns.length)]}`;
   }
@@ -97,7 +162,7 @@
 
   async function confirmReset() {
     await resetGame();
-    await initializeGame(newTeamName || 'Your Team', newManagerName || 'You', newCoat, startWithAuctionOption, selectedColorIndex);
+    await initializeGame(newTeamName || 'Your Team', newManagerName || 'You', customLogoString, startWithAuctionOption, selectedColorIndex);
     await saveCurrentGame(4000000);
     isResetting = false;
     window.location.href = '/';
@@ -157,6 +222,8 @@
         return `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`;
       case 'Guide':
         return `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>`;
+      case 'Settings':
+        return `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`;
       default:
         return `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138z"/></svg>`;
     }
@@ -202,36 +269,27 @@
         </div>
       </div>
 
-      <!-- Vertical Navigation List -->
       <nav class="sidebar-nav" aria-label="Sidebar navigation">
         {#each visibleNavItems as item}
           <a
             href={item.href}
             class="sidebar-nav-item"
-            data-active={isActiveRoute($page.url.pathname, item.href)}
+            data-active={item.href === '#settings' ? showSettingsModal : isActiveRoute($page.url.pathname, item.href)}
+            onclick={(e) => {
+              if (item.href === '#settings') {
+                e.preventDefault();
+                openSettings();
+              }
+            }}
           >
             <span class="nav-icon">{@html getNavIcon(item.label)}</span>
             <span class="nav-label">{item.label}</span>
-            {#if isActiveRoute($page.url.pathname, item.href)}
+            {#if item.href !== '#settings' && isActiveRoute($page.url.pathname, item.href)}
               <span class="active-indicator-dot"></span>
             {/if}
           </a>
         {/each}
       </nav>
-
-      <!-- Footer System Buttons -->
-      <div class="sidebar-footer">
-        <button class="sys-btn" onclick={toggleTheme} title="Toggle theme">
-          {#if theme === 'dark'}
-            <span class="sys-btn-icon">☀</span> Light Mode
-          {:else}
-            <span class="sys-btn-icon">☾</span> Dark Mode
-          {/if}
-        </button>
-        <button class="sys-btn reset-btn-theme" onclick={handleReset} title="Reset game progress">
-          <span class="sys-btn-icon">🔄</span> Reset Game
-        </button>
-      </div>
     </aside>
 
     <!-- Right side content area -->
@@ -248,11 +306,8 @@
         </div>
 
         <div class="mobile-topbar-actions">
-          <button class="m-action-btn" onclick={toggleTheme} title="Theme">
-            {theme === 'dark' ? '☀' : '☾'}
-          </button>
-          <button class="m-action-btn m-reset" onclick={handleReset} title="Reset">
-            🔄
+          <button class="m-action-btn" onclick={openSettings} title="Settings">
+            ⚙️
           </button>
         </div>
       </header>
@@ -264,11 +319,53 @@
             {@render children()}
           </div>
         {/key}
+        
+        <footer class="app-footer" style="margin-top: 40px; padding: 20px 0; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.85rem; color: var(--text-secondary); opacity: 0.8;">
+          <p>© 2026 cmsusergit. All rights reserved.</p>
+        </footer>
       </main>
+
+      <!-- More Menu Drawer (Mobile) -->
+      {#if showMoreMenu}
+        <div
+          class="more-menu-backdrop"
+          onclick={() => (showMoreMenu = false)}
+          onkeydown={(e) => { if (e.key === 'Escape') showMoreMenu = false; }}
+          role="button"
+          tabindex="-1"
+          aria-label="Close menu"
+        ></div>
+
+        <div class="more-menu-drawer surface-strong" transition:fade={{ duration: 150 }}>
+          <div class="more-menu-header">
+            <h3>More Features</h3>
+            <button class="more-menu-close" onclick={() => showMoreMenu = false}>✕</button>
+          </div>
+          <div class="more-menu-grid">
+            {#each mobileMoreItems as item}
+              <a
+                href={item.href}
+                class="more-menu-item"
+                onclick={(e) => {
+                  showMoreMenu = false;
+                  if (item.href === '#settings') {
+                    e.preventDefault();
+                    openSettings();
+                  }
+                }}
+                data-active={item.href === '#settings' ? showSettingsModal : isActiveRoute($page.url.pathname, item.href)}
+              >
+                <span class="more-icon">{@html getNavIcon(item.label)}</span>
+                <span class="more-label">{item.label}</span>
+              </a>
+            {/each}
+          </div>
+        </div>
+      {/if}
 
       <!-- Mobile Bottom Tab Navigation -->
       <nav class="mobile-nav-bar" aria-label="Mobile navigation">
-        {#each visibleNavItems.slice(0, 5) as item}
+        {#each mobilePrimaryItems as item}
           <a
             href={item.href}
             class="mobile-nav-tab"
@@ -278,6 +375,23 @@
             <span class="tab-label">{item.label}</span>
           </a>
         {/each}
+        {#if mobileMoreItems.length > 0}
+          <button
+            class="mobile-nav-tab more-toggle-btn"
+            data-active={isMoreActive}
+            onclick={() => (showMoreMenu = !showMoreMenu)}
+            aria-label="More options"
+            aria-expanded={showMoreMenu}
+            type="button"
+          >
+            <span class="tab-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+              </svg>
+            </span>
+            <span class="tab-label">More</span>
+          </button>
+        {/if}
       </nav>
     </div>
   </div>
@@ -312,27 +426,78 @@
           </div>
         </div>
 
-        <div class="field-group">
-          <label class="small-label">Coat of Arms</label>
-          <div class="command-row" style="flex-wrap: wrap;">
-            {#each predefinedCoats as coat}
-              <button
-                class="btn-secondary"
-                class:is-active={newCoat === coat}
-                onclick={() => (newCoat = coat)}
-                style="font-size: 1.35rem; width: 3rem; height: 3rem; padding: 0;"
-                aria-label={`Select ${coat}`}
-              >
-                {coat}
-              </button>
-            {/each}
+        <div class="designer-panel surface-strong" style="padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px;">
+          
+          <div style="display: flex; gap: 16px; align-items: center; justify-content: center; padding: 10px; background: rgba(0,0,0,0.25); border-radius: 6px; border: 1px solid rgba(255,255,255,0.03);">
+            <span class="small-label" style="margin-bottom: 0; font-weight: bold; color: var(--text-primary);">Emblem Preview:</span>
+            <div style="width: 84px; height: 84px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03); border-radius: 50%; border: 1px solid var(--border-color);">
+              <TeamLogo logo={customLogoString} size={72} />
+            </div>
           </div>
-          <input id="logoUrl" type="text" bind:value={newCoat} placeholder="Or enter a custom emoji or character" />
+
+          <!-- Shape Selector -->
+          <div>
+            <span class="small-label">Base Shape</span>
+            <div class="command-row" style="flex-wrap: wrap; gap: 6px; margin-top: 4px;">
+              {#each ['shield', 'circle', 'diamond', 'hexagon'] as shape}
+                <button
+                  class="btn-secondary"
+                  class:is-active={designBgShape === shape}
+                  onclick={() => designBgShape = shape}
+                  style="flex: 1; text-transform: capitalize; padding: 6px 12px; font-size: 0.85rem; height: auto;"
+                  type="button"
+                >
+                  {shape}
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          <!-- Symbol Selector -->
+          <div>
+            <span class="small-label">Emblem Symbol</span>
+            <div style="max-height: 180px; overflow-y: auto; padding: 6px; border: 1px solid rgba(148, 163, 184, 0.08); border-radius: 6px; background: rgba(0,0,0,0.15); margin-top: 4px;">
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; justify-items: center;">
+                {#each designSymbols as symbol}
+                  <button
+                    class="btn-secondary"
+                    class:is-active={designSymbol === symbol}
+                    onclick={() => designSymbol = symbol}
+                    style="width: 48px; height: 48px; padding: 0; display: flex; align-items: center; justify-content: center;"
+                    title={symbol.replace('_', ' ')}
+                    type="button"
+                  >
+                    <TeamLogo logo={`custom|shield|#1e293b|${symbol}|#cbd5e1`} size={46} />
+                  </button>
+                {/each}
+              </div>
+            </div>
+          </div>
+
+          <!-- Color Options -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <span class="small-label">Base Color</span>
+              <div class="color-picker-row" style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+                <input type="color" bind:value={designBgColor} style="width: 2.2rem; height: 2.2rem; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; background: none; padding: 0;" />
+                <input type="text" bind:value={designBgColor} style="flex: 1; height: 2.2rem; font-size: 0.85rem; padding: 4px 8px; border-radius: 4px;" />
+              </div>
+            </div>
+            
+            <div>
+              <span class="small-label">Symbol Color</span>
+              <div class="color-picker-row" style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+                <input type="color" bind:value={designSymbolColor} style="width: 2.2rem; height: 2.2rem; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; background: none; padding: 0;" />
+                <input type="text" bind:value={designSymbolColor} style="flex: 1; height: 2.2rem; font-size: 0.85rem; padding: 4px 8px; border-radius: 4px;" />
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- Start Mode Selection -->
         <div class="field-group">
-          <label class="small-label">Starting Setup</label>
+          <span class="small-label">Starting Setup</span>
           <div class="command-row" style="gap: 16px; margin-top: 4px;">
             <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; color: var(--text-primary);">
               <input type="radio" name="startMode" checked={!startWithAuctionOption} onchange={() => startWithAuctionOption = false} style="width: 1rem; height: 1rem; accent-color: var(--color-accent);" />
@@ -347,7 +512,7 @@
 
         <!-- Color Scheme Selection -->
         <div class="field-group" style="margin-bottom: 0.75rem;">
-          <label class="small-label">Team Color Scheme</label>
+          <span class="small-label">Team Color Scheme</span>
           <div class="command-row" style="flex-wrap: wrap; gap: 8px; margin-top: 4px;">
             {#each TEAM_COLORS as color, idx}
               <button
@@ -367,6 +532,82 @@
         <div class="command-row" style="justify-content: flex-end; margin-top: 0.5rem;">
           <button class="btn-secondary" onclick={cancelReset}>Cancel</button>
           <button class="btn-primary" onclick={confirmReset}>Start New Game</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if showSettingsModal}
+  <div
+    class="modal-backdrop"
+    onclick={(e) => { if (e.target === e.currentTarget) closeSettings(); }}
+    onkeydown={(e) => { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') closeSettings(); }}
+    role="button"
+    tabindex="-1"
+  >
+    <div class="modal-card surface-strong" style="max-width: 420px; width: 90%;">
+      <div class="section-title" style="margin-bottom: 1.25rem;">
+        <div>
+          <p class="eyebrow">Settings</p>
+          <h2>Preferences & Audio</h2>
+        </div>
+      </div>
+
+      <div class="stack" style="gap: 1.25rem;">
+        <!-- Theme Setting -->
+        <div class="field-group">
+          <span class="small-label">Color Theme</span>
+          <button class="btn-secondary" onclick={toggleTheme} style="width: 100%; text-align: left; justify-content: flex-start; gap: 8px;">
+            {#if theme === 'dark'}
+              <span class="sys-btn-icon">☀</span> Light Mode
+            {:else}
+              <span class="sys-btn-icon">☾</span> Dark Mode
+            {/if}
+          </button>
+        </div>
+
+        <!-- Audio Enabled -->
+        <div class="field-group" style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-bottom: 0;">
+          <span class="small-label" style="margin-bottom: 0;">Enable Game Sound</span>
+          <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; user-select: none;">
+            <input type="checkbox" checked={audioEnabled} onchange={handleAudioToggle} style="opacity: 0; width: 0; height: 0;" />
+            <span class="slider-toggle" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: {audioEnabled ? 'var(--color-accent)' : 'var(--border-color)'}; transition: .3s; border-radius: 24px; display: flex; align-items: center; padding: 2px;">
+              <span style="width: 20px; height: 20px; border-radius: 50%; background-color: white; transition: .3s; transform: translateX({audioEnabled ? '20px' : '0px'});"></span>
+            </span>
+          </label>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 1rem; opacity: {audioEnabled ? 1 : 0.5}; pointer-events: {audioEnabled ? 'auto' : 'none'}; transition: opacity 0.2s; border-top: 1px dashed var(--border-color); padding-top: 1.25rem;">
+          <!-- Crowd Volume -->
+          <div class="field-group" style="margin-bottom: 0;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-family: var(--font-fantasy); text-transform: uppercase; letter-spacing: 0.16em;">
+              <span>Crowd Cheer & Groan</span>
+              <span class="text-gold">{Math.round(crowdVolume * 100)}%</span>
+            </div>
+            <input type="range" min="0" max="1" step="0.05" value={crowdVolume} oninput={handleCrowdVolumeChange} style="width: 100%; accent-color: var(--color-accent); cursor: pointer;" aria-label="Crowd volume slider" />
+          </div>
+
+          <!-- Dialogue Volume -->
+          <div class="field-group" style="margin-bottom: 0;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-family: var(--font-fantasy); text-transform: uppercase; letter-spacing: 0.16em;">
+              <span>Commentary Voice (TTS)</span>
+              <span class="text-gold">{Math.round(dialogueVolume * 100)}%</span>
+            </div>
+            <input type="range" min="0" max="1" step="0.05" value={dialogueVolume} oninput={handleDialogueVolumeChange} style="width: 100%; accent-color: var(--color-accent); cursor: pointer;" aria-label="Commentary voice volume slider" />
+          </div>
+        </div>
+
+        <!-- System Reset -->
+        <div class="field-group" style="border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-bottom: 0;">
+          <span class="small-label">System Actions</span>
+          <button class="btn-secondary reset-btn-theme" onclick={() => { closeSettings(); handleReset(); }} style="width: 100%; text-align: left; justify-content: flex-start; gap: 8px; color: var(--color-danger); border-color: rgba(239, 68, 68, 0.2);">
+            <span class="sys-btn-icon">🔄</span> Reset Game progress
+          </button>
+        </div>
+
+        <div class="command-row" style="justify-content: flex-end; margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button class="btn-primary" onclick={closeSettings} style="min-width: 80px;">Save & Close</button>
         </div>
       </div>
     </div>
@@ -557,35 +798,6 @@
     box-shadow: 0 0 8px #06b6d4;
   }
 
-  .sidebar-footer {
-    padding: 12px;
-    border-top: 1px solid rgba(148, 163, 184, 0.06);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .sys-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(148, 163, 184, 0.05);
-    color: var(--text-secondary);
-    font-size: 12px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
-  }
-
-  .sys-btn:hover {
-    background: rgba(6, 182, 212, 0.08);
-    border-color: rgba(6, 182, 212, 0.15);
-    color: var(--text-primary);
-  }
-
   .sys-btn-icon {
     font-size: 14px;
   }
@@ -770,21 +982,6 @@
     color: #0891b2;
   }
 
-  :global([data-theme="light"]) .sidebar-footer {
-    border-top: 1px solid rgba(15, 23, 42, 0.06);
-  }
-
-  :global([data-theme="light"]) .sys-btn {
-    background: rgba(15, 23, 42, 0.02);
-    border: 1px solid rgba(15, 23, 42, 0.05);
-  }
-
-  :global([data-theme="light"]) .sys-btn:hover {
-    background: rgba(6, 182, 212, 0.06);
-    border-color: rgba(6, 182, 212, 0.16);
-    color: #0891b2;
-  }
-
   :global([data-theme="light"]) .mobile-topbar {
     background: #ffffff;
     border-bottom: 1px solid rgba(15, 23, 42, 0.08);
@@ -811,6 +1008,149 @@
 
   :global([data-theme="light"]) .mobile-nav-tab[data-active="true"] {
     color: #0891b2;
+  }
+
+  /* Mobile More Menu Drawer */
+  .more-menu-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 97;
+  }
+
+  .more-menu-drawer {
+    position: fixed;
+    bottom: 60px;
+    left: 0;
+    right: 0;
+    background: rgba(8, 13, 22, 0.96);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(148, 163, 184, 0.1);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    padding: 16px;
+    z-index: 98;
+    max-height: 60vh;
+    overflow-y: auto;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .more-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+    padding-bottom: 8px;
+  }
+
+  .more-menu-header h3 {
+    font-size: 14px;
+    font-family: var(--font-fantasy);
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+  }
+
+  .more-menu-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .more-menu-close:hover {
+    color: var(--text-primary);
+  }
+
+  .more-menu-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .more-menu-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 6px;
+    border-radius: 8px;
+    border: 1px solid rgba(148, 163, 184, 0.05);
+    background: rgba(255, 255, 255, 0.02);
+    text-decoration: none;
+    color: var(--text-secondary);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .more-menu-item:hover,
+  .more-menu-item[data-active="true"] {
+    background: rgba(6, 182, 212, 0.12);
+    border-color: rgba(6, 182, 212, 0.22);
+    color: #06b6d4;
+    font-weight: 600;
+  }
+
+  .more-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+  }
+
+  .more-icon :global(svg) {
+    width: 20px;
+    height: 20px;
+  }
+
+  .more-label {
+    font-family: var(--font-fantasy);
+    font-size: 11px;
+    text-align: center;
+  }
+
+  /* Light Theme overrides for More Menu */
+  :global([data-theme="light"]) .more-menu-drawer {
+    background: rgba(255, 255, 255, 0.98);
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.15);
+  }
+
+  :global([data-theme="light"]) .more-menu-header {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  }
+
+  :global([data-theme="light"]) .more-menu-header h3 {
+    color: #0f172a;
+  }
+
+  :global([data-theme="light"]) .more-menu-item {
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    background: rgba(15, 23, 42, 0.01);
+    color: var(--text-secondary);
+  }
+
+  :global([data-theme="light"]) .more-menu-item:hover,
+  :global([data-theme="light"]) .more-menu-item[data-active="true"] {
+    background: rgba(6, 182, 212, 0.08);
+    border-color: rgba(6, 182, 212, 0.16);
+    color: #0891b2;
+  }
+
+  .mobile-nav-tab.more-toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    padding: 0;
   }
 </style>
 

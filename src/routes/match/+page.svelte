@@ -60,6 +60,7 @@
   let speed = $state<'instant' | 'ball' | 'over'>('instant');
   let autoPlayDelay = $state<number>(1000);
   let targetOver = $state<number>(15);
+  let suppressCommentaryAudio = $state(false);
   
   type SimTarget = { type: 'innings' | 'over' | 'specific_over' | 'wicket', value?: number } | null;
   let simulationTarget = $state<SimTarget>(null);
@@ -387,6 +388,11 @@
       
       if (!userWon) {
          tossChoice = Math.random() > 0.5 ? 'bat' : 'bowl';
+         const winnerName = getTeamName(tossWinner);
+         const text = `${winnerName} won the toss and elected to ${tossChoice === 'bat' ? 'bat' : 'bowl'} first.`;
+         if (gameSpeed !== 'instant') {
+           gameAudio.speakCommentary(text);
+         }
          setTimeout(() => {
             if (tossChoice === 'bat') {
                 startGame(tossWinner!);
@@ -394,6 +400,10 @@
                 startGame('user_team');
             }
          }, 3000);
+      } else {
+         if (gameSpeed !== 'instant') {
+           gameAudio.speakCommentary("You have won the toss! Choose whether to bat or bowl first.");
+         }
       }
       isTossing = false;
     }, 1500);
@@ -414,15 +424,26 @@
     currentBowlerIndex = 0;
     target = 0;
     checkInitialSelection();
+
+    if (gameSpeed !== 'instant') {
+      gameAudio.speakCommentary(`The match is about to begin. ${battingTeamObj.name} will bat first.`);
+    }
   }
 
   function userChooseToBat() {
+    if (gameSpeed !== 'instant') {
+      gameAudio.speakCommentary("You won the toss and elected to bat first.");
+    }
     startGame('user_team');
   }
 
   function userChooseToBowl() {
     if (!matchTeam1 || !matchTeam2) return;
     const aiTeamId = matchTeam1.id === 'user_team' ? matchTeam2.id : matchTeam1.id;
+    const aiTeamName = getTeamName(aiTeamId);
+    if (gameSpeed !== 'instant') {
+      gameAudio.speakCommentary(`You won the toss and elected to bowl first. ${aiTeamName} will bat first.`);
+    }
     startGame(aiTeamId);
   }
   
@@ -483,6 +504,24 @@
       const winnerId = t1Won ? innings1.teamId : t2Won ? innings2.teamId : 'draw';
       const score1 = currentMatch.team1Id === innings1.teamId ? innings1.totalRuns : innings2.totalRuns;
       const score2 = currentMatch.team2Id === innings2.teamId ? innings2.totalRuns : innings1.totalRuns;
+
+      let matchCommentary = '';
+      if (winnerId === 'draw') {
+        matchCommentary = `The match has ended in a tie! What an unbelievable result!`;
+      } else {
+        const winnerObj = winnerId === team1.id ? team1 : team2;
+        if (winnerId === innings1.teamId) {
+          const runsDiff = Math.abs(innings1.totalRuns - innings2.totalRuns);
+          matchCommentary = `That is it! ${winnerObj.name} won the match by ${runsDiff} runs! What a superb win!`;
+        } else {
+          const wicketsRemaining = 10 - innings2.wickets;
+          matchCommentary = `It's all over! ${winnerObj.name} chased down the target and won the match by ${wicketsRemaining} wickets! Spectacular run chase!`;
+        }
+      }
+
+      if (!suppressCommentaryAudio && gameSpeed !== 'instant') {
+        gameAudio.speakCommentary(matchCommentary);
+      }
 
       // RESOLVE MATCH FIRST — mutates morale/form on local refs
       const result = resolveMatch(team1, team2, innings1, innings2, currentMatch.team1Id);
@@ -775,7 +814,7 @@
       });
       const impactId = reserves[0].id;
 
-      const playing11PlayersList = aiTeam.players.filter(p => p11.includes(p.id));
+      const playing11PlayersList = aiTeam.players.filter(p => p11.includes(p.id) && !currentInn.currentBatsmen.includes(p.id) && p.id !== currentLiveBowlerId);
       playing11PlayersList.sort((a, b) => {
         if (roleToBringIn === 'batsman') {
           return a.stats.batting - b.stats.batting;
@@ -874,6 +913,7 @@
   
     const currentInn = currentInnings === 1 ? innings1 : innings2;
     const strikerId = currentInn.currentBatsmen[0];
+    const runsBefore = getBatsmanStats(strikerId).runs;
     const striker = currentBattingTeam.players.find(p => p.id === strikerId);
     
     const bowlers = getBowlers(currentBowlingTeam);
@@ -920,14 +960,15 @@
     const bowlingFieldingAvg = currentBowlingTeam.players.filter(p => getPlaying11(currentBowlingTeam).includes(p.id)).reduce((sum, p) => sum + (p.stats.fielding || 60), 0) / 11;
 
     if (!currentInn.batsmanConcentration) currentInn.batsmanConcentration = {};
-    if (currentInn.batsmanConcentration[strikerId] === undefined) currentInn.batsmanConcentration[strikerId] = 0;
+    if (currentInn.batsmanConcentration[strikerId] === undefined) currentInn.batsmanConcentration[strikerId] = 50;
     let conc = currentInn.batsmanConcentration[strikerId];
-    let concMult = 1.0 + (conc / 100) * 0.15;
+    // Scale stats from 80% to 120% based on confidence (0-100)
+    let concMult = 0.8 + (conc / 100) * 0.40;
 
     if (!currentInn.bowlerRhythm) currentInn.bowlerRhythm = {};
-    if (currentInn.bowlerRhythm[bowlerId] === undefined) currentInn.bowlerRhythm[bowlerId] = 0;
+    if (currentInn.bowlerRhythm[bowlerId] === undefined) currentInn.bowlerRhythm[bowlerId] = 50;
     let rhythm = currentInn.bowlerRhythm[bowlerId];
-    let rhythmMult = 1.0 + (rhythm / 100) * 0.15;
+    let rhythmMult = 0.8 + (rhythm / 100) * 0.40;
 
     const ballEvent = resolveBall(striker, bowler, currentInn.balls, totalOvers, currentActiveBattingIntent, weather as any, pitch as any, 0, freeHitActive, currentActiveBowlingIntent, avoidSingles, bowlingFieldingAvg, currentBallType, concMult, rhythmMult, getPlaying11(currentBowlingTeam));
 
@@ -940,20 +981,24 @@
       freeHitActive = false;
     }
 
+    // Morale & Form impact the rate of confidence increase/decrease
+    const strikerMoraleFormMult = Math.max(0.2, Math.min(2.0, 1.0 + ((striker.morale - 50) / 100) + (striker.form / 20)));
+    const bowlerMoraleFormMult = Math.max(0.2, Math.min(2.0, 1.0 + ((bowler.morale - 50) / 100) + (bowler.form / 20)));
+
     if (ballEvent.result === 'dot') {
        conc = Math.max(0, conc - 5);
-       rhythm = Math.min(100, rhythm + 5);
+       rhythm = Math.min(100, rhythm + (5 * bowlerMoraleFormMult));
     } else if (ballEvent.runs === 4 || ballEvent.runs === 6) {
-       conc = Math.min(100, conc + 15);
+       conc = Math.min(100, conc + (15 * strikerMoraleFormMult));
        rhythm = Math.max(0, rhythm - 10);
     } else if (ballEvent.runs > 0) {
-       conc = Math.min(100, conc + 5);
+       conc = Math.min(100, conc + (5 * strikerMoraleFormMult));
     }
     if (ballEvent.result === 'wide' || ballEvent.result === 'noball') {
        rhythm = Math.max(0, rhythm - 5);
     }
     if (ballEvent.isWicket) {
-       rhythm = Math.min(100, rhythm + 25);
+       rhythm = Math.min(100, rhythm + (25 * bowlerMoraleFormMult));
     }
 
     currentInn.batsmanConcentration[strikerId] = conc;
@@ -1069,12 +1114,60 @@
     if (currentInnings === 1) innings1 = updatedInn;
     else innings2 = updatedInn;
 
+    const runsAfter = getBatsmanStats(strikerId).runs;
+
+    let milestoneMessage = '';
+    if (runsBefore < 50 && runsAfter >= 50) {
+      milestoneMessage = `${striker.name} reaches fifty! A fantastic half century!`;
+    } else if (runsBefore < 100 && runsAfter >= 100) {
+      milestoneMessage = `Century for ${striker.name}! A spectacular hundred!`;
+    }
+
+    if (!suppressCommentaryAudio && gameSpeed !== 'instant') {
+      if (milestoneMessage) {
+        gameAudio.speakCommentary(milestoneMessage);
+      } else if (ballEvent.isWicket) {
+        const wicketComments = [
+          `Out! Wicket falls! ${striker.name} is out.`,
+          `Got him! ${striker.name} is dismissed!`,
+          `Wicket! Huge breakthrough for ${currentBowlingTeam.name}!`,
+          `${striker.name} is walking back! Big wicket!`
+        ];
+        const comment = wicketComments[Math.floor(Math.random() * wicketComments.length)];
+        gameAudio.speakCommentary(comment);
+      } else if (ballEvent.runs === 4) {
+        const fourComments = [
+          `Four runs! Shot of a batsman in form by ${striker.name}!`,
+          `${striker.name} finds the boundary! That is a lovely four!`,
+          `Smacked away through the covers for four!`,
+          `Cracking shot! No chance for the outfielders, four runs!`
+        ];
+        const comment = fourComments[Math.floor(Math.random() * fourComments.length)];
+        gameAudio.speakCommentary(comment);
+      } else if (ballEvent.runs === 6) {
+        const sixComments = [
+          `Six runs! Over the fence and into the crowd, what a shot by ${striker.name}!`,
+          `Cleanly struck! That is a monstrous six from ${striker.name}!`,
+          `It is high! It is far! It is six runs!`,
+          `Smacked! That's a massive six!`
+        ];
+        const comment = sixComments[Math.floor(Math.random() * sixComments.length)];
+        gameAudio.speakCommentary(comment);
+      } else if (ballEvent.result === 'noball') {
+        gameAudio.speakCommentary("No ball! Free hit coming up!");
+      }
+    }
+
     if (currentInnings === 1 && (nextOvers >= totalOvers || nextWickets >= 10 || nextWickets >= currentInn.battingOrder.length - 1)) {
         currentInnings = 2;
         target = updatedInn.totalRuns + 1;
         currentBowlerIndex = 0;
         phase = 'inningBreak';
         if (ballInterval) clearInterval(ballInterval);
+
+        if (!suppressCommentaryAudio && gameSpeed !== 'instant') {
+          gameAudio.speakCommentary(`End of innings one. ${currentBattingTeam.name} scored ${updatedInn.totalRuns} runs. The target for ${currentBowlingTeam.name} is ${target} runs.`);
+        }
         return true;
     } else if (currentInnings === 2 && (updatedInn.totalRuns >= target || nextOvers >= totalOvers || nextWickets >= 10 || nextWickets >= currentInn.battingOrder.length - 1)) {
         finishMatch();
@@ -1163,11 +1256,13 @@
 
   function playSingleOverAction() {
     if (phase === 'playing') return;
+    suppressCommentaryAudio = true;
     for (let i = 0; i < 6; i++) {
       if (isComplete) break;
       const phaseChanged = executeSingleBall();
       if (phaseChanged) break;
     }
+    suppressCommentaryAudio = false;
   }
 
   function getAvailableBatsmen() {
@@ -1403,6 +1498,19 @@
       return INTENT_LABELS[intent] || 'Neutral';
   }
   
+  function getPlayerMatchConfidence(p: any): number {
+    if (!p) return 50;
+    if (currentInningsData) {
+      if (currentInningsData.batsmanConcentration && currentInningsData.batsmanConcentration[p.id] !== undefined) {
+        return currentInningsData.batsmanConcentration[p.id];
+      }
+      if (currentInningsData.bowlerRhythm && currentInningsData.bowlerRhythm[p.id] !== undefined) {
+        return currentInningsData.bowlerRhythm[p.id];
+      }
+    }
+    return p.morale || 50;
+  }
+
   let currentActiveBattingIntent = $derived(currentInningsData.currentBatsmen[0] ? (batsmanIntents[currentInningsData.currentBatsmen[0]] || 'balanced') : 'balanced');
   let currentActiveBowlingIntent = $derived(currentLiveBowlerId ? (bowlerIntents[currentLiveBowlerId] || 'balanced') : 'balanced');
 
@@ -1557,8 +1665,8 @@
                       {#if idx > 0 && ball.over !== recentBalls[idx - 1].over}
                         <div class="over-separator" style="width: 2px; height: 18px; background-color: var(--border-color); margin: 0 4px; align-self: center;"></div>
                       {/if}
-                      <div class="bubble {ball.isWicket ? 'wicket' : ball.runs === 4 ? 'four' : ball.runs === 6 ? 'six' : ball.runs === 0 ? 'dot' : 'runs'}">
-                        {ball.isWicket ? 'W' : ball.runs}
+                      <div class="bubble {ball.isWicket ? 'wicket' : (ball.result === 'wide' || ball.result === 'noball') ? 'extra' : ball.runs === 4 ? 'four' : ball.runs === 6 ? 'six' : ball.runs === 0 ? 'dot' : 'runs'}">
+                        {ball.isWicket ? 'W' : ball.result === 'wide' ? `${ball.runs}wd` : ball.result === 'noball' ? `${ball.runs}nb` : ball.runs}
                       </div>
                     {/each}
                   </div>
@@ -1725,8 +1833,8 @@
                     {#if idx > 0 && ball.over !== recentBalls[idx - 1].over}
                       <div class="over-separator" style="width: 2px; height: 18px; background-color: var(--border-color); margin: 0 4px; align-self: center;"></div>
                     {/if}
-                    <div class="bubble {ball.isWicket ? 'wicket' : ball.runs === 4 ? 'four' : ball.runs === 6 ? 'six' : ball.runs === 0 ? 'dot' : 'runs'}">
-                      {ball.isWicket ? 'W' : ball.runs}
+                    <div class="bubble {ball.isWicket ? 'wicket' : (ball.result === 'wide' || ball.result === 'noball') ? 'extra' : ball.runs === 4 ? 'four' : ball.runs === 6 ? 'six' : ball.runs === 0 ? 'dot' : 'runs'}">
+                      {ball.isWicket ? 'W' : ball.result === 'wide' ? `${ball.runs}wd` : ball.result === 'noball' ? `${ball.runs}nb` : ball.runs}
                     </div>
                   {/each}
                 </div>
@@ -1856,7 +1964,7 @@
                                 <span class="bar-title">Conf</span>
                               </div>
                               <div class="mini-bar-track">
-                                <div class="mini-bar-fill confidence" style="width: {p.morale}%; background-color: {getBarColor(p.morale)};"></div>
+                                <div class="mini-bar-fill confidence" style="width: {getPlayerMatchConfidence(p)}%; background-color: {getBarColor(getPlayerMatchConfidence(p))};"></div>
                               </div>
                             </div>
                           </div>
@@ -1951,7 +2059,7 @@
                         <span class="bar-title">Confidence</span>
                       </div>
                       <div class="bar-track">
-                        <div class="bar-fill confidence" style="width: {p.morale}%; background-color: {getBarColor(p.morale)};"></div>
+                        <div class="bar-fill confidence" style="width: {getPlayerMatchConfidence(p)}%; background-color: {getBarColor(getPlayerMatchConfidence(p))};"></div>
                       </div>
                     </div>
                   </div>
@@ -2181,7 +2289,6 @@
             {/if}
           {/if}
         </div>
-
         <!-- Live Commentary Console -->
         <div class="commentary-panel-new card-premium">
           <div class="commentary-header">
@@ -2203,7 +2310,7 @@
           <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.4;">Choose which starting player <strong>{reserveObj?.name}</strong> will replace. The replaced player cannot take any further part in the match.</p>
           
           <div class="players-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 250px; overflow-y: auto; margin-bottom: 16px; border: 1px solid var(--border-color); padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.15);">
-            {#each playing11Players as p}
+            {#each playing11Players.filter(p => !currentInningsData.currentBatsmen.includes(p.id) && p.id !== currentLiveBowlerId) as p}
               <button 
                 onclick={() => {
                   activateImpactPlayer(p.id);
@@ -2212,6 +2319,8 @@
                 style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 12px; font-size: 0.78rem; text-align: left; cursor: pointer; border-radius: 4px; transition: all 0.2s; width: 100%;"
                 onmouseover={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
                 onmouseout={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                onfocus={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                onblur={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
               >
                 <span>{p.name} ({p.role})</span>
                 <span style="font-size: 0.7rem; color: var(--color-accent); font-weight: bold;">Replace 🔄</span>
@@ -2630,12 +2739,6 @@
     gap: 4px;
   }
   
-  .stamina-vertical-wrapper .stamina-percent {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #3b82f6;
-  }
-  
   .stamina-vertical-wrapper .vertical-bar-track {
     width: 8px;
     height: 30px;
@@ -2799,11 +2902,6 @@
     font-size: 0.8rem;
     font-weight: bold;
     color: var(--text-secondary);
-  }
-  
-  .intent-header .active-player-name {
-    color: var(--color-accent);
-    font-size: 0.85rem;
   }
   
   .intent-header .ai-label {
@@ -3081,10 +3179,6 @@
   .selection-table .player-name {
     font-weight: 600;
     color: var(--text-primary);
-  }
-  
-  .selection-table .faction-cell .faction-icon {
-    margin: 0;
   }
   
   .selection-table .rating-val {
@@ -3406,6 +3500,11 @@
   .bubble.wicket {
     background: #ef4444;
     border-color: #dc2626;
+  }
+  .bubble.extra {
+    background: #eab308;
+    border-color: #ca8a04;
+    font-size: 0.72rem;
   }
 
   .recent-balls-mini {

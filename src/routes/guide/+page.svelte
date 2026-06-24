@@ -1,6 +1,9 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { gamePhase } from '$lib/stores/gameState';
+  import { gamePhase, teamStore } from '$lib/stores/gameState';
+  import type { Team } from '$lib/models/team';
+
+  let userTeam = $derived($teamStore.find((t: Team) => t.isUserTeam));
 
   let activeTopic = $state('basics');
 
@@ -26,12 +29,12 @@
 </svelte:head>
 
 <div class="guide-page">
-  <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
-    <div>
-      <h1>📖 Manager's Guidebook</h1>
-      <p class="subtitle">Master the art of fantasy cricket management.</p>
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+    <div style="border-left: 4px solid {userTeam?.colorPrimary || '#1e40af'}; padding-left: 12px;">
+      <h1 style="color: {userTeam?.colorPrimary || '#1e40af'}; margin: 0 0 4px 0; font-size: 1.8rem; line-height: 1.2;">📖 Manager's Guidebook</h1>
+      <p class="subtitle" style="margin-bottom: 0; font-size: 0.9rem; color: var(--text-secondary);">Master the art of fantasy cricket management.</p>
     </div>
-    <button class="close-guide-btn" onclick={handleCloseGuide}>
+    <button class="close-guide-btn" onclick={handleCloseGuide} style="font-size: 0.9rem; border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 6px; background: rgba(255,255,255,0.02); color: var(--text-secondary); transition: all 0.2s;">
       Close Guide
     </button>
   </div>
@@ -164,11 +167,7 @@
     padding-bottom: 60px;
   }
   
-  .header {
-    margin-bottom: 16px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 16px;
-  }
+
   
   .subtitle {
     color: var(--text-secondary);

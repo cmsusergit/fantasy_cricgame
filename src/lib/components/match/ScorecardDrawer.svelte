@@ -9,9 +9,7 @@
   export let battingTeamPlayers: Player[];
   export let bowlingTeamPlayers: Player[];
   export let battingTeamColorPrimary: string = '#3b82f6';
-  export let battingTeamColorSecondary: string = '#fbbf24';
   export let bowlingTeamColorPrimary: string = '#3b82f6';
-  export let bowlingTeamColorSecondary: string = '#fbbf24';
 
   let activeTab: 'batting' | 'bowling' = 'batting';
 

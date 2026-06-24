@@ -269,3 +269,79 @@ export function calculateTeamStrength(team: Team): { batting: number; bowling: n
     stars
   };
 }
+
+export function generateFantasyLogo(teamName: string, primaryColor: string, secondaryColor: string, teamIndex?: number): string {
+  const SHAPES_LIST = ['shield', 'circle', 'diamond', 'hexagon'];
+  const UNIQUE_SYMBOLS = [
+    'valkyrie_helmet', // User Team (default index 0)
+    'dragon_fire',     // Team 1
+    'unicorn',         // Team 2
+    'tree_of_life',    // Team 3
+    'wizard_magic',    // Team 4
+    'ram_horns',       // Team 5
+    'demon_horns',     // Team 6
+    'gargoyle_statue'  // Team 7
+  ];
+
+  let shape = 'shield';
+  let symbol = 'star';
+
+  if (teamIndex !== undefined && teamIndex >= 0) {
+    shape = SHAPES_LIST[teamIndex % SHAPES_LIST.length];
+    symbol = UNIQUE_SYMBOLS[teamIndex % UNIQUE_SYMBOLS.length];
+  } else {
+    const nameLower = teamName.toLowerCase();
+    if (nameLower.includes('circle') || nameLower.includes('sentinels') || nameLower.includes('guardians')) {
+      shape = 'circle';
+    } else if (nameLower.includes('star') || nameLower.includes('void') || nameLower.includes('comic') || nameLower.includes('cosmic') || nameLower.includes('diamond')) {
+      shape = 'diamond';
+    } else if (nameLower.includes('hexagon') || nameLower.includes('titan') || nameLower.includes('steel') || nameLower.includes('iron')) {
+      shape = 'hexagon';
+    }
+
+    if (nameLower.includes('dragon') || nameLower.includes('phoenix') || nameLower.includes('fire') || nameLower.includes('blaze') || nameLower.includes('fury') || nameLower.includes('rage')) {
+      symbol = 'dragon';
+    } else if (nameLower.includes('wolf') || nameLower.includes('beast') || nameLower.includes('panther') || nameLower.includes('lion') || nameLower.includes('raven') || nameLower.includes('eagle')) {
+      symbol = 'wolf';
+    } else if (nameLower.includes('thunder') || nameLower.includes('storm') || nameLower.includes('lightning') || nameLower.includes('strike') || nameLower.includes('shatter')) {
+      symbol = 'lightning';
+    } else if (nameLower.includes('warrior') || nameLower.includes('knight') || nameLower.includes('guard') || nameLower.includes('clash') || nameLower.includes('vanguard') || nameLower.includes('raider') || nameLower.includes('savage') || nameLower.includes('brutal')) {
+      symbol = 'sword';
+    } else if (nameLower.includes('royal') || nameLower.includes('noble') || nameLower.includes('imperial') || nameLower.includes('master') || nameLower.includes('mind') || nameLower.includes('king') || nameLower.includes('crown')) {
+      symbol = 'crown';
+    }
+  }
+  
+  let bgColor = primaryColor;
+  let symbolColor = secondaryColor;
+  
+  // High contrast calculation
+  const getLuminance = (hex: string): number => {
+    const cleanHex = hex.replace('#', '');
+    const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
+    const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
+    const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
+    const linear = (c: number) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+  };
+  
+  try {
+    const bgL = getLuminance(bgColor);
+    const fgL = getLuminance(symbolColor);
+    const ratio = (Math.max(bgL, fgL) + 0.05) / (Math.min(bgL, fgL) + 0.05);
+    
+    if (ratio < 4.0) {
+      if (bgL < 0.3) {
+        symbolColor = '#ffffff'; // Fallback to white on dark background for high contrast
+      } else {
+        symbolColor = '#0f172a'; // Fallback to slate on light background for high contrast
+      }
+    }
+  } catch (e) {
+    if (bgColor.toLowerCase() === symbolColor.toLowerCase()) {
+      symbolColor = '#ffffff';
+    }
+  }
+  
+  return `custom|${shape}|${bgColor}|${symbol}|${symbolColor}`;
+}

@@ -4,7 +4,7 @@ import type { Team } from '../models/team';
 import type { Match } from '../models/match';
 import type { FactionType } from '../models/faction';
 import { generatePlayerPool, generateTeamName, generateCoachName, generateBalancedSquad } from '../core/draftAI';
-import { TEAM_PERSONALITIES, createTeamTendency, PERSONALITY_NAMES } from '../core/teamBuilder';
+import { TEAM_PERSONALITIES, createTeamTendency, PERSONALITY_NAMES, generateFantasyLogo } from '../core/teamBuilder';
 import { generateTournamentSchedule, type TournamentSchedule, type ScheduledMatch, type GameDay } from '../core/schedule';
 import { saveGame, loadGame, clearSave } from '../services/storage';
 
@@ -150,10 +150,18 @@ function createTeamStore() {
         
         const { playing11, captain, wicketKeeper, reservePlayer } = selectInitialPlaying11(teamPlayers);
         
+        const name = generateTeamName(faction);
+        const primaryColor = TEAM_COLORS[i % TEAM_COLORS.length].primary;
+        const secondaryColor = TEAM_COLORS[i % TEAM_COLORS.length].secondary;
+        const logo = generateFantasyLogo(name, primaryColor, secondaryColor, i);
+        const personality = isUserTeam ? 'balanced' : TEAM_PERSONALITIES[i - 1] || 'balanced';
+        const tendency = createTeamTendency(personality);
+
         baseTeams.push({
           id: teamId,
-          name: generateTeamName(faction),
+          name,
           coach: generateCoachName(faction),
+          logo,
           budget: isUserTeam ? (userTeam?.budget ?? 4000000) : 4000000,
           staff: isUserTeam ? (userTeam?.staff ?? []) : [],
           facilities: isUserTeam ? (userTeam?.facilities ?? { stadiumLevel: 1, trainingLevel: 1, medicalLevel: 1 }) : { stadiumLevel: 1, trainingLevel: 1, medicalLevel: 1 },
@@ -169,11 +177,11 @@ function createTeamStore() {
           sponsorships: [],
           tournamentWins: 0,
           injuries: [],
-          personality: isUserTeam ? 'balanced' : TEAM_PERSONALITIES[i - 1] || 'balanced',
-          tendency: createTeamTendency(isUserTeam ? 'balanced' : TEAM_PERSONALITIES[i - 1] || 'balanced'),
+          personality,
+          tendency,
           faction,
-          colorPrimary: TEAM_COLORS[i % TEAM_COLORS.length].primary,
-          colorSecondary: TEAM_COLORS[i % TEAM_COLORS.length].secondary,
+          colorPrimary: primaryColor,
+          colorSecondary: secondaryColor,
           playing11,
           captain,
           wicketKeeper,
@@ -300,6 +308,19 @@ function createTeamStore() {
         teams.map(t => {
           if (t.id === teamId) {
             return { ...t, sponsorships: [...(t.sponsorships || []), sponsorship] };
+          }
+          return t;
+        })
+      );
+    },
+    removeSponsorship: (teamId: string, sponsorshipId: string) => {
+      update(teams =>
+        teams.map(t => {
+          if (t.id === teamId) {
+            return {
+              ...t,
+              sponsorships: (t.sponsorships || []).filter((s: any) => s.id !== sponsorshipId)
+            };
           }
           return t;
         })
@@ -455,7 +476,7 @@ export async function initializeGame(
     for (let i = 0; i < 8; i++) {
       const isUserTeam = i === 0;
       const faction = factionTypes[i % factionTypes.length];
-      const personality = isUserTeam ? 'balanced' : TEAM_PERSONALITIES[i - 1];
+      const personality = isUserTeam ? 'balanced' : TEAM_PERSONALITIES[i - 1] || 'balanced';
       const tendency = createTeamTendency(personality);
       const teamPlayers = generateBalancedSquad(faction)
         .map(p => ({ ...p, isAvailable: startWithAuction })); // If starting with auction, players start available in the pool
@@ -464,11 +485,16 @@ export async function initializeGame(
       
       const { playing11, captain, wicketKeeper, reservePlayer } = selectInitialPlaying11(teamPlayers);
 
+      const name = isUserTeam ? teamName : PERSONALITY_NAMES[personality] || generateTeamName(faction);
+      const primaryColor = orderedColors[i % orderedColors.length].primary;
+      const secondaryColor = orderedColors[i % orderedColors.length].secondary;
+      const logo = isUserTeam ? logoUrl : generateFantasyLogo(name, primaryColor, secondaryColor, i);
+
       teams.push({
         id: isUserTeam ? 'user_team' : `team_${i}`,
-        name: isUserTeam ? teamName : PERSONALITY_NAMES[personality],
+        name,
         coach: isUserTeam ? managerName : generateCoachName(faction),
-        logo: isUserTeam ? logoUrl : undefined,
+        logo,
         budget: isUserTeam ? 4000000 : 4000000,
         staff: [],
         facilities: { stadiumLevel: 1, trainingLevel: 1, medicalLevel: 1 },
@@ -487,8 +513,8 @@ export async function initializeGame(
         personality,
         tendency,
         faction,
-        colorPrimary: orderedColors[i % orderedColors.length].primary,
-        colorSecondary: orderedColors[i % orderedColors.length].secondary,
+        colorPrimary: primaryColor,
+        colorSecondary: secondaryColor,
         playing11: startWithAuction ? undefined : playing11,
         captain: startWithAuction ? undefined : captain,
         wicketKeeper: startWithAuction ? undefined : wicketKeeper,

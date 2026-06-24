@@ -24,7 +24,10 @@
   let isUserPlayer = $derived(userTeam?.players?.some((p: any) => p.id === player.id));
 
   let isEditingName = $state(false);
-  let editNameValue = $state(player.name);
+  let editNameValue = $state('');
+  $effect(() => {
+    editNameValue = player.name;
+  });
 
   function startEdit(e: Event) {
     e.stopPropagation();
@@ -76,8 +79,14 @@
   }
 </script>
 
-<div class="modal-overlay" onclick={onClose} role="dialog">
-  <div class="modal" onclick={(e) => e.stopPropagation()} role="document" data-faction={player.faction}>
+<div
+  class="modal-overlay"
+  onclick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+  onkeydown={(e) => { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') onClose(); }}
+  role="button"
+  tabindex="-1"
+>
+  <div class="modal" role="document" data-faction={player.faction}>
     <button class="close-btn" onclick={onClose}>×</button>
     
     <div class="player-header">
@@ -89,7 +98,7 @@
       </div>
       <div class="player-info">
         {#if isEditingName}
-          <div class="edit-name-container" onclick={(e) => e.stopPropagation()}>
+          <div class="edit-name-container">
             <input type="text" class="edit-name-input" bind:value={editNameValue} maxlength="30" onkeydown={(e) => e.key === 'Enter' && saveEdit(e)} />
             <button class="icon-btn save-btn" onclick={saveEdit} title="Save">✓</button>
             <button class="icon-btn cancel-btn" onclick={cancelEdit} title="Cancel">✕</button>
@@ -622,9 +631,6 @@
   :global([data-theme="light"]) .contract-item,
   :global([data-theme="light"]) .special-trait-item {
     background: rgba(15, 23, 42, 0.03);
-  }
-  :global([data-theme="light"]) .match-history-table th {
-    background: rgba(15, 23, 42, 0.04);
   }
   :global([data-theme="light"]) .stat-progress {
     background: rgba(15, 23, 42, 0.05);

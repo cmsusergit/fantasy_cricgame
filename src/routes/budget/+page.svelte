@@ -33,9 +33,12 @@
 </svelte:head>
 
 <div class="budget-page">
-  <div class="header">
-    <h1>Finance Hub</h1>
-    <a href="/" class="back-btn">← Back to Dashboard</a>
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+    <div style="border-left: 4px solid {userTeam?.colorPrimary || '#1e40af'}; padding-left: 12px;">
+      <h1 style="color: {userTeam?.colorPrimary || '#1e40af'}; margin: 0 0 4px 0; font-size: 1.8rem; line-height: 1.2;">🪙 Finance Hub</h1>
+      <p class="subtitle" style="margin-bottom: 0; font-size: 0.9rem; color: var(--text-secondary);">Manage your franchise's budget, contracts, and sponsorships.</p>
+    </div>
+    <a href="/" class="back-btn-custom" style="text-decoration: none; color: var(--text-secondary); font-size: 0.9rem; border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 6px; background: rgba(255,255,255,0.02); transition: all 0.2s;">← Back to Dashboard</a>
   </div>
 
   {#if userTeam}
@@ -140,10 +143,7 @@
 
 <style>
   .budget-page { max-width: 1000px; margin: 0 auto; padding: 14px; font-family: sans-serif; }
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .header h1 { margin: 0; color: var(--text-primary); font-size: 1rem; }
-  .back-btn { color: var(--text-secondary); text-decoration: none; font-weight: bold; }
-  .back-btn:hover { color: var(--text-primary); }
+  .back-btn-custom:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
 
   .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; margin-bottom: 16px; }
   .card { background: var(--bg-secondary); padding: 14px; border-radius: 12px; border: 1px solid var(--border-color); text-align: center; }

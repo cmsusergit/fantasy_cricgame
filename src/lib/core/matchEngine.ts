@@ -4,7 +4,7 @@ import type { Player } from '../models/player';
 import type { Team } from '../models/team';
 import { FACTIONS } from '../models/faction';
 import { getEffectiveStats } from '../models/player';
-import { applyInjuryToPlayer, rollForInjury, type Injury } from './injurySystem';
+import { applyInjuryToPlayer, rollForInjury, rollPlayerInjury, type Injury } from './injurySystem';
 
 export interface MatchConfig {
   totalOvers: number;
@@ -124,9 +124,9 @@ export function calculateWicketChance(
 
   const fatigueMult = 1 + (batterFatigue / 100 * 0.2 * currentOver / totalOvers);
   
-  // Morale modifiers
-  const batterMoraleMod = 1 + ((batter.morale - 50) / 100) * 0.20;
-  const bowlerMoraleMod = 1 + ((bowler.morale - 50) / 100) * 0.20;
+  // Morale modifiers (morale and form now impact confidence rate, not outcome directly)
+  const batterMoraleMod = 1.0;
+  const bowlerMoraleMod = 1.0;
   
   // Injury penalty for batter (higher wicket chance when injured)
   let batterInjuryPenalty = 0;
@@ -201,9 +201,9 @@ export function calculateShotQuality(
   const weatherMod = WEATHER_EFFECTS[weather];
   const pitchMod = PITCH_EFFECTS[pitch];
   
-  // Morale modifiers
-  const batterMoraleMod = 1 + ((batter.morale - 50) / 100) * 0.20;
-  const bowlerMoraleMod = 1 + ((bowler.morale - 50) / 100) * 0.20;
+  // Morale modifiers (morale and form now impact confidence rate, not outcome directly)
+  const batterMoraleMod = 1.0;
+  const bowlerMoraleMod = 1.0;
 
   const synergyMult = getPitchSynergyMultiplier(bowler.bowlingType, pitch);
   const effectiveBowling = bowlerStats.bowling * bowlerMoraleMod * synergyMult;
@@ -720,32 +720,56 @@ export function resolveMatch(
     });
   }
   
-  // Injury rolls — higher fatigue = higher injury risk
-  const avgFatigue1 = team1.players.reduce((sum, p) => sum + (p.fatigue || 0), 0) / Math.max(1, team1.players.length);
-  const injuryRolls = rollForInjury(avgFatigue1);
+  // Injury rolls — players with higher age and high fatigue have higher chance of catching injury
   const team1Injuries: Injury[] = [];
   const team2Injuries: Injury[] = [];
-  
-  if (injuryRolls && team1.players.length > 0) {
-    const randomPlayer = team1.players[Math.floor(Math.random() * Math.min(5, team1.players.length))];
-    const injury = { ...injuryRolls, playerId: randomPlayer.id, playerName: randomPlayer.name };
-    team1Injuries.push(injury);
-    team1.players = team1.players.map(player =>
-      player.id === randomPlayer.id ? applyInjuryToPlayer(player, injury) : player
-    );
-    team1.injuries = [...(team1.injuries || []), injury];
+
+  let injuriesApplied1 = 0;
+  const activeInjuriesCount1 = team1.players.filter(p => p.activeInjury).length;
+  team1.players = team1.players.map(player => {
+    if (player.activeInjury) return player;
+    const currentActiveCount = activeInjuriesCount1 + injuriesApplied1;
+    if (currentActiveCount >= 3) return player; // Enforce max cap of 3 injuries on the roster
+
+    const injury = rollPlayerInjury(player);
+    if (injury) {
+      injuriesApplied1++;
+      team1Injuries.push(injury);
+      if (team1.playing11) {
+        team1.playing11 = team1.playing11.filter((id: string) => id !== player.id);
+        if (team1.captain === player.id) team1.captain = team1.playing11[0] || '';
+        if (team1.wicketKeeper === player.id) team1.wicketKeeper = team1.playing11[0] || '';
+      }
+      return applyInjuryToPlayer(player, injury);
+    }
+    return player;
+  });
+  if (team1Injuries.length > 0) {
+    team1.injuries = [...(team1.injuries || []), ...team1Injuries];
   }
-  
-  const avgFatigue2 = team2.players.reduce((sum, p) => sum + (p.fatigue || 0), 0) / Math.max(1, team2.players.length);
-  const injuryRolls2 = rollForInjury(avgFatigue2);
-  if (injuryRolls2 && team2.players.length > 0) {
-    const randomPlayer = team2.players[Math.floor(Math.random() * Math.min(5, team2.players.length))];
-    const injury = { ...injuryRolls2, playerId: randomPlayer.id, playerName: randomPlayer.name };
-    team2Injuries.push(injury);
-    team2.players = team2.players.map(player =>
-      player.id === randomPlayer.id ? applyInjuryToPlayer(player, injury) : player
-    );
-    team2.injuries = [...(team2.injuries || []), injury];
+
+  let injuriesApplied2 = 0;
+  const activeInjuriesCount2 = team2.players.filter(p => p.activeInjury).length;
+  team2.players = team2.players.map(player => {
+    if (player.activeInjury) return player;
+    const currentActiveCount = activeInjuriesCount2 + injuriesApplied2;
+    if (currentActiveCount >= 3) return player; // Enforce max cap of 3 injuries on the roster
+
+    const injury = rollPlayerInjury(player);
+    if (injury) {
+      injuriesApplied2++;
+      team2Injuries.push(injury);
+      if (team2.playing11) {
+        team2.playing11 = team2.playing11.filter((id: string) => id !== player.id);
+        if (team2.captain === player.id) team2.captain = team2.playing11[0] || '';
+        if (team2.wicketKeeper === player.id) team2.wicketKeeper = team2.playing11[0] || '';
+      }
+      return applyInjuryToPlayer(player, injury);
+    }
+    return player;
+  });
+  if (team2Injuries.length > 0) {
+    team2.injuries = [...(team2.injuries || []), ...team2Injuries];
   }
   
   // Fan/popularity updates

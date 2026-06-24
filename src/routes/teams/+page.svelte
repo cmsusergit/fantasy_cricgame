@@ -4,8 +4,8 @@
   import type { Team } from '$lib/models/team';
   import { calculateTeamStrength, PERSONALITY_DESCRIPTIONS } from '$lib/core/teamBuilder';
   import PlayerCard from '$lib/components/team/PlayerCard.svelte';
-  import { FACTIONS } from '$lib/models/faction';
   import { getCrowdFavourites } from '$lib/core/fanSystem';
+  import TeamLogo from '$lib/components/team/TeamLogo.svelte';
 
   let teams = $state<Team[]>([]);
   let selectedTeamId = $state<string>('');
@@ -22,6 +22,7 @@
     return unsub;
   });
 
+  let userTeam = $derived(teams.find(t => t.isUserTeam));
   let selectedTeam = $derived(teams.find(t => t.id === selectedTeamId));
   let teamStrength = $derived(selectedTeam ? calculateTeamStrength(selectedTeam) : null);
   
@@ -49,23 +50,7 @@
       }).slice(0, 3);
   })());
 
-  function getFactionColor(factionType: string | undefined) {
-      if (!factionType) return 'var(--border-color)';
-      const mapping: Record<string, string> = {
-          'human': 'var(--accent-human)',
-          'elf': 'var(--accent-elf)',
-          'orc': 'var(--accent-orc)',
-          'dwarf': 'var(--accent-dwarf)',
-          'goblin': 'var(--accent-goblin)',
-          'nightelf': 'var(--accent-nightelf)'
-      };
-      return mapping[factionType] || 'var(--border-color)';
-  }
 
-  function getFactionName(factionType: string | undefined) {
-      if (!factionType) return 'Unknown';
-      return FACTIONS[factionType as keyof typeof FACTIONS]?.name || 'Unknown';
-  }
 
   function hexToRgb(hex: string): string {
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -77,6 +62,14 @@
   <title>League Teams - Fantasy Cricket</title>
 </svelte:head>
 
+<div class="teams-page-container" style="max-width: 1200px; margin: 0 auto; padding: 14px;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+    <div style="border-left: 4px solid {userTeam?.colorPrimary || '#1e40af'}; padding-left: 12px;">
+      <h1 style="color: {userTeam?.colorPrimary || '#1e40af'}; margin: 0 0 4px 0; font-size: 1.8rem; line-height: 1.2;">🛡️ Franchise Directory</h1>
+      <p class="subtitle" style="margin-bottom: 0; font-size: 0.9rem; color: var(--text-secondary);">Browse league teams, coaches, personalities, and roster details.</p>
+    </div>
+  </div>
+
 <div class="teams-page">
   <div class="teams-sidebar">
     <h3>Franchises</h3>
@@ -85,8 +78,13 @@
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="team-selector-item" class:active={selectedTeamId === team.id} onclick={() => selectedTeamId = team.id} style="border-left-color: {team.colorPrimary}">
-          <div class="team-name">{team.name} {team.isUserTeam ? '(You)' : ''}</div>
-          <div class="team-faction">{getFactionName(team.faction)}</div>
+          <div class="team-logo-container" style="background: rgba(255,255,255,0.03); border-radius: 50%; padding: 4px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex-shrink: 0;">
+            <TeamLogo logo={team.logo || ''} size={30} />
+          </div>
+          <div class="team-info">
+            <div class="team-name" style="color: var(--text-primary);">{team.name} {team.isUserTeam ? '(You)' : ''}</div>
+            <div class="team-faction">Manager: {team.coach}</div>
+          </div>
         </div>
       {/each}
     </div>
@@ -95,9 +93,14 @@
   <div class="team-details">
     {#if selectedTeam && teamStrength}
       <div class="team-header" style="border-top: 4px solid {selectedTeam.colorPrimary}; background: linear-gradient(135deg, {selectedTeam.colorPrimary}15, {selectedTeam.colorSecondary}30);">
-        <div class="header-main">
-          <h1 style="color: {selectedTeam.colorPrimary}">{selectedTeam.name}</h1>
-          <div class="coach-badge">Coach: {selectedTeam.coach}</div>
+        <div class="header-main" style="display: flex; align-items: center; gap: 16px;">
+          <div style="background: rgba(255,255,255,0.03); border-radius: 50%; padding: 8px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; flex-shrink: 0;">
+            <TeamLogo logo={selectedTeam.logo || ''} size={54} />
+          </div>
+          <div>
+            <h1 style="color: {selectedTeam.colorPrimary}; margin: 0 0 6px 0; font-size: 1.8rem; line-height: 1.2;">{selectedTeam.name}</h1>
+            <div class="coach-badge">Coach: {selectedTeam.coach}</div>
+          </div>
         </div>
         <div class="team-meta">
           <div class="meta-item">
@@ -177,6 +180,7 @@
     {/if}
   </div>
 </div>
+</div>
 
 <style>
   .teams-page {
@@ -205,13 +209,17 @@
   }
   
   .team-selector-item {
-    padding: 14px;
+    padding: 10px 12px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-left-width: 4px;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
   }
   
   .team-selector-item:hover {
@@ -223,16 +231,27 @@
     border-color: var(--text-primary);
     box-shadow: 0 0 8px rgba(var(--team-primary-rgb, 30, 64, 175), 0.15);
   }
+
+  .team-info {
+    flex: 1;
+    min-width: 0;
+  }
   
   .team-name {
     font-weight: 600;
     font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .team-faction {
     font-size: 12px;
     color: var(--text-secondary);
     margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .team-details {
@@ -341,9 +360,6 @@
     transition: width 0.5s ease;
   }
   
-  .stat-bar-fill.high { background: var(--success); }
-  .stat-bar-fill.medium { background: var(--warning); }
-  .stat-bar-fill.low { background: var(--danger); }
   .stat-bar-fill.team-fill {
     background: linear-gradient(90deg, rgba(var(--team-primary-rgb, 30, 64, 175), 0.95), rgba(var(--team-secondary-rgb, 251, 191, 36), 0.85));
   }

@@ -82,15 +82,16 @@
 </svelte:head>
 
 <div class="scouting-page">
-  <header class="page-header">
-    <h1>Youth Academy & Scouting</h1>
-    <p class="subtitle">Draft Prospects</p>
-    
-    <div class="budget-panel">
-        <span class="budget-label">Available Budget:</span>
-        <span class="budget-value">${currentBudget.toLocaleString()}</span>
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+    <div style="border-left: 4px solid {userTeam?.colorPrimary || '#1e40af'}; padding-left: 12px;">
+      <h1 style="color: {userTeam?.colorPrimary || '#1e40af'}; margin: 0 0 4px 0; font-size: 1.8rem; line-height: 1.2;">🕵️ Youth Academy & Scouting</h1>
+      <p class="subtitle" style="margin-bottom: 0; font-size: 0.9rem; color: var(--text-secondary);">Scout promising young prospects before they enter the auction pool.</p>
     </div>
-  </header>
+    <div class="budget-panel" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+        <span style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Available Budget:</span>
+        <span style="font-size: 1.25rem; font-family: var(--font-fantasy); font-weight: bold; color: {userTeam?.colorPrimary || 'var(--success)'};">${currentBudget.toLocaleString()}</span>
+    </div>
+  </div>
 
   {#if errorMsg}
     <div class="toast error">{errorMsg}</div>
@@ -147,37 +148,7 @@
     padding: 14px;
   }
 
-  .page-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 16px;
-  }
 
-  .page-header h1 {
-    font-size: 1rem;
-    color: var(--text-primary);
-    margin-bottom: 8px;
-  }
-
-  .subtitle {
-    color: var(--text-secondary);
-    font-size: 1.1rem;
-    margin-bottom: 16px;
-  }
-
-  .budget-panel {
-    background: rgba(35, 134, 54, 0.15);
-    border: 1px solid var(--success);
-    padding: 12px 24px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .budget-label { color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; }
-  .budget-value { color: var(--success); font-size: 1rem; font-weight: 800; font-family: monospace; }
 
   .info-banner {
     background: rgba(59, 130, 246, 0.15);

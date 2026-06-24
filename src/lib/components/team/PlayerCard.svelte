@@ -45,7 +45,10 @@
     let canUpgradeAny = $derived(isUserPlayer && player.xp >= 100 && userTeam?.budget >= 5000 && Object.values(player.stats).some(v => typeof v === 'number' && v < 100));
     
     let isEditingName = $state(false);
-    let editNameValue = $state(player.name);
+    let editNameValue = $state('');
+    $effect(() => {
+      editNameValue = player.name;
+    });
 
     function hexToRgb(hex: string): string {
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -93,10 +96,17 @@
   class:unavailable={!hideAvailability && !player.isAvailable} 
   data-faction={player.faction}
   style={teamColorPrimary ? `--team-primary: ${teamColorPrimary}; --team-secondary: ${teamColorSecondary ?? '#6b7280'}; --team-primary-rgb: ${hexToRgb(teamColorPrimary)}; --team-secondary-rgb: ${hexToRgb(teamColorSecondary ?? '#6b7280')}; --card-bg: linear-gradient(180deg, ${(teamColorSecondary ?? '#6b7280')}10, transparent 40%), var(--bg-surface);` : ''}
-  onclick={() => onSelect && (hideAvailability || player.isAvailable) && onSelect(player)}
-  role={onSelect && (hideAvailability || player.isAvailable) ? "button" : undefined}
-  tabindex={onSelect && (hideAvailability || player.isAvailable) ? 0 : undefined}
-  onkeydown={(e) => e.key === 'Enter' && onSelect && (hideAvailability || player.isAvailable) && onSelect(player)}
+  onclick={(e) => {
+    if ((e.target as HTMLElement).closest('.edit-name-container')) return;
+    if (onSelect && (hideAvailability || player.isAvailable)) onSelect(player);
+  }}
+  role="button"
+  aria-disabled={!(onSelect && (hideAvailability || player.isAvailable))}
+  tabindex={onSelect && (hideAvailability || player.isAvailable) ? 0 : -1}
+  onkeydown={(e) => {
+    if ((e.target as HTMLElement).closest('.edit-name-container')) return;
+    if (e.key === 'Enter' && onSelect && (hideAvailability || player.isAvailable)) onSelect(player);
+  }}
 >
   <div class="player-header">
     <div class="avatar-container">
@@ -107,7 +117,7 @@
     </div>
     <div class="player-info">
       {#if isEditingName}
-        <div class="edit-name-container" onclick={(e) => e.stopPropagation()}>
+        <div class="edit-name-container">
           <input type="text" class="edit-name-input" bind:value={editNameValue} maxlength="30" onkeydown={(e) => e.key === 'Enter' && saveEdit(e)} />
           <button class="icon-btn save-btn" onclick={saveEdit} title="Save">✓</button>
           <button class="icon-btn cancel-btn" onclick={cancelEdit} title="Cancel">✕</button>
@@ -129,7 +139,9 @@
           <span class="status-pill retiring">Retiring</span>
         {/if}
         {#if activeInjury}
-          <span class="status-pill injury">Injury: {activeInjury.type}</span>
+          <span class="status-pill injury" title="{activeInjury.name || activeInjury.type} injury ({activeInjury.recoveryDays - activeInjury.currentDay} matches left to skip)">
+            🤕 {activeInjury.name || 'Injured'}: {activeInjury.recoveryDays - activeInjury.currentDay}m left
+          </span>
         {/if}
         <span class="status-pill xp" class:can-upgrade={canUpgradeAny} title={canUpgradeAny ? 'Can afford an upgrade!' : `${player.xp || 0} XP`}>
           ✨ {player.xp || 0}

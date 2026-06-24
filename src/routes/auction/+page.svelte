@@ -67,13 +67,18 @@
 </svelte:head>
 
 <div class="auction-page">
-  <header class="header">
-    <h1>Live Mega Auction</h1>
-    <div class="purse-display">
-       <span>Your Purse:</span>
-       <strong class={currentBudget < nextBidAmount ? 'danger' : 'success'}>${currentBudget.toLocaleString()}</strong>
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+    <div style="border-left: 4px solid {userTeam?.colorPrimary || '#1e40af'}; padding-left: 12px;">
+      <h1 style="color: {userTeam?.colorPrimary || '#1e40af'}; margin: 0 0 4px 0; font-size: 1.8rem; line-height: 1.2;">🔨 Live Mega Auction</h1>
+      <p class="subtitle" style="margin-bottom: 0; font-size: 0.9rem; color: var(--text-secondary);">Bid on players to build your custom dream squad.</p>
     </div>
-  </header>
+    <div class="purse-display" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+       <span style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Your Purse:</span>
+       <strong class={currentBudget < nextBidAmount ? 'danger' : 'success'} style="font-size: 1.25rem; font-family: var(--font-fantasy); font-weight: bold; color: {currentBudget < nextBidAmount ? 'var(--color-danger)' : 'var(--color-success)'};">
+         ${currentBudget.toLocaleString()}
+       </strong>
+    </div>
+  </div>
 
   {#if state.isActive && state.currentPlayer}
     <div class="auction-layout">
@@ -183,8 +188,6 @@
 
 <style>
   .auction-page { max-width: 1200px; margin: 0 auto; padding: 14px; font-family: sans-serif; }
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: var(--bg-secondary); padding: 16px 24px; border-radius: 12px; border: 1px solid var(--border-color); }
-  .header h1 { color: var(--warning); margin: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
   .purse-display { font-size: 1rem; font-weight: 600; display: flex; gap: 10px; align-items: center; }
   .purse-display .success { color: var(--success); font-size: 1rem; font-family: monospace; }
   .purse-display .danger { color: var(--danger); font-size: 1rem; font-family: monospace; }

@@ -171,6 +171,26 @@
     }
   }
 
+  function getPlaying11(team: any) {
+    if (!team) return [];
+    return team.playing11 && team.playing11.length === 11 
+      ? team.playing11 
+      : team.players.slice(0, 11).map((p: any) => p.id);
+  }
+
+  function getYetToBatPlayers(displayBattingTeam: any, displayInnings: innings | null, batsmanScorecards: BatsmanScorecard[]) {
+    if (!displayBattingTeam || !displayInnings) return [];
+    const currentBatsmen = displayInnings.currentBatsmen || [];
+    const hasBattedIds = new Set(
+      batsmanScorecards
+        .filter((stats: BatsmanScorecard) => stats.balls > 0 || stats.isOut || currentBatsmen.includes(stats.playerId))
+        .map((s: BatsmanScorecard) => s.playerId)
+    );
+    const p11 = getPlaying11(displayBattingTeam);
+    return (displayBattingTeam.players || []).filter((p: Player) => p11.includes(p.id) && !hasBattedIds.has(p.id));
+  }
+
+  $: targetVal = innings1 ? innings1.totalRuns + 1 : 0;
   $: scorecard = displayInnings ? calculateScorecardStats(displayInnings, [...(displayBattingTeam?.players || []), ...(displayBowlingTeam?.players || [])]) : { batsmanScorecards: [], bowlerScorecards: [] };
 </script>
 
@@ -207,7 +227,7 @@
             </tr>
           </thead>
           <tbody>
-            {#each scorecard.batsmanScorecards as stats}
+            {#each scorecard.batsmanScorecards.filter(stats => stats.balls > 0 || stats.isOut || (displayInnings && displayInnings.currentBatsmen && displayInnings.currentBatsmen.includes(stats.playerId))) as stats}
               {@const player = displayBattingTeam?.players.find((p: Player) => p.id === stats.playerId)}
               {#if player}
                 <tr>
@@ -220,8 +240,6 @@
                   <td>
                     {#if stats.isOut}
                       {formatDismissal(stats, displayBowlingTeam?.players || [])}
-                    {:else if stats.balls === 0}
-                      did not bat
                     {:else}
                       not out
                     {/if}
@@ -231,6 +249,21 @@
             {/each}
           </tbody>
         </table>
+        {#if displayInnings}
+          {@const yetToBatPlayers = getYetToBatPlayers(displayBattingTeam, displayInnings, scorecard.batsmanScorecards)}
+          {#if yetToBatPlayers.length > 0}
+            <div class="yet-to-bat" style="margin-top: 12px; font-size: 0.82rem; color: var(--text-secondary); padding: 8px 14px; border-top: 1px dashed var(--border-color);">
+              <strong>
+                {#if displayInnings.overs >= 20 || displayInnings.wickets >= 10 || (innings2 && displayInnings.teamId === innings2.teamId && displayInnings.totalRuns >= targetVal)}
+                  Did not bat:
+                {:else}
+                  Yet to bat:
+                {/if}
+              </strong>
+              {yetToBatPlayers.map((p: any) => p.name).join(', ')}
+            </div>
+          {/if}
+        {/if}
       </div>
       <div class="scorecard-table">
         <h3>Bowling Scorecard</h3>
@@ -303,41 +336,6 @@
   .drawer-header h2 {
     margin: 0;
     font-size: 1.5rem;
-  }
-
-  .close-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--text-muted);
-  }
-
-  .tab-controls {
-    display: flex;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  .tab-btn {
-    flex: 1;
-    padding: 12px 16px;
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    color: var(--text-muted);
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .tab-btn:hover {
-    color: var(--text-primary);
-  }
-
-  .tab-btn.active {
-    color: var(--batting-primary, var(--color-accent));
-    border-bottom-color: var(--batting-primary, var(--color-accent));
-    font-weight: 600;
   }
 
   .drawer-content {
