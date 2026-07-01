@@ -1439,6 +1439,9 @@
   }
 
   function getCurrentLiveBowler() {
+     if (currentBowlingTeam?.id === 'user_team' && selectedBowlerId) {
+        return selectedBowlerId;
+     }
      const inn = currentInnings === 1 ? innings1 : innings2;
      if (inn.ballsFaced.length === 0) return null;
      const lastBall = inn.ballsFaced[inn.ballsFaced.length - 1];
@@ -1866,60 +1869,123 @@
                   {phase === 'selectOpeningBatsmen' ? '🏏 Pick 2 Opening Batsmen' : '🏏 Pick Next Batsman'}
                 </h3>
               </div>
-              <div class="selection-table-container">
-                <table class="selection-table">
-                  <thead>
-                    <tr>
-                      <th>Player</th>
-                      <th>Faction</th>
-                      <th>Role</th>
-                      <th>Style</th>
-                      <th>Rating</th>
-                      <th>Stamina</th>
-                      <th>Confidence</th>
-                      <th style="text-align: center;">Select</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {#each getAvailableBatsmen() as p}
-                      {@const isSelected = selectedBatsmen.includes(p.id)}
-                      <tr class:selected={isSelected} onclick={() => toggleBatsman(p.id)}>
-                        <td>
-                          <div class="player-cell" style="display: flex; align-items: center; gap: 8px;">
-                            <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar-mini" />
-                            <span class="player-name">{p.name}</span>
-                          </div>
-                        </td>
-                        <td>
-                          <span class="faction-icon faction-{p.faction}">
-                            {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
-                          </span>
-                        </td>
-                        <td>{p.role}</td>
-                        <td>{p.battingType || 'RHB'} ({p.battingRole || 'Middle Order'})</td>
-                        <td class="rating-val">{p.stats.batting}</td>
-                        <td>
-                          <div class="bar-container">
-                            <div class="bar stamina" style="width: {100 - p.fatigue}%; background-color: {getBarColor(100 - p.fatigue)};"></div>
-                          </div>
-                        </td>
-                        <td>
-                          <div class="bar-container">
-                            <div class="bar confidence" style="width: {p.morale}%; background-color: {getBarColor(p.morale)};"></div>
-                          </div>
-                        </td>
-                        <td style="text-align: center;">
-                          {#if phase === 'selectOpeningBatsmen'}
-                            <input type="checkbox" checked={isSelected} onchange={(e) => { e.stopPropagation(); toggleBatsman(p.id); }} style="cursor: pointer;" />
-                          {:else}
-                            <button class="btn-select" onclick={(e) => { e.stopPropagation(); toggleBatsman(p.id); }}>Select</button>
-                          {/if}
-                        </td>
+              
+              <!-- Desktop Table View -->
+              <div class="selection-table-desktop">
+                <div class="selection-table-container">
+                  <table class="selection-table">
+                    <thead>
+                      <tr>
+                        <th>Player</th>
+                        <th>Faction</th>
+                        <th>Role</th>
+                        <th>Style</th>
+                        <th>Rating</th>
+                        <th>Stamina</th>
+                        <th>Confidence</th>
+                        <th style="text-align: center;">Select</th>
                       </tr>
-                    {/each}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {#each getAvailableBatsmen() as p}
+                        {@const isSelected = selectedBatsmen.includes(p.id)}
+                        <tr class:selected={isSelected} onclick={() => toggleBatsman(p.id)}>
+                          <td>
+                            <div class="player-cell" style="display: flex; align-items: center; gap: 8px;">
+                              <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar-mini" />
+                              <span class="player-name">{p.name}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span class="faction-icon faction-{p.faction}">
+                              {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
+                            </span>
+                          </td>
+                          <td>{p.role}</td>
+                          <td>{p.battingType || 'RHB'} ({p.battingRole || 'Middle Order'})</td>
+                          <td class="rating-val">{p.stats.batting}</td>
+                          <td>
+                            <div class="bar-container">
+                              <div class="bar stamina" style="width: {100 - p.fatigue}%; background-color: {getBarColor(100 - p.fatigue)};"></div>
+                            </div>
+                          </td>
+                          <td>
+                            <div class="bar-container">
+                              <div class="bar confidence" style="width: {p.morale}%; background-color: {getBarColor(p.morale)};"></div>
+                            </div>
+                          </td>
+                          <td style="text-align: center;">
+                            {#if phase === 'selectOpeningBatsmen'}
+                              <input type="checkbox" checked={isSelected} onchange={(e) => { e.stopPropagation(); toggleBatsman(p.id); }} style="cursor: pointer;" />
+                            {:else}
+                              <button class="btn-select" onclick={(e) => { e.stopPropagation(); toggleBatsman(p.id); }}>Select</button>
+                            {/if}
+                          </td>
+                        </tr>
+                      {/each}
+                    </tbody>
+                  </table>
+                </div>
               </div>
+
+              <!-- Mobile Compact Card Grid View -->
+              <div class="selection-cards-mobile">
+                {#each getAvailableBatsmen() as p}
+                  {@const isSelected = selectedBatsmen.includes(p.id)}
+                  <div class="selection-player-card card-premium {isSelected ? 'selected' : ''}" onclick={() => toggleBatsman(p.id)}>
+                    <div class="selection-card-header">
+                      <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+                        <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar-mini" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border-color); flex-shrink: 0;" />
+                        <div style="display: flex; flex-direction: column; min-width: 0;">
+                          <span class="player-name" style="font-weight: bold; font-size: 0.85rem; color: var(--text-primary); white-space: normal; word-break: break-word;">{p.name}</span>
+                          <span class="player-style" style="font-size: 0.65rem; color: var(--text-muted);">{p.battingType || 'RHB'} • {p.role}</span>
+                        </div>
+                      </div>
+                      <div class="rating-badge batting" style="background: var(--color-batting); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; color: white;">
+                        <span>🏏 {p.stats.batting}</span>
+                      </div>
+                    </div>
+                    
+                    <div class="selection-card-body" style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
+                      <div class="faction-row" style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted);">
+                        <span>Faction:</span>
+                        <span class="faction-name faction-{p.faction}">
+                          {p.faction === 'human' ? '⚔ Human' : p.faction === 'elf' ? '🌿 Elf' : p.faction === 'orc' ? '🪓 Orc' : p.faction === 'dwarf' ? '⛏ Dwarf' : p.faction === 'goblin' ? '💎 Goblin' : '🌙 Undead'}
+                        </span>
+                      </div>
+                      
+                      <div class="selection-bars" style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
+                        <div class="mini-bar-wrapper" style="display: flex; align-items: center; gap: 6px;">
+                          <span class="bar-label" style="width: 32px; font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">Stam</span>
+                          <div class="mini-bar-track" style="flex-grow: 1; height: 4px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden;">
+                            <div class="mini-bar-fill stamina" style="height: 100%; width: {100 - p.fatigue}%; background-color: {getBarColor(100 - p.fatigue)};"></div>
+                          </div>
+                          <span class="bar-val" style="width: 28px; text-align: right; font-size: 0.6rem; font-weight: bold; color: var(--text-primary);">{100 - p.fatigue}%</span>
+                        </div>
+                        <div class="mini-bar-wrapper" style="display: flex; align-items: center; gap: 6px;">
+                          <span class="bar-label" style="width: 32px; font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">Conf</span>
+                          <div class="mini-bar-track" style="flex-grow: 1; height: 4px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden;">
+                            <div class="mini-bar-fill confidence" style="height: 100%; width: {p.morale}%; background-color: {getBarColor(p.morale)};"></div>
+                          </div>
+                          <span class="bar-val" style="width: 28px; text-align: right; font-size: 0.6rem; font-weight: bold; color: var(--text-primary);">{p.morale}%</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="selection-card-footer" style="display: flex; justify-content: flex-end; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 6px; margin-top: 8px;">
+                      {#if phase === 'selectOpeningBatsmen'}
+                        <div class="select-checkbox-wrapper" style="display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: var(--text-secondary);">
+                          <input type="checkbox" checked={isSelected} onchange={(e) => { e.stopPropagation(); toggleBatsman(p.id); }} style="cursor: pointer;" />
+                          <span>Select Opener</span>
+                        </div>
+                      {:else}
+                        <button class="btn-select-mobile" style="background: var(--color-accent); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer;">Select Batter</button>
+                      {/if}
+                    </div>
+                  </div>
+                {/each}
+              </div>
+
               {#if phase === 'selectOpeningBatsmen'}
                 <div class="confirm-bar">
                   <button class="btn-confirm-opening" disabled={selectedBatsmen.length !== 2} onclick={confirmOpeningBatsmen}>Confirm Openers</button>
@@ -1936,39 +2002,68 @@
                    {@const intent = batsmanIntents[batsmanId] || 'balanced'}
                    {#if p}
                      <div class="batsman-card-new intent-{intent} {i === 0 ? 'on-strike' : ''}">
-                        <div class="batsman-avatar-ring">
-                          <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
-                          <div class="skill-badge-mini">{p.stats.batting}</div>
-                        </div>
-                        <div class="batsman-details">
-                          <div class="name-row">
-                            <span class="name">{p.name}</span>
-                            {#if i === 0}<span class="striker-icon" title="On Strike">🏏</span>{/if}
-                          </div>
-                          <div class="style-text">{p.battingType || 'RHB'} • {p.battingRole || 'Batsman'}</div>
-                          <div class="score-text">
-                            <span class="runs-scored">{stats.runs}</span>
-                            <span class="balls-faced">({stats.balls})</span>
-                          </div>
-                          <div class="bars-side-by-side">
-                            <div class="bar-wrapper">
-                              <div class="bar-header">
-                                <span class="bar-title">Stam</span>
-                              </div>
-                              <div class="mini-bar-track">
-                                <div class="mini-bar-fill stamina" style="width: {100 - p.fatigue}%; background-color: {getBarColor(100 - p.fatigue)};"></div>
-                              </div>
-                            </div>
-                            <div class="bar-wrapper">
-                              <div class="bar-header">
-                                <span class="bar-title">Conf</span>
-                              </div>
-                              <div class="mini-bar-track">
-                                <div class="mini-bar-fill confidence" style="width: {getPlayerMatchConfidence(p)}%; background-color: {getBarColor(getPlayerMatchConfidence(p))};"></div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                       <div class="card-main-content">
+                         <div class="batsman-avatar-ring">
+                           <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
+                           <div class="skill-badge-mini">{p.stats.batting}</div>
+                         </div>
+                         <div class="batsman-details">
+                           <div class="name-row">
+                             <span class="name">{p.name}</span>
+                             {#if i === 0}<span class="striker-icon" title="On Strike">🏏</span>{/if}
+                           </div>
+                           <div class="style-text">{p.battingType || 'RHB'} • {p.battingRole || 'Batsman'}</div>
+                           <div class="score-text">
+                             <span class="runs-scored">{stats.runs}</span>
+                             <span class="balls-faced">({stats.balls})</span>
+                           </div>
+                           <div class="bars-side-by-side">
+                             <div class="bar-wrapper">
+                               <div class="bar-header">
+                                 <span class="bar-title">Stam</span>
+                               </div>
+                               <div class="mini-bar-track">
+                                 <div class="mini-bar-fill stamina" style="width: {100 - p.fatigue}%; background-color: {getBarColor(100 - p.fatigue)};"></div>
+                               </div>
+                             </div>
+                             <div class="bar-wrapper">
+                               <div class="bar-header">
+                                 <span class="bar-title">Conf</span>
+                               </div>
+                               <div class="mini-bar-track">
+                                 <div class="mini-bar-fill confidence" style="width: {getPlayerMatchConfidence(p)}%; background-color: {getBarColor(getPlayerMatchConfidence(p))};"></div>
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+                       </div>
+                       
+                       <!-- Inline Strategy Controls -->
+                       <div class="card-strategy-control">
+                         {#if currentBattingTeam?.id === 'user_team'}
+                           <div class="compact-intent-adjuster">
+                             <button 
+                               class="btn-intent-adjust-mini" 
+                               disabled={getIntentIndex(batsmanIntents[batsmanId] || 'balanced') === 0} 
+                               onclick={(e) => { e.stopPropagation(); changeBatsmanIntent(batsmanId, -1); }}>
+                               ➖
+                             </button>
+                             <span class="compact-intent-label {intent}">
+                               {getBatsmanIntentLabel(intent)}
+                             </span>
+                             <button 
+                               class="btn-intent-adjust-mini" 
+                               disabled={getIntentIndex(batsmanIntents[batsmanId] || 'balanced') === INTENT_LEVELS.length - 1} 
+                               onclick={(e) => { e.stopPropagation(); changeBatsmanIntent(batsmanId, 1); }}>
+                               ➕
+                             </button>
+                           </div>
+                         {:else}
+                           <div class="compact-intent-adjuster disabled">
+                             <span class="compact-intent-label ai">🤖 AI Managed</span>
+                           </div>
+                         {/if}
+                       </div>
                      </div>
                    {/if}
                  {/each}
@@ -1982,54 +2077,108 @@
               <div class="panel-header" style="margin-bottom: 12px;">
                 <h3 style="margin: 0; font-family: 'Cinzel', serif; font-size: 1.15rem; color: var(--color-accent);">🎯 Select Bowler</h3>
               </div>
-              <div class="selection-table-container">
-                <table class="selection-table">
-                  <thead>
-                    <tr>
-                      <th>Player</th>
-                      <th>Faction</th>
-                      <th>Role</th>
-                      <th>Style</th>
-                      <th>Rating</th>
-                      <th>Stamina</th>
-                      <th>Confidence</th>
-                      <th style="text-align: center;">Select</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {#each getAvailableBowlers() as p}
-                      <tr onclick={() => confirmBowler(p.id)}>
-                        <td>
-                          <div class="player-cell" style="display: flex; align-items: center; gap: 8px;">
-                            <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar-mini" />
-                            <span class="player-name">{p.name}</span>
-                          </div>
-                        </td>
-                        <td>
-                          <span class="faction-icon faction-{p.faction}">
-                            {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
-                          </span>
-                        </td>
-                        <td>{p.role}</td>
-                        <td>{p.bowlingType || 'Fast'}</td>
-                        <td class="rating-val">{p.stats.bowling}</td>
-                        <td>
-                          <div class="bar-container">
-                            <div class="bar stamina" style="width: {100 - p.fatigue}%; background-color: {getBarColor(100 - p.fatigue)};"></div>
-                          </div>
-                        </td>
-                        <td>
-                          <div class="bar-container">
-                            <div class="bar confidence" style="width: {p.morale}%; background-color: {getBarColor(p.morale)};"></div>
-                          </div>
-                        </td>
-                        <td style="text-align: center;">
-                          <button class="btn-select">Select</button>
-                        </td>
+              
+              <!-- Desktop Table View -->
+              <div class="selection-table-desktop">
+                <div class="selection-table-container">
+                  <table class="selection-table">
+                    <thead>
+                      <tr>
+                        <th>Player</th>
+                        <th>Faction</th>
+                        <th>Role</th>
+                        <th>Style</th>
+                        <th>Rating</th>
+                        <th>Stamina</th>
+                        <th>Confidence</th>
+                        <th style="text-align: center;">Select</th>
                       </tr>
-                    {/each}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {#each getAvailableBowlers() as p}
+                        <tr onclick={() => confirmBowler(p.id)}>
+                          <td>
+                            <div class="player-cell" style="display: flex; align-items: center; gap: 8px;">
+                              <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar-mini" />
+                              <span class="player-name">{p.name}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span class="faction-icon faction-{p.faction}">
+                              {p.faction === 'human' ? '⚔' : p.faction === 'elf' ? '🌿' : p.faction === 'orc' ? '🪓' : p.faction === 'dwarf' ? '⛏' : p.faction === 'goblin' ? '💎' : '🌙'}
+                            </span>
+                          </td>
+                          <td>{p.role}</td>
+                          <td>{p.bowlingType || 'Fast'}</td>
+                          <td class="rating-val">{p.stats.bowling}</td>
+                          <td>
+                            <div class="bar-container">
+                              <div class="bar stamina" style="width: {100 - p.fatigue}%; background-color: {getBarColor(100 - p.fatigue)};"></div>
+                            </div>
+                          </td>
+                          <td>
+                            <div class="bar-container">
+                              <div class="bar confidence" style="width: {p.morale}%; background-color: {getBarColor(p.morale)};"></div>
+                            </div>
+                          </td>
+                          <td style="text-align: center;">
+                            <button class="btn-select">Select</button>
+                          </td>
+                        </tr>
+                      {/each}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Mobile Compact Card Grid View -->
+              <div class="selection-cards-mobile">
+                {#each getAvailableBowlers() as p}
+                  <div class="selection-player-card card-premium" onclick={() => confirmBowler(p.id)}>
+                    <div class="selection-card-header">
+                      <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+                        <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar-mini" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border-color); flex-shrink: 0;" />
+                        <div style="display: flex; flex-direction: column; min-width: 0;">
+                          <span class="player-name" style="font-weight: bold; font-size: 0.85rem; color: var(--text-primary); white-space: normal; word-break: break-word;">{p.name}</span>
+                          <span class="player-style" style="font-size: 0.65rem; color: var(--text-muted);">{p.bowlingType || 'Fast'} • {p.role}</span>
+                        </div>
+                      </div>
+                      <div class="rating-badge bowling" style="background: var(--color-bowling); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; color: white;">
+                        <span>🎯 {p.stats.bowling}</span>
+                      </div>
+                    </div>
+                    
+                    <div class="selection-card-body" style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
+                      <div class="faction-row" style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted);">
+                        <span>Faction:</span>
+                        <span class="faction-name faction-{p.faction}">
+                          {p.faction === 'human' ? '⚔ Human' : p.faction === 'elf' ? '🌿 Elf' : p.faction === 'orc' ? '🪓 Orc' : p.faction === 'dwarf' ? '⛏ Dwarf' : p.faction === 'goblin' ? '💎 Goblin' : '🌙 Undead'}
+                        </span>
+                      </div>
+                      
+                      <div class="selection-bars" style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
+                        <div class="mini-bar-wrapper" style="display: flex; align-items: center; gap: 6px;">
+                          <span class="bar-label" style="width: 32px; font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">Stam</span>
+                          <div class="mini-bar-track" style="flex-grow: 1; height: 4px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden;">
+                            <div class="mini-bar-fill stamina" style="height: 100%; width: {100 - p.fatigue}%; background-color: {getBarColor(100 - p.fatigue)};"></div>
+                          </div>
+                          <span class="bar-val" style="width: 28px; text-align: right; font-size: 0.6rem; font-weight: bold; color: var(--text-primary);">{100 - p.fatigue}%</span>
+                        </div>
+                        <div class="mini-bar-wrapper" style="display: flex; align-items: center; gap: 6px;">
+                          <span class="bar-label" style="width: 32px; font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">Conf</span>
+                          <div class="mini-bar-track" style="flex-grow: 1; height: 4px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden;">
+                            <div class="mini-bar-fill confidence" style="height: 100%; width: {p.morale}%; background-color: {getBarColor(p.morale)};"></div>
+                          </div>
+                          <span class="bar-val" style="width: 28px; text-align: right; font-size: 0.6rem; font-weight: bold; color: var(--text-primary);">{p.morale}%</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="selection-card-footer" style="display: flex; justify-content: flex-end; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 6px; margin-top: 8px;">
+                      <button class="btn-select-mobile" style="background: var(--color-accent); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer;">Select Bowler</button>
+                    </div>
+                  </div>
+                {/each}
               </div>
             </div>
           {:else}
@@ -2041,68 +2190,120 @@
             <div class="active-bowler-container">
               {#if p && stats}
                 <div class="bowler-card-new intent-{intent}">
-                  <div class="bowler-avatar-ring">
-                    <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
-                    <div class="skill-badge-mini">{p.stats.bowling}</div>
+                  <div class="card-main-content">
+                    <div class="bowler-avatar-ring">
+                      <img src={getAvatarUrl(p.faction, p.portraitId || 1)} alt={p.name} class="player-avatar" />
+                      <div class="skill-badge-mini">{p.stats.bowling}</div>
+                    </div>
+                    <div class="bowler-details">
+                      <div class="name-row">
+                        <span class="name">{p.name}</span>
+                      </div>
+                      <div class="style-text">{p.bowlingType || 'Fast'} • {p.role}</div>
+                      <div class="score-text">
+                        Figures: <span class="figures">{stats.wickets}-{stats.runs}</span>
+                        <span class="overs-bowled">({stats.overs} ov)</span>
+                      </div>
+                      <div class="confidence-bar-wrapper">
+                        <div class="bar-header">
+                          <span class="bar-title">Confidence</span>
+                        </div>
+                        <div class="bar-track">
+                          <div class="bar-fill confidence" style="width: {getPlayerMatchConfidence(p)}%; background-color: {getBarColor(getPlayerMatchConfidence(p))};"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="bowler-right-stamina">
+                      <div class="stamina-vertical-wrapper">
+                        <div class="vertical-bar-track">
+                          <div class="vertical-bar-fill stamina" style="height: {100 - p.fatigue}%; background-color: {getBarColor(100 - p.fatigue)};"></div>
+                        </div>
+                        <span class="stamina-label">STAMINA</span>
+                      </div>
+                    </div>
                   </div>
-                  <div class="bowler-details">
-                    <div class="name-row">
-                      <span class="name">{p.name}</span>
-                    </div>
-                    <div class="style-text">{p.bowlingType || 'Fast'} • {p.role}</div>
-                    <div class="score-text">
-                      Figures: <span class="figures">{stats.wickets}-{stats.runs}</span>
-                      <span class="overs-bowled">({stats.overs} ov)</span>
-                    </div>
-                    <div class="confidence-bar-wrapper">
-                      <div class="bar-header">
-                        <span class="bar-title">Confidence</span>
+                  
+                  <!-- Inline Strategy Controls -->
+                  <div class="card-strategy-control">
+                    {#if currentBowlingTeam?.id === 'user_team'}
+                      <div class="compact-intent-adjuster">
+                        <button 
+                          class="btn-intent-adjust-mini" 
+                          disabled={getIntentIndex(bowlerId ? (bowlerIntents[bowlerId] || 'balanced') : 'balanced') === 0} 
+                          onclick={(e) => { e.stopPropagation(); bowlerId && changeBowlerIntent(bowlerId, -1); }}>
+                          ➖
+                        </button>
+                        <span class="compact-intent-label {intent}">
+                          {getBowlerIntentLabel(bowlerId ? (bowlerIntents[bowlerId] || 'balanced') : 'balanced')}
+                        </span>
+                        <button 
+                          class="btn-intent-adjust-mini" 
+                          disabled={getIntentIndex(bowlerId ? (bowlerIntents[bowlerId] || 'balanced') : 'balanced') === INTENT_LEVELS.length - 1} 
+                          onclick={(e) => { e.stopPropagation(); bowlerId && changeBowlerIntent(bowlerId, 1); }}>
+                          ➕
+                        </button>
                       </div>
-                      <div class="bar-track">
-                        <div class="bar-fill confidence" style="width: {getPlayerMatchConfidence(p)}%; background-color: {getBarColor(getPlayerMatchConfidence(p))};"></div>
+                    {:else}
+                      <div class="compact-intent-adjuster disabled">
+                        <span class="compact-intent-label ai">🤖 AI Managed</span>
                       </div>
-                    </div>
-                  </div>
-                  <div class="bowler-right-stamina">
-                    <div class="stamina-vertical-wrapper">
-                      <div class="vertical-bar-track">
-                        <div class="vertical-bar-fill stamina" style="height: {100 - p.fatigue}%; background-color: {getBarColor(100 - p.fatigue)};"></div>
-                      </div>
-                      <span class="stamina-label">STAMINA</span>
-                    </div>
+                    {/if}
                   </div>
                 </div>
               {/if}
             </div>
+
+
           {/if}
 
           <!-- Sim Actions dock -->
-          <div class="sim-actions-panel card-premium">
-            <div class="actions-group">
-              <button class="btn-play-pause {phase === 'playing' ? 'playing' : ''}" onclick={togglePause}>
-                {phase === 'playing' ? '⏸ PAUSE' : '▶ PLAY'}
-              </button>
-              <button class="btn-step" onclick={playSingleBallAction} disabled={phase !== 'paused'}>
-                +1 BALL
-              </button>
-            </div>
-            <div class="speed-group">
-              <span class="label">SPEED</span>
-              <div class="speed-buttons">
-                <button class="btn-speed {gameSpeed === 'ball' ? 'active' : ''}" onclick={() => handleSpeedChange('ball')}>1x</button>
-                <button class="btn-speed {gameSpeed === 'over' ? 'active' : ''}" onclick={() => handleSpeedChange('over')}>Over</button>
-                <button class="btn-speed {gameSpeed === 'instant' ? 'active' : ''}" onclick={() => handleSpeedChange('instant')}>Max</button>
+          {#if phase === 'playing' || phase === 'paused'}
+            <div class="sim-actions-panel card-premium">
+              <div class="actions-group">
+                <button class="btn-play-pause {phase === 'playing' ? 'playing' : ''}" onclick={togglePause}>
+                  {phase === 'playing' ? '⏸ PAUSE' : '▶ PLAY'}
+                </button>
+                <button class="btn-step" onclick={playSingleBallAction} disabled={phase !== 'paused'}>
+                  +1 BALL
+                </button>
+              </div>
+              <div class="speed-group">
+                <span class="label">SPEED</span>
+                <div class="speed-buttons">
+                  <button class="btn-speed {gameSpeed === 'ball' ? 'active' : ''}" onclick={() => handleSpeedChange('ball')}>1x</button>
+                  <button class="btn-speed {gameSpeed === 'over' ? 'active' : ''}" onclick={() => handleSpeedChange('over')}>Over</button>
+                  <button class="btn-speed {gameSpeed === 'instant' ? 'active' : ''}" onclick={() => handleSpeedChange('instant')}>Max</button>
+                </div>
+              </div>
+              <div class="targets-group">
+                <span class="label">SIM TO</span>
+                <div class="target-buttons">
+                  <button class="btn-target" onclick={() => handleSimulateTarget({type: 'over'})}>OVER</button>
+                  <button class="btn-target" onclick={() => handleSimulateTarget({type: 'wicket'})}>WICKET</button>
+                  <button class="btn-target" onclick={() => handleSimulateTarget({type: 'innings'})}>INNINGS</button>
+                </div>
               </div>
             </div>
-            <div class="targets-group">
-              <span class="label">SIM TO</span>
-              <div class="target-buttons">
-                <button class="btn-target" onclick={() => handleSimulateTarget({type: 'over'})}>OVER</button>
-                <button class="btn-target" onclick={() => handleSimulateTarget({type: 'wicket'})}>WICKET</button>
-                <button class="btn-target" onclick={() => handleSimulateTarget({type: 'innings'})}>INNINGS</button>
+          {/if}
+
+          <!-- Nominated Impact Sub (Below Sim Actions Panel) -->
+          {#if userTeam && userTeam.reservePlayer && !impactUsed && (phase === 'paused' || String(phase) === 'ready' || phase === 'selectNextBowler' || phase === 'selectNextBatsman' || String(phase) === 'inningBreak')}
+            {@const reserveObj = userTeam.players.find(p => p.id === userTeam.reservePlayer)}
+            {#if reserveObj}
+              <div class="impact-sub-dock card-premium" style="margin-top: 14px; margin-bottom: 14px; padding: 12px;">
+                <span class="sub-title" style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 6px;">⚡ Nominated Impact Sub</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <img src={getAvatarUrl(reserveObj.faction, reserveObj.portraitId || 1)} alt={reserveObj.name} style="width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border-color);" />
+                    <span style="font-size: 0.78rem; font-weight: bold; color: var(--color-accent);">{reserveObj.name} ({reserveObj.role})</span>
+                  </div>
+                  <button class="btn-activate-impact" onclick={() => showImpactSelector = true} style="background: var(--color-accent); color: white; border: none; padding: 4px 8px; font-size: 0.72rem; font-weight: bold; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+                    Activate Sub
+                  </button>
+                </div>
               </div>
-            </div>
-          </div>
+            {/if}
+          {/if}
         {/if}
 
       </div> <!-- End Left Column -->
@@ -2270,24 +2471,6 @@
               </div>
             {/if}
           </div>
-          
-          {#if userTeam && userTeam.reservePlayer && !impactUsed && (phase === 'paused' || phase === 'ready' || phase === 'selectNextBowler' || phase === 'selectNextBatsman' || phase === 'inningBreak')}
-            {@const reserveObj = userTeam.players.find(p => p.id === userTeam.reservePlayer)}
-            {#if reserveObj}
-              <div class="impact-sub-dock" style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 12px;">
-                <span class="sub-title" style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 6px;">⚡ Nominated Impact Sub</span>
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <img src={getAvatarUrl(reserveObj.faction, reserveObj.portraitId || 1)} alt={reserveObj.name} style="width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border-color);" />
-                    <span style="font-size: 0.78rem; font-weight: bold; color: var(--color-accent);">{reserveObj.name} ({reserveObj.role})</span>
-                  </div>
-                  <button class="btn-activate-impact" onclick={() => showImpactSelector = true} style="background: var(--color-accent); color: white; border: none; padding: 4px 8px; font-size: 0.72rem; font-weight: bold; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
-                    Activate Sub
-                  </button>
-                </div>
-              </div>
-            {/if}
-          {/if}
         </div>
         <!-- Live Commentary Console -->
         <div class="commentary-panel-new card-premium">
@@ -2597,15 +2780,17 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    flex-wrap: wrap;
+    min-width: 0;
   }
   
   .batsman-details .name, .bowler-details .name {
     font-size: 0.92rem;
     font-weight: 700;
     color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
+    min-width: 0;
   }
   
   .batsman-details .striker-icon {
@@ -3688,5 +3873,302 @@
   @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.35; }
+  }
+
+  /* Inline Strategy Controls & Mobile Grid Enhancements */
+  .batsman-card-new, .bowler-card-new {
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .card-main-content {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .card-strategy-control {
+    margin-top: auto;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 8px;
+    width: 100%;
+  }
+
+  .compact-intent-adjuster {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 3px 6px;
+    box-sizing: border-box;
+  }
+  
+  :global([data-theme="light"]) .compact-intent-adjuster {
+    background: rgba(15, 23, 42, 0.02);
+  }
+
+  .compact-intent-adjuster.disabled {
+    background: transparent;
+    border-color: transparent;
+    justify-content: center;
+  }
+
+  .btn-intent-adjust-mini {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s ease;
+  }
+  .btn-intent-adjust-mini:hover:not(:disabled) {
+    transform: scale(1.2);
+  }
+  .btn-intent-adjust-mini:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .compact-intent-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .compact-intent-label.very_defensive { color: #3b82f6; }
+  .compact-intent-label.defensive { color: #60a5fa; }
+  .compact-intent-label.balanced { color: #fbbf24; }
+  .compact-intent-label.aggressive { color: #22c55e; }
+  .compact-intent-label.very_aggressive { color: #ef4444; }
+  .compact-intent-label.ai {
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    font-weight: normal;
+  }
+
+  @media (max-width: 1024px) {
+    .intent-controls-panel {
+      display: none !important;
+    }
+    .floating-suggestion {
+      bottom: 80px !important;
+      right: 16px !important;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .active-batsmen-grid {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 10px;
+      min-width: 0 !important;
+      overflow: hidden !important;
+    }
+    .batsman-avatar-ring, .bowler-avatar-ring {
+      width: 36px;
+      height: 36px;
+    }
+    .skill-badge-mini {
+      width: 16px;
+      height: 16px;
+      font-size: 0.6rem;
+      bottom: -2px;
+      right: -2px;
+    }
+    .batsman-details .name, .bowler-details .name {
+      font-size: 0.8rem;
+      white-space: normal !important;
+      word-break: break-word !important;
+    }
+    .style-text {
+      display: none; /* Hide role style text to save height on mobile */
+    }
+    .score-text {
+      font-size: 0.95rem;
+    }
+    .score-text .balls-faced {
+      font-size: 0.75rem;
+    }
+    .bars-side-by-side {
+      grid-template-columns: 1fr !important;
+      gap: 3px !important;
+    }
+    .bar-header {
+      font-size: 0.55rem;
+    }
+    .compact-intent-label {
+      font-size: 0.65rem;
+    }
+
+    /* Bowler mobile adjustments */
+    .bowler-details .figures {
+      font-size: 0.95rem;
+    }
+    .bowler-details .overs-bowled {
+      font-size: 0.75rem;
+    }
+    .bowler-right-stamina {
+      padding-left: 4px;
+    }
+    .stamina-vertical-wrapper {
+      height: 36px;
+    }
+    .vertical-bar-track {
+      width: 4px;
+    }
+    .stamina-label {
+      font-size: 0.5rem;
+    }
+
+    /* Mobile Selection Layout and Compact Cards */
+    .selection-table-desktop {
+      display: none !important;
+    }
+    .selection-cards-mobile {
+      display: flex !important;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .selection-player-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      box-sizing: border-box;
+      width: 100%;
+    }
+    :global([data-theme="light"]) .selection-player-card {
+      background: #ffffff;
+    }
+    .selection-player-card.selected {
+      border-color: var(--color-accent) !important;
+      box-shadow: 0 0 10px rgba(234, 179, 8, 0.2) !important;
+    }
+    .selection-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .selection-player-card .player-name {
+      font-weight: bold;
+      font-size: 0.85rem !important;
+      color: var(--text-primary);
+      white-space: normal !important;
+      word-break: break-word !important;
+    }
+    .selection-player-card .player-style {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .rating-badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: white;
+      font-family: var(--font-sports);
+    }
+    .rating-badge.batting { background: var(--color-batting); }
+    .rating-badge.bowling { background: var(--color-bowling); }
+
+    .selection-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.75rem;
+    }
+    .faction-row {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+    }
+    .selection-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .mini-bar-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mini-bar-wrapper .bar-label {
+      width: 32px;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .mini-bar-wrapper .mini-bar-track {
+      flex-grow: 1;
+      height: 4px;
+      background: var(--bg-tertiary);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .mini-bar-wrapper .bar-val {
+      width: 28px;
+      text-align: right;
+      font-size: 0.65rem;
+      font-weight: bold;
+      color: var(--text-primary);
+    }
+    .selection-card-footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 8px;
+      margin-top: 4px;
+    }
+    .select-checkbox-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .btn-select-mobile {
+      background: var(--color-accent);
+      color: white;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .batsman-card-new, .bowler-card-new {
+      padding: 6px !important;
+      gap: 6px !important;
+    }
+    
+    .card-main-content {
+      gap: 6px !important;
+    }
+  }
+
+  /* Desktop defaults for selection views */
+  .selection-table-desktop {
+    display: block;
+  }
+  .selection-cards-mobile {
+    display: none;
   }
 </style>
