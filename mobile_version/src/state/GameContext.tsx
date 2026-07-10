@@ -226,7 +226,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userBudget: userBudgetVal,
         savedAt: Date.now()
       });
-    }, 500); // debounce save by 500ms
+    }, 3000); // debounce save by 3000ms to throttle AsyncStorage I/O on mobile devices
     
     return () => clearTimeout(saveTimer);
   }, [teams, players, tournamentMatches, schedule, currentDay, currentSeason, gamePhase, isFirstLogin, isLoading]);

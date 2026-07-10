@@ -9,7 +9,7 @@
  * Uses calculateTeamStrength() and getCrowdFavourites() from core modules.
  */
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { useGame } from '../state/GameContext';
 import { THEME, useStyles, useThemeColors, darkColors } from '../utils/theme';
 import { calculateTeamStrength, PERSONALITY_DESCRIPTIONS } from '../core/teamBuilder';
@@ -102,72 +102,83 @@ export const TeamsScreen: React.FC<Props> = ({ onBack }) => {
 
       {/* Detail Panel */}
       {selectedTeam ? (
-        <ScrollView style={styles.detail} contentContainerStyle={{ paddingBottom: 24 }}>
-          {/* Team Header */}
-          <View style={[styles.detailHeader, { borderLeftColor: selectedTeam.colorPrimary }]}>
-            <TeamLogo logo={selectedTeam.logo || 'logo_shield'} size={48} />
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.detailTeamName}>{selectedTeam.name}</Text>
-              <Text style={styles.detailCoach}>Coach: {selectedTeam.coach}</Text>
-              <Text style={styles.detailFaction}>
-                Faction: {selectedTeam.faction?.toUpperCase()} • {selectedTeam.personality}
+        <FlatList
+          style={styles.detail}
+          contentContainerStyle={{ paddingBottom: 24 }}
+          data={displayedPlayers}
+          keyExtractor={item => item.id}
+          initialNumToRender={8}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          ListHeaderComponent={
+            <View>
+              {/* Team Header */}
+              <View style={[styles.detailHeader, { borderLeftColor: selectedTeam.colorPrimary }]}>
+                <TeamLogo logo={selectedTeam.logo || 'logo_shield'} size={48} />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.detailTeamName}>{selectedTeam.name}</Text>
+                  <Text style={styles.detailCoach}>Coach: {selectedTeam.coach}</Text>
+                  <Text style={styles.detailFaction}>
+                    Faction: {selectedTeam.faction?.toUpperCase()} • {selectedTeam.personality}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Strength bars */}
+              {teamStrength && (
+                <View style={styles.strengthCard}>
+                  <Text style={styles.strengthTitle}>Team Strength</Text>
+                  {Object.entries(teamStrength).map(([key, val]) => (
+                    <View key={key} style={styles.strengthRow}>
+                      <Text style={styles.strengthLabel}>{key.charAt(0).toUpperCase() + key.slice(1)}</Text>
+                      <View style={styles.strengthBarBg}>
+                        <View style={[styles.strengthBarFill, { width: `${Math.min(100, Number(val))}%`, backgroundColor: selectedTeam.colorPrimary }]} />
+                      </View>
+                      <Text style={styles.strengthValue}>{Math.round(Number(val))}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* Top Players */}
+              {topPlayers.length > 0 && (
+                <View style={styles.topPlayersCard}>
+                  <Text style={styles.sectionLabel}>⭐ Top 3 Players</Text>
+                  {topPlayers.map(p => (
+                    <View key={p.id} style={styles.topPlayerRow}>
+                      <Text style={styles.topPlayerName}>
+                        {crowdFavouriteIds.has(p.id) ? '❤️ ' : ''}{p.name}
+                      </Text>
+                      <Text style={styles.topPlayerStats}>
+                        Bat {p.stats.batting} | Bowl {p.stats.bowling} | {p.role}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* Role filter */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.roleFilterRow}>
+                {ROLE_FILTERS.map(role => (
+                  <TouchableOpacity
+                    key={role}
+                    style={[styles.roleChip, filterRole === role && styles.roleChipActive]}
+                    onPress={() => setFilterRole(role)}
+                  >
+                    <Text style={[styles.roleChipText, filterRole === role && styles.roleChipTextActive]}>
+                      {role.charAt(0).toUpperCase() + role.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              {/* Player list */}
+              <Text style={styles.sectionLabel}>
+                Roster ({displayedPlayers.length} players)
               </Text>
             </View>
-          </View>
-
-          {/* Strength bars */}
-          {teamStrength && (
-            <View style={styles.strengthCard}>
-              <Text style={styles.strengthTitle}>Team Strength</Text>
-              {Object.entries(teamStrength).map(([key, val]) => (
-                <View key={key} style={styles.strengthRow}>
-                  <Text style={styles.strengthLabel}>{key.charAt(0).toUpperCase() + key.slice(1)}</Text>
-                  <View style={styles.strengthBarBg}>
-                    <View style={[styles.strengthBarFill, { width: `${Math.min(100, Number(val))}%`, backgroundColor: selectedTeam.colorPrimary }]} />
-                  </View>
-                  <Text style={styles.strengthValue}>{Math.round(Number(val))}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* Top Players */}
-          {topPlayers.length > 0 && (
-            <View style={styles.topPlayersCard}>
-              <Text style={styles.sectionLabel}>⭐ Top 3 Players</Text>
-              {topPlayers.map(p => (
-                <View key={p.id} style={styles.topPlayerRow}>
-                  <Text style={styles.topPlayerName}>
-                    {crowdFavouriteIds.has(p.id) ? '❤️ ' : ''}{p.name}
-                  </Text>
-                  <Text style={styles.topPlayerStats}>
-                    Bat {p.stats.batting} | Bowl {p.stats.bowling} | {p.role}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* Role filter */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.roleFilterRow}>
-            {ROLE_FILTERS.map(role => (
-              <TouchableOpacity
-                key={role}
-                style={[styles.roleChip, filterRole === role && styles.roleChipActive]}
-                onPress={() => setFilterRole(role)}
-              >
-                <Text style={[styles.roleChipText, filterRole === role && styles.roleChipTextActive]}>
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Player list */}
-          <Text style={styles.sectionLabel}>
-            Roster ({displayedPlayers.length} players)
-          </Text>
-          {displayedPlayers.map(p => {
+          }
+          renderItem={({ item: p }) => {
             const isStartingXI = selectedTeam?.playing11?.includes(p.id);
             const isCaptain = selectedTeam?.captain === p.id;
             const isKeeper = selectedTeam?.wicketKeeper === p.id;
@@ -175,7 +186,6 @@ export const TeamsScreen: React.FC<Props> = ({ onBack }) => {
 
             return (
               <PlayerCard
-                key={p.id}
                 player={p}
                 isStartingXI={isStartingXI}
                 isCaptain={isCaptain}
@@ -185,8 +195,8 @@ export const TeamsScreen: React.FC<Props> = ({ onBack }) => {
                 teamColorSecondary={selectedTeam?.colorSecondary}
               />
             );
-          })}
-        </ScrollView>
+          }}
+        />
       ) : (
         <View style={styles.emptyDetail}>
           <Text style={styles.emptyText}>Select a team to view details.</Text>

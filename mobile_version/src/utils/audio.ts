@@ -107,6 +107,9 @@ class GameAudio {
   private crowdVolume: number = 0.15;
   private dialogueVolume: number = 0.5; // Defaults to audible out-of-the-box
   
+  // Audio waveforms cache to avoid re-synthesis overhead on mobile devices
+  private soundCache: { [key: string]: string } = {};
+
   // Web Audio Context (Browser only)
   private audioCtx: any = null;
   private activeSource: any = null;
@@ -134,6 +137,13 @@ class GameAudio {
       } catch (e) {}
     });
     this.activeOscillators = [];
+  }
+
+  private getCachedSound(key: string, generator: () => string): string {
+    if (!this.soundCache[key]) {
+      this.soundCache[key] = generator();
+    }
+    return this.soundCache[key];
   }
 
   private async playNativeSound(uri: string, volume: number) {
@@ -234,12 +244,14 @@ class GameAudio {
         console.warn('Web cheer synthesis failed:', e);
       }
     } else {
-      // Native: Play generated crowd rumble WAV
-      let lastVal = 0;
-      const uri = generateWavDataUri(8000, 2.0, () => {
-        const noise = Math.random() * 2 - 1;
-        lastVal = 0.88 * lastVal + 0.12 * noise; // lowpass filter emulation
-        return lastVal * 1.5;
+      // Native: Play cached or freshly generated cheer WAV
+      const uri = this.getCachedSound('cheer', () => {
+        let lastVal = 0;
+        return generateWavDataUri(8000, 2.0, () => {
+          const noise = Math.random() * 2 - 1;
+          lastVal = 0.88 * lastVal + 0.12 * noise;
+          return lastVal * 1.5;
+        });
       });
       this.playNativeSound(uri, intensity * this.crowdVolume);
     }
@@ -294,13 +306,15 @@ class GameAudio {
         console.warn('Web groan synthesis failed:', e);
       }
     } else {
-      // Native
-      let lastVal = 0;
-      const uri = generateWavDataUri(8000, 1.8, (t) => {
-        const noise = Math.random() * 2 - 1;
-        const coef = 0.95 - (t * 0.08); // slide down
-        lastVal = coef * lastVal + (1 - coef) * noise;
-        return lastVal * 1.3;
+      // Native: Play cached or freshly generated groan WAV
+      const uri = this.getCachedSound('groan', () => {
+        let lastVal = 0;
+        return generateWavDataUri(8000, 1.8, (t) => {
+          const noise = Math.random() * 2 - 1;
+          const coef = 0.95 - (t * 0.08);
+          lastVal = coef * lastVal + (1 - coef) * noise;
+          return lastVal * 1.3;
+        });
       });
       this.playNativeSound(uri, intensity * this.crowdVolume);
     }
@@ -335,11 +349,13 @@ class GameAudio {
         console.warn('Web batCrack synthesis failed:', e);
       }
     } else {
-      // Native: short sweep sine wave
-      const uri = generateWavDataUri(8000, 0.06, (t) => {
-        const freq = 1200 * Math.exp(-t * 90);
-        const amp = Math.exp(-t * 80);
-        return Math.sin(2 * Math.PI * freq * t) * amp;
+      // Native: Play cached or freshly generated bat crack WAV
+      const uri = this.getCachedSound('batCrack', () => {
+        return generateWavDataUri(8000, 0.06, (t) => {
+          const freq = 1200 * Math.exp(-t * 90);
+          const amp = Math.exp(-t * 80);
+          return Math.sin(2 * Math.PI * freq * t) * amp;
+        });
       });
       this.playNativeSound(uri, this.crowdVolume * 1.5);
     }
@@ -385,11 +401,13 @@ class GameAudio {
         console.warn('Web siren synthesis failed:', e);
       }
     } else {
-      // Native
-      const uri = generateWavDataUri(8000, 0.75, (t) => {
-        const freq = 400 + (400 * t / 0.7);
-        const amp = Math.max(0, 1.0 - (t / 0.75));
-        return Math.sin(2 * Math.PI * freq * t) * amp;
+      // Native: Play cached or freshly generated siren WAV
+      const uri = this.getCachedSound('siren', () => {
+        return generateWavDataUri(8000, 0.75, (t) => {
+          const freq = 400 + (400 * t / 0.7);
+          const amp = Math.max(0, 1.0 - (t / 0.75));
+          return Math.sin(2 * Math.PI * freq * t) * amp;
+        });
       });
       this.playNativeSound(uri, this.crowdVolume * 0.8);
     }
@@ -432,25 +450,27 @@ class GameAudio {
         console.warn('Web fanfare synthesis failed:', e);
       }
     } else {
-      // Native
-      const uri = generateWavDataUri(8000, 0.85, (t) => {
-        let freq = 0;
-        let amp = 0;
-        if (t < 0.15) {
-          freq = 523.25;
-          amp = Math.exp(-(t) * 10);
-        } else if (t < 0.30) {
-          freq = 659.25;
-          amp = Math.exp(-(t - 0.15) * 10);
-        } else if (t < 0.45) {
-          freq = 783.99;
-          amp = Math.exp(-(t - 0.30) * 10);
-        } else if (t < 0.85) {
-          freq = 1046.50;
-          amp = Math.exp(-(t - 0.45) * 5);
-        }
-        if (freq === 0) return 0;
-        return Math.sin(2 * Math.PI * freq * t) * amp;
+      // Native: Play cached or freshly generated fanfare WAV
+      const uri = this.getCachedSound('fanfare', () => {
+        return generateWavDataUri(8000, 0.85, (t) => {
+          let freq = 0;
+          let amp = 0;
+          if (t < 0.15) {
+            freq = 523.25;
+            amp = Math.exp(-(t) * 10);
+          } else if (t < 0.30) {
+            freq = 659.25;
+            amp = Math.exp(-(t - 0.15) * 10);
+          } else if (t < 0.45) {
+            freq = 783.99;
+            amp = Math.exp(-(t - 0.30) * 10);
+          } else if (t < 0.85) {
+            freq = 1046.50;
+            amp = Math.exp(-(t - 0.45) * 5);
+          }
+          if (freq === 0) return 0;
+          return Math.sin(2 * Math.PI * freq * t) * amp;
+        });
       });
       this.playNativeSound(uri, this.crowdVolume * 0.8);
     }
