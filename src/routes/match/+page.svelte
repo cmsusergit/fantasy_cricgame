@@ -98,6 +98,8 @@
   let aiReplacedPlayerId = $state<string | null>(null);
   let aiImpactPlayerId = $state<string | null>(null);
   let showImpactSelector = $state(false);
+  let showCommentaryModal = $state(false);
+  let showSuggestionModal = $state(false);
   let currentSuggestion = $derived.by(() => {
      if (!currentInningsData) return "No suggestions available yet.";
      
@@ -341,7 +343,7 @@
   }
 
   onDestroy(() => {
-    if (ballInterval) clearInterval(ballInterval);
+    if (ballInterval) clearTimeout(ballInterval);
     syncActiveMatchState();
   });
   
@@ -449,13 +451,13 @@
   
   function startPlay() {
     phase = 'paused';
-    if (ballInterval) clearInterval(ballInterval);
+    if (ballInterval) clearTimeout(ballInterval);
   }
   
   function startSecondInnings() {
     currentInnings = 2;
     currentBowlerIndex = 0;
-    if (ballInterval) clearInterval(ballInterval);
+    if (ballInterval) clearTimeout(ballInterval);
     checkInitialSelection();
   }
   
@@ -464,11 +466,11 @@
       phase = 'paused';
       autoResume = false;
       simulationTarget = null;
-      if (ballInterval) clearInterval(ballInterval);
+      if (ballInterval) clearTimeout(ballInterval);
     } else if (phase === 'paused') {
       phase = 'playing';
       autoResume = true;
-      if (ballInterval) clearInterval(ballInterval);
+      if (ballInterval) clearTimeout(ballInterval);
       ballInterval = setTimeout(playTargetedLoop, 50);
     }
   }
@@ -493,7 +495,7 @@
   function finishMatch() {
     isComplete = true;
     phase = 'complete';
-    if (ballInterval) clearInterval(ballInterval);
+    if (ballInterval) clearTimeout(ballInterval);
     
     if (currentMatch && matchTeam1 && matchTeam2) {
       const team1 = matchTeam1;
@@ -938,7 +940,7 @@
               target = currentInn.totalRuns + 1;
               currentBowlerIndex = 0;
               phase = 'inningBreak';
-              if (ballInterval) clearInterval(ballInterval);
+              if (ballInterval) clearTimeout(ballInterval);
           } else {
               finishMatch();
           }
@@ -1163,7 +1165,7 @@
         target = updatedInn.totalRuns + 1;
         currentBowlerIndex = 0;
         phase = 'inningBreak';
-        if (ballInterval) clearInterval(ballInterval);
+        if (ballInterval) clearTimeout(ballInterval);
 
         if (!suppressCommentaryAudio && gameSpeed !== 'instant') {
           gameAudio.speakCommentary(`End of innings one. ${currentBattingTeam.name} scored ${updatedInn.totalRuns} runs. The target for ${currentBowlingTeam.name} is ${target} runs.`);
@@ -1176,12 +1178,12 @@
 
     if (needsBatsman) {
         phase = 'selectNextBatsman';
-        if (ballInterval) clearInterval(ballInterval);
+        if (ballInterval) clearTimeout(ballInterval);
         if (pendingBowlerSelection) pendingBowlerSelection = false; // Clear pending if batsman selected first
         return true;
     } else if (needsBowler) {
         phase = 'selectNextBowler';
-        if (ballInterval) clearInterval(ballInterval);
+        if (ballInterval) clearTimeout(ballInterval);
         return true;
     }
     
@@ -1193,8 +1195,9 @@
       simulationTarget = target;
       phase = 'playing';
       autoResume = true;
-      if (ballInterval) clearInterval(ballInterval);
-      ballInterval = setTimeout(playTargetedLoop, 50);
+      if (ballInterval) clearTimeout(ballInterval);
+      const delay = gameSpeed === 'ball' ? 1200 : gameSpeed === 'over' ? 600 : 150;
+      ballInterval = setTimeout(playTargetedLoop, delay);
   }
 
   function playTargetedLoop() {
@@ -1240,11 +1243,7 @@
         return;
     }
 
-    let delay = autoPlayDelay;
-    if (gameSpeed === 'instant') {
-       delay = 10; 
-    }
-
+    const delay = gameSpeed === 'ball' ? 1200 : gameSpeed === 'over' ? 600 : 150;
     ballInterval = setTimeout(playTargetedLoop, delay);
   }
 
@@ -1803,10 +1802,15 @@
         {:else}
           <!-- Scoreboard Card (Interactive Play Phases) -->
           <div class="scoreboard-card card-premium">
-            <div class="matchup-header">
-              <span class="team-name" style="color: {matchTeam1?.colorPrimary}">{matchTeam1?.name}</span>
-              <span class="vs">vs</span>
-              <span class="team-name" style="color: {matchTeam2?.colorPrimary}">{matchTeam2?.name}</span>
+            <div style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center;">
+              <div class="matchup-header" style="margin: 0 auto;">
+                <span class="team-name" style="color: {matchTeam1?.colorPrimary}">{matchTeam1?.name}</span>
+                <span class="vs">vs</span>
+                <span class="team-name" style="color: {matchTeam2?.colorPrimary}">{matchTeam2?.name}</span>
+              </div>
+              <button class="btn-commentary-toggle card-premium" onclick={() => showCommentaryModal = true} style="position: absolute; right: 0; display: flex; align-items: center; gap: 6px; padding: 5px 10px; font-size: 0.72rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--color-accent); font-weight: bold; border-radius: 4px; cursor: pointer; transition: background 0.2s; white-space: nowrap;" onmouseover={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'} onmouseout={(e) => e.currentTarget.style.background = 'var(--bg-tertiary)'}>
+                🎙️ Comm
+              </button>
             </div>
             <div class="weather-pitch-bar">
               <span>{weatherEmojis[weather]} {weather}</span>
@@ -2256,6 +2260,8 @@
 
           {/if}
 
+
+
           <!-- Sim Actions dock -->
           {#if phase === 'playing' || phase === 'paused'}
             <div class="sim-actions-panel card-premium">
@@ -2472,15 +2478,7 @@
             {/if}
           </div>
         </div>
-        <!-- Live Commentary Console -->
-        <div class="commentary-panel-new card-premium">
-          <div class="commentary-header">
-            <span>🎙️ Live Commentary Feed</span>
-          </div>
-          <div class="commentary-content">
-            <BallFeed events={currentInningsData.ballsFaced} />
-          </div>
-        </div>
+
 
       </div> <!-- End Right Column -->
     </div> <!-- End match-dashboard -->
@@ -2518,6 +2516,25 @@
       </div>
     {/if}
 
+    {#if showCommentaryModal}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="commentary-modal-overlay" onclick={() => showCommentaryModal = false} style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 1200;">
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="commentary-modal-content card-premium" onclick={(e) => e.stopPropagation()} style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; max-width: 500px; width: 90%; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
+          <div class="commentary-modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 12px;">
+            <h3 style="margin: 0; font-family: 'Cinzel', serif; color: var(--color-accent); font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">🎙️ Live Commentary Feed</h3>
+            <!-- svelte-ignore a11y_mouse_events_have_key_events -->
+            <button class="btn-close-modal" onclick={() => showCommentaryModal = false} style="background: transparent; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer; transition: color 0.2s;" onmouseover={(e) => e.currentTarget.style.color = '#ef4444'} onmouseout={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}>✕</button>
+          </div>
+          <div class="commentary-modal-body" style="flex: 1; overflow-y: auto; padding-right: 4px;">
+            <BallFeed events={currentInningsData.ballsFaced} />
+          </div>
+        </div>
+      </div>
+    {/if}
+
     <!-- Full scorecard aligned at the bottom -->
     <div class="full-width-scorecard-container">
       <FullScorecard 
@@ -2529,19 +2546,36 @@
       />
     </div>
   {/if}
+
   {#if currentSuggestion}
-    <div class="floating-suggestion" class:expanded={showSuggestion}>
-      <button class="suggestion-toggle" onclick={() => showSuggestion = !showSuggestion} title="Assistant Suggestion">
-        💡
-      </button>
-      {#if showSuggestion}
-        <div class="suggestion-content">
-          <h4>Assistant Tip</h4>
-          <p>{currentSuggestion}</p>
+    <button 
+      onclick={() => showSuggestionModal = true} 
+      style="position: fixed; bottom: 40px; right: 20px; z-index: 999; width: 48px; height: 48px; border-radius: 50%; background: var(--color-accent); border: none; font-size: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.45); transition: transform 0.2s;"
+      onmouseover={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+      onmouseout={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
+      title="View Coach Tip"
+    >
+      💡
+    </button>
+  {/if}
+
+  {#if showSuggestionModal}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="commentary-modal-overlay" onclick={() => showSuggestionModal = false} style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 1300;">
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="commentary-modal-content card-premium" onclick={(e) => e.stopPropagation()} style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; max-width: 420px; width: 90%; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
+        <div class="commentary-modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 12px;">
+          <h3 style="margin: 0; font-family: 'Cinzel', serif; color: var(--color-accent); font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">💡 Coach's Tip</h3>
+          <!-- svelte-ignore a11y_mouse_events_have_key_events -->
+          <button class="btn-close-modal" onclick={() => showSuggestionModal = false} style="background: transparent; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer; transition: color 0.2s;" onmouseover={(e) => e.currentTarget.style.color = '#ef4444'} onmouseout={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}>✕</button>
         </div>
-      {/if}
+        <p style="margin: 0; font-size: 0.85rem; color: var(--text-primary); line-height: 1.5; text-align: left;">{currentSuggestion}</p>
+      </div>
     </div>
   {/if}
+
 </div>
 
 <style>
@@ -2586,6 +2620,18 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
     box-sizing: border-box;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .suggestion-box {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: 4px;
+    clear: both;
+    width: 100%;
+    box-sizing: border-box;
   }
   
   :global([data-theme="light"]) .card-premium {
@@ -2710,6 +2756,9 @@
     position: relative;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     transition: all 0.3s ease;
+    height: auto !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
   }
   
   :global([data-theme="light"]) .batsman-card-new,
@@ -2865,6 +2914,14 @@
   .bowler-card-new {
     width: 100%;
     box-sizing: border-box;
+    height: auto !important;
+    overflow: hidden !important;
+  }
+  
+  .active-bowler-container {
+    width: 100%;
+    height: auto !important;
+    overflow: hidden !important;
   }
   
   .bowler-card-new .score-text .figures {
@@ -3793,67 +3850,7 @@
     to { transform: translateY(0); opacity: 1; }
   }
 
-  /* Floating suggestions tips */
-  .floating-suggestion {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 200;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 12px;
-  }
 
-  .suggestion-toggle {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: var(--color-accent);
-    color: var(--bg-surface);
-    border: none;
-    font-size: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transition: transform 0.2s, background 0.2s;
-  }
-
-  .suggestion-toggle:hover {
-    transform: scale(1.1);
-  }
-
-  .suggestion-content {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: 16px;
-    width: 250px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    animation: slideInUp 0.3s ease-out forwards;
-    transform-origin: bottom right;
-  }
-
-  .suggestion-content h4 {
-    margin: 0 0 8px 0;
-    color: var(--color-accent);
-    font-size: 1rem;
-    font-family: 'Cinzel', serif;
-  }
-
-  .suggestion-content p {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    line-height: 1.4;
-  }
-
-  @keyframes slideInUp {
-    from { opacity: 0; transform: translateY(20px) scale(0.9); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
 
   /* Light Theme Dashboard Specific Colors overrides */
   :global([data-theme="light"]) .sim-actions-panel .btn-step {
@@ -3962,10 +3959,6 @@
     .intent-controls-panel {
       display: none !important;
     }
-    .floating-suggestion {
-      bottom: 80px !important;
-      right: 16px !important;
-    }
   }
 
   @media (max-width: 640px) {
@@ -4018,12 +4011,13 @@
     .bowler-details .overs-bowled {
       font-size: 0.75rem;
     }
-    .bowler-right-stamina {
-      padding-left: 4px;
-    }
-    .stamina-vertical-wrapper {
-      height: 36px;
-    }
+     .bowler-right-stamina {
+       padding-left: 4px;
+       height: 36px !important;
+     }
+     .stamina-vertical-wrapper {
+       height: 36px;
+     }
     .vertical-bar-track {
       width: 4px;
     }
