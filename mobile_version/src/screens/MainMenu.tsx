@@ -40,6 +40,7 @@ const FloatingParticle: React.FC<{ index: number }> = ({ index }) => {
   const emoji = PARTICLE_EMOJIS[index % PARTICLE_EMOJIS.length];
 
   useEffect(() => {
+    let delayTimer: any;
     const startAnimation = () => {
       animatedY.setValue(SCREEN_HEIGHT + 50);
       animatedX.setValue(Math.random() * SCREEN_WIDTH);
@@ -65,7 +66,11 @@ const FloatingParticle: React.FC<{ index: number }> = ({ index }) => {
       });
     };
 
-    startAnimation();
+    delayTimer = setTimeout(() => {
+      startAnimation();
+    }, index * 400);
+
+    return () => clearTimeout(delayTimer);
   }, []);
 
   const spin = rotation.interpolate({

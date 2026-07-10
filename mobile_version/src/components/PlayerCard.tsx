@@ -17,7 +17,7 @@ interface Props {
   teamColorSecondary?: string;
 }
 
-export const PlayerCard: React.FC<Props> = ({
+const PlayerCardComponent: React.FC<Props> = ({
   player,
   onPress,
   showPrice = false,
@@ -410,4 +410,27 @@ const stylesCreator = (colors: typeof darkColors) => StyleSheet.create({
     fontStyle: 'italic',
     letterSpacing: 2,
   }
+});
+
+export const PlayerCard = React.memo(PlayerCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.isStartingXI === nextProps.isStartingXI &&
+    prevProps.isCaptain === nextProps.isCaptain &&
+    prevProps.isKeeper === nextProps.isKeeper &&
+    prevProps.isReserve === nextProps.isReserve &&
+    prevProps.showPrice === nextProps.showPrice &&
+    prevProps.teamColorPrimary === nextProps.teamColorPrimary &&
+    prevProps.teamColorSecondary === nextProps.teamColorSecondary &&
+    prevProps.player.id === nextProps.player.id &&
+    prevProps.player.name === nextProps.player.name &&
+    prevProps.player.fatigue === nextProps.player.fatigue &&
+    prevProps.player.morale === nextProps.player.morale &&
+    prevProps.player.xp === nextProps.player.xp &&
+    prevProps.player.isInjured === nextProps.player.isInjured &&
+    prevProps.player.form === nextProps.player.form &&
+    prevProps.player.isAvailable === nextProps.player.isAvailable &&
+    prevProps.player.price === nextProps.player.price &&
+    prevProps.player.stats.batting === nextProps.player.stats.batting &&
+    prevProps.player.stats.bowling === nextProps.player.stats.bowling
+  );
 });

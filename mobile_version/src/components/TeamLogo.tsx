@@ -45,7 +45,7 @@ const SYMBOL_EMOJI: Record<string, string> = {
   dragon:         '🐉',
 };
 
-export const TeamLogo: React.FC<Props> = ({ logo = 'logo_shield', size = 24 }) => {
+const TeamLogoComponent: React.FC<Props> = ({ logo = 'logo_shield', size = 24 }) => {
   const isCustom = logo.startsWith('custom|');
 
   if (!isCustom) {
@@ -93,3 +93,5 @@ export const TeamLogo: React.FC<Props> = ({ logo = 'logo_shield', size = 24 }) =
     </View>
   );
 };
+
+export const TeamLogo = React.memo(TeamLogoComponent);
